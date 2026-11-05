@@ -39,6 +39,12 @@ export function clay(color, { emissive = 0, opacity = 1 } = {}) {
   return m;
 }
 
+/** Minted metal (coins): warm gold that reflects the room, so money reads as money. */
+export function gold(color = '#f2c14e') {
+  const c = new THREE.Color(color);
+  return new THREE.MeshStandardMaterial({ color: c, roughness: 0.3, metalness: 0.7, envMapIntensity: 3, emissive: c.clone(), emissiveIntensity: 0.12 });
+}
+
 /** Rounded box geometry (soft edges read as "clay"). */
 export const rounded = (w, h, d, r = 0.08, seg = 3) => new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2, h / 2, d / 2));
 export const cylinder = (rt, rb, h, seg = 32) => new THREE.CylinderGeometry(rt, rb, h, seg);

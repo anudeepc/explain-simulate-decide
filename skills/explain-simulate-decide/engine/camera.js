@@ -172,3 +172,15 @@ export function poseAt(setups, i, local, { reducedMotion = false } = {}) {
     target: from.target.map((v, n) => lerp(v, end.target[n], travel)),
   };
 }
+
+/**
+ * A camera operator never holds perfectly still: a slow, small drift (a few
+ * centimetres at diorama scale) so even a held shot feels filmed, not rendered.
+ * Pure function of time, so frames stay exact.
+ */
+export function breathe(pose, t) {
+  const d = Math.hypot(...pose.position.map((v, i) => v - pose.target[i]));
+  const a = d * 0.0045;
+  const off = [Math.sin(t * 0.31) + 0.5 * Math.sin(t * 0.73 + 1.3), 0.6 * Math.sin(t * 0.43 + 0.7), Math.sin(t * 0.27 + 2.1) + 0.4 * Math.sin(t * 0.61)];
+  return { position: pose.position.map((v, i) => v + off[i] * a), target: pose.target.map((v, i) => v + off[i] * a * 0.35) };
+}

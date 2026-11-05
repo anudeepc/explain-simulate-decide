@@ -1,7 +1,7 @@
 // Jar: a glass jar that fills with coins. Shows a store's level, a target line
 // (e.g. what the system cost), a flag when the target is reached, and a ghost ring
 // at the level of the viewer's previous try.
-import { clay, rounded, cylinder, torus, mesh, group, PALETTE, THREE, lerp, clamp01 } from './kit.js';
+import { clay, gold, rounded, cylinder, torus, mesh, group, PALETTE, THREE, lerp, clamp01 } from './kit.js';
 
 const R = 0.95;
 const H = 2.3;
@@ -12,9 +12,7 @@ export default function build() {
   const object = group();
   // coins inside (instanced, stacked with a little jitter)
   const coinGeo = new THREE.CylinderGeometry(R * 0.8, R * 0.8, T * 0.92, 40);
-  const coinMat = clay(PALETTE.gold, { emissive: 0.12 });
-  coinMat.roughness = 0.45;
-  coinMat.metalness = 0.35;
+  const coinMat = gold();
   const coins = new THREE.InstancedMesh(coinGeo, coinMat, COINS);
   coins.castShadow = true;
   const m4 = new THREE.Matrix4();

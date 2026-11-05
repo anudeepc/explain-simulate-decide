@@ -7,7 +7,7 @@ import { createModel, normalise, formatValue } from './model.js';
 import { parse, refs } from './formula.js';
 import { buildTimeline, stateAt, easeInOut, easeOut, span, lerp, TRAVEL, clamp01 } from './timing.js';
 import { layoutWorld, lanes, routeFlow, bounds, FOOT } from './layout.js';
-import { cameraSetups, poseAt } from './camera.js';
+import { cameraSetups, poseAt, breathe } from './camera.js';
 import { createStage, toScreen } from './stage.js';
 import { createFlow } from './flows.js';
 import { resolveActor } from './cast/resolve.js';
@@ -166,6 +166,8 @@ async function start(root, sp, options, api) {
       const p = pos[nd.id];
       holder.position.set(p.x, p.y, p.z);
       holder.rotation.y = p.rotY;
+      // things in the sky light the set; they do not throw shadows on it
+      if (nd.sky) holder.traverse((o) => (o.castShadow = false));
       stage.scene.add(holder);
     }
   }
@@ -298,7 +300,7 @@ async function start(root, sp, options, api) {
     const prev = emphasisFor(tl.segments[Math.max(0, st.index - 1)]);
     const cur = emphasisFor(seg);
     f.emphasis = mixEmphasis(prev, cur, st.index === 0 ? 1 : easeInOut(span(local, 0, 0.3)));
-    f.pose = poseAt(setups, st.index, local, { reducedMotion });
+    f.pose = reducedMotion ? poseAt(setups, st.index, local, { reducedMotion }) : breathe(poseAt(setups, st.index, local), t);
     const textAlpha = span(local, 0.1, 0.22) * (1 - span(local, 0.95, 1));
 
     if (seg.act === 'explain') {
@@ -503,7 +505,7 @@ async function start(root, sp, options, api) {
     if (ringNode && pos[ringNode] && !pos[ringNode].sky) stage.markFocus(pos[ringNode].x, pos[ringNode].z, frame.ringAlpha);
     else stage.markFocus(0, 0, 0);
     stage.look(frame.pose.position, frame.pose.target);
-    stage.render();
+    stage.render(timeForFlow);
 
     // ---- overlay
     ctx2.clearRect(0, 0, W, H);
@@ -835,11 +837,33 @@ async function start(root, sp, options, api) {
   );
   c2.addEventListener('dblclick', () => mode === 'live' && moveCamera());
 
+  // ---- drawing only when it shows: not off screen, not in a hidden tab, and not
+  // again for a paused film frame that has not changed
+  let onScreen = true;
+  new IntersectionObserver(([e]) => (onScreen = e.isIntersecting)).observe(root);
+  let drawnKey = '';
+  globalThis.document?.fonts?.ready.then(() => (drawnKey = '')); // redraw captions in the real typeface
+  // frame pacing: if frames run slow, trim the costliest finishing passes, one step at a time
+  let slow = 0;
+  let paced = 0;
+  function pace(dt) {
+    if (dt <= 0 || dt > 500) return;
+    paced++;
+    slow = slow * 0.95 + (dt > 40 ? 1 : 0) * 0.05;
+    if (paced > 90 && slow > 0.6 && stage.degrade()) {
+      slow = 0;
+      paced = 0;
+      resize();
+    }
+  }
   function tick(now) {
-    if (!recording) {
+    const shown = onScreen && !globalThis.document?.hidden;
+    if (!recording && !shown) last = now; // the film waits while nobody can see it
+    else if (!recording) {
+      const dt = now - last;
       if (mode === 'film') {
         if (playing) {
-          t += Math.min(0.1, (now - last) / 1000);
+          t += Math.min(0.1, dt / 1000);
           if (t >= filmEnd()) {
             t = filmEnd();
             if (opts.interactive) afterFilm();
@@ -856,12 +880,20 @@ async function start(root, sp, options, api) {
             if (opts.voice === 'browser' && soundOn) speakBrowser(text);
           }
         }
-        if (mode === 'film') {
+        const key = `${t}|${W}|${H}`;
+        if (mode === 'film' && (playing || key !== drawnKey)) {
+          drawnKey = key;
           apply(filmFrame(t), t, true);
           ui.setTime(t, filmEnd());
+          if (playing) pace(dt);
         }
       }
-      if (mode !== 'film') apply(liveFrame(now), now / 1000, false);
+      if (mode !== 'film') {
+        drawnKey = '';
+        apply(liveFrame(now), now / 1000, false);
+        pace(dt);
+        last = now;
+      }
     }
     requestAnimationFrame(tick);
   }
@@ -899,18 +931,20 @@ async function start(root, sp, options, api) {
     comp.height = height;
     const cctx = comp.getContext('2d');
     try {
-      return await recordFilm(
-        {
-          total: Math.min(seconds || Infinity, tl.total),
-          drawFrame(time) {
-            apply(filmFrame(time), time, true);
-            cctx.drawImage(c3, 0, 0, width, height);
-            cctx.drawImage(c2, 0, 0, width, height);
-            return comp;
+      return await stage.withFullQuality(() =>
+        recordFilm(
+          {
+            total: Math.min(seconds || Infinity, tl.total),
+            drawFrame(time) {
+              apply(filmFrame(time), time, true);
+              cctx.drawImage(c3, 0, 0, width, height);
+              cctx.drawImage(c2, 0, 0, width, height);
+              return comp;
+            },
+            renderAudio: opts.music || clips.length ? renderAudio : null,
           },
-          renderAudio: opts.music || clips.length ? renderAudio : null,
-        },
-        { width, height, fps, onProgress },
+          { width, height, fps, onProgress },
+        ),
       );
     } finally {
       recording = null;
@@ -938,6 +972,8 @@ async function start(root, sp, options, api) {
   Object.assign(api, {
     timeline: tl,
     duration: tl.total,
+    /** Film-look settings (exposure, bloom, focus blur, grain), for tuning and tests. */
+    look: stage.post.settings,
     play,
     pause,
     seek: (time) => {

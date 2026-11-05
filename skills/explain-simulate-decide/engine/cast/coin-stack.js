@@ -1,5 +1,5 @@
 // Coin stack: more coins stack up as the value rises (1 → 12). New coins settle in from above.
-import { clay, mesh, group, PALETTE, THREE, lerp, clamp01 } from './kit.js';
+import { clay, gold, mesh, group, PALETTE, THREE, lerp, clamp01 } from './kit.js';
 
 const MAX = 12;
 const R = 0.62;
@@ -19,8 +19,8 @@ function coinGeometry() {
 export default function build() {
   const object = group();
   const geo = coinGeometry();
-  const mat = clay(PALETTE.gold, { emissive: 0.08 });
-  const faceMat = clay('#d9a23f');
+  const mat = gold();
+  const faceMat = gold('#dba640');
   const faceGeo = new THREE.CylinderGeometry(R * 0.66, R * 0.66, 0.012, 36);
   const coins = [];
   for (let i = 0; i < MAX; i++) {

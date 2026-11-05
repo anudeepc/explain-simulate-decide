@@ -8,7 +8,7 @@ import { serve } from './serve.mjs';
 const [page = 'examples/solar/solar.html', out = 'examples/solar/solar.mp4'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const channel = process.argv.includes('--channel') ? process.argv[process.argv.indexOf('--channel') + 1] : undefined;
 const srv = serve();
-const browser = await chromium.launch({ channel, args: ['--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ channel, args: ['--autoplay-policy=no-user-gesture-required', '--use-angle=metal', '--enable-gpu'] });
 try {
   const p = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, acceptDownloads: true })).newPage();
   p.on('pageerror', (e) => console.error('page error:', e));

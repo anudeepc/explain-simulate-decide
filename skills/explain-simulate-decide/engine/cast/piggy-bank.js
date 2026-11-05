@@ -1,5 +1,5 @@
 // Piggy bank: a coin slips into the slot, the slot glows and the body swells slightly as savings grow.
-import { clay, rounded, cylinder, sphere, cone, torus, mesh, group, PALETTE, THREE, lerp } from './kit.js';
+import { clay, gold, rounded, cylinder, sphere, cone, torus, mesh, group, PALETTE, THREE, lerp } from './kit.js';
 
 export default function build({ color = '#e7a99c' } = {}) {
   const object = group();
@@ -23,7 +23,7 @@ export default function build({ color = '#e7a99c' } = {}) {
   // coin slot on the back + coin
   const slotMat = clay(PALETTE.ink, { emissive: 0 });
   body.add(mesh(rounded(0.46, 0.06, 0.1, 0.03), slotMat, { y: 0.73 }));
-  const coin = mesh(cylinder(0.28, 0.28, 0.07, 32), clay(PALETTE.gold, { emissive: 0.1 }), { rx: Math.PI / 2 });
+  const coin = mesh(cylinder(0.28, 0.28, 0.07, 32), gold(), { rx: Math.PI / 2 });
   body.add(coin);
   const glow = new THREE.Color(PALETTE.sun);
   return {

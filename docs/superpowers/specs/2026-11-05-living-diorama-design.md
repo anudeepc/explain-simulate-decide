@@ -33,6 +33,13 @@ over a simulated clock. The renderer builds one connected miniature world on a p
   flows of the same kind are comparable (a trickle of small credits vs a stream of bill savings).
 - Stores show their level at the clock time; targets draw a line; milestones raise a flag.
 - Look: sky gradient, image-based light, a plinth diorama, emissive energy carriers.
+- Film finish (added 2026-11-06, after "it feels like a 90s video game, not a film"): the scene renders
+  into a high-range buffer and is finished in `post.js` with contact shade (ambient occlusion), bloom,
+  depth of field focused on what the camera aims at, a colour-true tone curve, a light grade, vignette
+  and fine grain. Low warm key light with soft shadows. The camera drifts slightly in every shot.
+  Coins stand on edge and roll (turning by distance over radius); power and heat are glowing pulses
+  inside glass conduits; sunlight is a soft shaft. A soft pool of light marks the node in focus.
+  Quality steps down for phones, software rendering and slow frames; recording always uses full quality.
 - Simulate: drag a node to change the input it plays; a compact dock keeps sliders for keyboard and
   screen readers; Run/Pause the clock; a ghost of the previous run stays on each store.
 
