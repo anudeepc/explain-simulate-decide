@@ -1,0 +1,19 @@
+{
+  "name": "explain-simulate-decide",
+  "version": "0.1.0",
+  "description": "Turn any article into a directed 3D explainer: Explain, Simulate, Decide.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/",
+    "validate": "node skills/explain-simulate-decide/scripts/validate.mjs",
+    "render": "node skills/explain-simulate-decide/scripts/render.mjs",
+    "render:solar": "node skills/explain-simulate-decide/scripts/render.mjs examples/solar/screenplay.json -o examples/solar/solar.html",
+    "serve": "python3 -m http.server 8080",
+    "check": "node tests/render-check.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
