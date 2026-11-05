@@ -207,3 +207,15 @@ LinkedIn article and narration script, Word (.docx) input, user accounts, any se
 ## 12. Publishing gate
 
 Before the repo is made public: check GitHub login with `gh auth status` and confirm the repo name and owner with the user.
+
+## 13. Implementation notes (changes made while building)
+
+- **Named constants.** Formulas may only contain plain conversion numbers. Every other number must be a `constants` entry with a label and source, so the "every number sourced" rule is checked by the validator.
+- **`drive` field (optional) on shots.** It chooses which input sweeps during a shot.
+- **`plays` is optional** on cast entries; actors without it are scenery.
+- **Calmer pacing.** 2.6 words/s plus a 1.6 s hold, with a 3.5 s minimum per shot. The recorded Simulate segment is 12 s and Decide is 10 s. The solar film runs about 72 s.
+- **Layout.** Actors stand on a shallow arc (an amphitheatre), not in rows, so no actor hides another. The camera fits each shot by framing (fit these actors, from this angle), not by fixed offsets.
+- **Captions, labels and painted panels are drawn on a 2D canvas** over the 3D stage, so the live page and the MP4 show identical pixels. The live sliders and Decide panel are accessible DOM controls.
+- **Recording** uses H.264 at 8 Mbps plus AAC. Headless Chromium's shell crashes on long recordings, so `tests/record-mp4.mjs` uses installed Chrome (`--channel chrome`). MP4s are kept out of git and published as release assets.
+- **The "before" view** on the landing page is an inline panel, not a separate `before.html`.
+- **Second test article.** The heat-pump example uses a synthetic test article (`tests/fixtures/heat-pump-article.md`), because the Department of Energy heat-pump pages returned 404. The news-article test is not done yet.

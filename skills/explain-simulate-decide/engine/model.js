@@ -76,8 +76,10 @@ export function formatValue(value, unit = '') {
   const abs = Math.abs(value);
   const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
   const num = value.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
-  if (unit === '$') return `$${num}`;
-  if (unit.startsWith('$/')) return `$${value.toFixed(2)}/${unit.slice(2)}`;
+  const sign = value < 0 ? '-' : '';
+  const abs2 = Math.abs(value);
+  if (unit === '$') return `${sign}$${abs2.toLocaleString('en-US', { maximumFractionDigits: digits })}`;
+  if (unit.startsWith('$/')) return `${sign}$${abs2.toFixed(abs2 !== 0 && abs2 < 0.1 ? 3 : 2)}/${unit.slice(2)}`;
   if (unit === '%') return `${num}%`;
   return unit ? `${num} ${unit}` : num;
 }

@@ -12,7 +12,7 @@ const VIDEO_CODECS = [
 async function pickVideo(width, height, fps) {
   if (!('VideoEncoder' in globalThis)) throw new Error('This browser cannot record video (WebCodecs missing). Try Chrome or Edge.');
   for (const [codec, mux] of VIDEO_CODECS) {
-    const config = { codec, width, height, bitrate: 12_000_000, framerate: fps };
+    const config = { codec, width, height, bitrate: 8_000_000, framerate: fps };
     try {
       if ((await VideoEncoder.isConfigSupported(config)).supported) return { config, mux };
     } catch {}

@@ -488,7 +488,7 @@ async function start(root, sp, options, api) {
     return off.startRendering();
   }
 
-  async function record({ width = 1920, height = 1080, fps = 60, onProgress } = {}) {
+  async function record({ width = 1920, height = 1080, fps = 60, onProgress, seconds } = {}) {
     pause();
     const saved = { W, H, mode };
     recording = true;
@@ -507,7 +507,7 @@ async function start(root, sp, options, api) {
     try {
       return await recordFilm(
         {
-          total: tl.total,
+          total: Math.min(seconds || Infinity, tl.total),
           drawFrame(time) {
             apply(filmFrame(time), time, true);
             cctx.drawImage(c3, 0, 0, width, height);

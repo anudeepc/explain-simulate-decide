@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "question": "Should I replace my gas furnace with a heat pump?",
+  "source": {
+    "title": "Thinking about a heat pump? (synthetic test article)",
+    "publisher": "Test fixture written for this repo, illustrative numbers",
+    "url": "",
+    "quotes": [
+      "a typical heat pump delivers about three units of heat for every unit of electricity it uses.",
+      "A good gas furnace turns about 90 percent of its fuel into heat.",
+      "Electricity usually costs more per unit of energy than gas, so the running cost depends on both prices where you live.",
+      "Sealing and insulating first can shrink the heat you need, and lets you buy a smaller system."
+    ]
+  },
+  "model": {
+    "inputs": [
+      {
+        "id": "insulation",
+        "label": "Heat saved by insulating first",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 40,
+        "step": 5,
+        "default": 0,
+        "source": "article",
+        "quote": 3
+      },
+      {
+        "id": "cop",
+        "label": "Heat pump efficiency",
+        "unit": "× heat per unit",
+        "kind": "lever",
+        "min": 2,
+        "max": 4.5,
+        "step": 0.1,
+        "default": 3,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "heatNeed",
+        "label": "Heat your home needs a year",
+        "unit": "kWh",
+        "kind": "condition",
+        "min": 6000,
+        "max": 30000,
+        "step": 500,
+        "default": 15000,
+        "source": "assumption"
+      },
+      {
+        "id": "elecPrice",
+        "label": "Electricity price",
+        "unit": "$/kWh",
+        "kind": "condition",
+        "min": 0.1,
+        "max": 0.4,
+        "step": 0.01,
+        "default": 0.16,
+        "source": "assumption"
+      },
+      {
+        "id": "gasPrice",
+        "label": "Gas price",
+        "unit": "$/kWh",
+        "kind": "condition",
+        "min": 0.03,
+        "max": 0.12,
+        "step": 0.005,
+        "default": 0.06,
+        "source": "assumption"
+      }
+    ],
+    "constants": [
+      {
+        "id": "furnaceEff",
+        "label": "Gas furnace efficiency",
+        "unit": "",
+        "value": 0.9,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "installCost",
+        "label": "Extra cost to install a heat pump",
+        "unit": "$",
+        "value": 8000,
+        "source": "assumption"
+      }
+    ],
+    "derived": [
+      {
+        "id": "heat",
+        "label": "Heat needed after insulating",
+        "unit": "kWh",
+        "formula": "heatNeed * (100 - insulation) / 100"
+      },
+      {
+        "id": "gasCost",
+        "label": "Yearly cost with gas",
+        "unit": "$",
+        "formula": "heat / furnaceEff * gasPrice"
+      },
+      {
+        "id": "hpCost",
+        "label": "Yearly cost with a heat pump",
+        "unit": "$",
+        "formula": "heat / cop * elecPrice"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "saving",
+        "label": "Saved each year",
+        "unit": "$",
+        "formula": "gasCost - hpCost"
+      },
+      {
+        "id": "payback",
+        "label": "Years to pay back",
+        "unit": "years",
+        "formula": "min(installCost / max(saving, 1), 100)"
+      }
+    ]
+  },
+  "cast": [
+    {
+      "id": "home",
+      "actor": "house",
+      "plays": "insulation",
+      "source": "studio",
+      "label": "Your home"
+    },
+    {
+      "id": "winter",
+      "actor": "cloud",
+      "plays": "heatNeed",
+      "source": "studio",
+      "label": "Winter"
+    },
+    {
+      "id": "pump",
+      "actor": "gauge",
+      "plays": "cop",
+      "source": "studio",
+      "label": "Heat pump"
+    },
+    {
+      "id": "power",
+      "actor": "plug",
+      "plays": "elecPrice",
+      "source": "studio",
+      "label": "Electricity"
+    },
+    {
+      "id": "gas",
+      "actor": "power-bill",
+      "plays": "gasPrice",
+      "source": "studio",
+      "label": "Gas bill"
+    },
+    {
+      "id": "jar",
+      "actor": "piggy-bank",
+      "plays": "saving",
+      "source": "studio",
+      "label": "Yearly saving"
+    },
+    {
+      "id": "days",
+      "actor": "calendar",
+      "plays": "payback",
+      "source": "studio",
+      "label": "Payback"
+    }
+  ],
+  "explain": [
+    {
+      "shot": "establish",
+      "focus": "home",
+      "caption": "Gas furnace or heat pump? Here is what decides it."
+    },
+    {
+      "shot": "introduce",
+      "focus": "winter",
+      "caption": "Colder winters mean your home needs more heat."
+    },
+    {
+      "shot": "introduce",
+      "focus": "pump",
+      "caption": "A heat pump moves heat in. It doesn't burn fuel."
+    },
+    {
+      "shot": "turn",
+      "focus": "pump",
+      "drive": "cop",
+      "caption": "One unit of electricity can bring in about three of heat."
+    },
+    {
+      "shot": "cause",
+      "focus": "power",
+      "affects": "jar",
+      "caption": "But electricity often costs more than gas, which eats into savings."
+    },
+    {
+      "shot": "cause",
+      "focus": "gas",
+      "affects": "jar",
+      "caption": "Higher gas prices make the heat pump look better."
+    },
+    {
+      "shot": "focus",
+      "focus": "home",
+      "caption": "Insulating first shrinks the heat you need at all."
+    },
+    {
+      "shot": "focus",
+      "focus": "days",
+      "drive": "elecPrice",
+      "caption": "Payback is the years until savings cover the extra cost."
+    },
+    {
+      "shot": "handoff",
+      "focus": "home",
+      "caption": "Your turn. Try your own prices and your own winter."
+    }
+  ],
+  "simulate": {
+    "controls": [
+      "heatNeed",
+      "elecPrice",
+      "gasPrice",
+      "cop",
+      "insulation"
+    ],
+    "prompt": "Try your own prices and your own winter."
+  },
+  "decide": {
+    "tradeoffs": [
+      "Lower running costs are likely where gas is expensive, but not guaranteed where electricity is.",
+      "A heat pump also cools in summer, but installation can cost more than a new furnace.",
+      "Insulating first costs money too, but can mean a smaller, cheaper system."
+    ],
+    "leftOut": [
+      "Rebates and tax credits. These change, so check what applies to you now.",
+      "Lower efficiency on the coldest days, and any backup heat you might need.",
+      "Duct or electrical panel upgrades your home might need.",
+      "Emissions, which depend on how your electricity is made."
+    ],
+    "questionsToAsk": [
+      "Which cold-climate models do installers recommend for my area?",
+      "Do my ducts or electrical panel need work?",
+      "What rebates are available where I live?",
+      "What would insulating first change about the system size?"
+    ]
+  }
+}

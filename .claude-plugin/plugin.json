@@ -1,0 +1,9 @@
+{
+  "name": "explain-simulate-decide",
+  "version": "0.1.0",
+  "description": "Turn any article into a directed 3D explainer: Explain, Simulate, Decide. Offline HTML + MP4.",
+  "author": {
+    "name": "Anudeep Chikyala"
+  },
+  "license": "MIT"
+}

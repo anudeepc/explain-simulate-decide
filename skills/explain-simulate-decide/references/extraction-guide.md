@@ -50,6 +50,7 @@ What does your small model leave out that could change the answer? Examples: inc
 - **Fill the gaps with assumptions,** labelled `"source": "assumption"`. Pick ordinary middle values and sensible ranges. The viewer sees an asterisk and can change them.
 - **Put meaningful numbers in `constants`** with a label and source. Only plain unit conversions (100, 365, 12, 24, 60, 1000…) may appear directly inside formulas.
 - **Check the defaults give a believable answer** (for example, solar payback of 5–20 years, not 0.3 or 400).
+- **Guard against outcomes that break.** If a value can reach zero or go negative, protect divisions with `max(x, 1)` and cap open-ended results with `min(…, 100)`. Then "never pays back" shows as 100 years instead of 8,000 or an error.
 - **Keep formulas short.** A derived value per idea is easier to cast and to explain.
 
 ## Casting

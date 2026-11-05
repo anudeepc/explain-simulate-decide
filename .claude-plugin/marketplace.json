@@ -1,0 +1,14 @@
+{
+  "name": "explain-simulate-decide",
+  "owner": { "name": "Anudeep Chikyala" },
+  "plugins": [
+    {
+      "name": "explain-simulate-decide",
+      "source": "./",
+      "description": "Turn any article into a directed 3D explainer: Explain, Simulate, Decide. Offline HTML + MP4.",
+      "version": "0.1.0",
+      "license": "MIT",
+      "keywords": ["explainer", "simulation", "three.js", "education", "visualization"]
+    }
+  ]
+}

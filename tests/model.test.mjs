@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createModel } from '../skills/explain-simulate-decide/engine/model.js';
+import { createModel, formatValue } from '../skills/explain-simulate-decide/engine/model.js';
 
 const solar = JSON.parse(readFileSync(new URL('../examples/solar/screenplay.json', import.meta.url)));
 
@@ -41,4 +41,14 @@ test('meta describes each value', () => {
   assert.deepEqual(m.meta('payback'), { id: 'payback', label: 'Years to pay back', unit: 'years', kind: 'output' });
   assert.equal(m.meta('size').kind, 'lever');
   assert.equal(m.meta('costPerKw').kind, 'constant');
+});
+
+test('formatValue handles money, rates, percents and negatives', () => {
+  assert.equal(formatValue(1301.4, '$'), '$1,301');
+  assert.equal(formatValue(-702.2, '$'), '-$702');
+  assert.equal(formatValue(0.25, '$/kWh'), '$0.25/kWh');
+  assert.equal(formatValue(0.065, '$/kWh'), '$0.065/kWh');
+  assert.equal(formatValue(50, '%'), '50%');
+  assert.equal(formatValue(13.84, 'years'), '13.8 years');
+  assert.equal(formatValue(null, '$'), '—');
 });

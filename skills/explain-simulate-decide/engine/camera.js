@@ -49,8 +49,8 @@ function boxOf(ids, layout, heights) {
 export function cameraSetups(tl, sp, layout, { heights = {}, aspect = 16 / 9 } = {}) {
   const ids = Object.keys(layout);
   const all = boxOf(ids, layout, heights);
-  const wide = frame(all, { el: 16, margin: 1.02, aspect, shiftY: 0.12 });
-  const sim = frame(all, { el: 18, margin: 1.22, aspect, shiftX: -0.17, shiftY: 0.04 });
+  const wide = frame(all, { el: 16, margin: 1.12, aspect, shiftY: 0.14 });
+  const sim = frame(all, { el: 18, margin: 1.45, aspect, shiftX: 0.27, shiftY: 0.1 });
   const pull = frame(all, { el: 24, margin: 1.5, aspect, shiftY: -0.55 });
   const b = bounds(layout);
   const sideOf = (id) => (layout[id].x < (b.minX + b.maxX) / 2 ? -1 : 1);
@@ -65,17 +65,17 @@ export function cameraSetups(tl, sp, layout, { heights = {}, aspect = 16 / 9 } =
       case 'establish':
         return { ...wide, push: 0.07 };
       case 'introduce': // three-quarter angle, subject on a third
-        return { ...frame(one, { az: 24 * s, el: 14, margin: 1.75, aspect, shiftX: 0.3 * s, shiftY: -0.05 }), push: 0.05 };
+        return { ...frame(one, { az: 24 * s, el: 14, margin: 1.75, aspect, shiftX: 0.3 * s, shiftY: 0.08 }), push: 0.05 };
       case 'focus':
-        return { ...frame(one, { az: 10 * s, el: 12, margin: 1.5, aspect, shiftX: 0.22 * s }), push: 0.06 };
+        return { ...frame(one, { az: 10 * s, el: 12, margin: 1.5, aspect, shiftX: 0.22 * s, shiftY: 0.12 }), push: 0.06 };
       case 'compare':
-        return { ...frame(one, { az: 0, el: 10, margin: 1.85, aspect }), push: 0.03 };
+        return { ...frame(one, { az: 0, el: 10, margin: 1.85, aspect, shiftY: 0.1 }), push: 0.03 };
       case 'turn': // hold, then a slow reveal
-        return { ...frame(one, { az: -20 * s, el: 9, margin: 1.6, aspect, shiftX: -0.25 * s }), push: 0.12 };
+        return { ...frame(one, { az: -20 * s, el: 9, margin: 1.6, aspect, shiftX: -0.25 * s, shiftY: 0.1 }), push: 0.12 };
       case 'handoff':
         return { ...sim, push: 0.02 };
       case 'cause':
-        return { ...frame(boxOf([shot.focus, shot.affects], layout, heights), { el: 16, margin: 1.2, aspect, shiftY: -0.05 }), push: 0.04 };
+        return { ...frame(boxOf([shot.focus, shot.affects], layout, heights), { el: 16, margin: 1.3, aspect, shiftY: 0.12 }), push: 0.04 };
       default:
         return { ...wide, push: 0.03 };
     }
