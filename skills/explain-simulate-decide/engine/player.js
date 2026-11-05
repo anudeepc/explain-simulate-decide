@@ -285,8 +285,8 @@ async function start(root, sp, options, api) {
   // answers shown on the painted "Make it yours" card in the recorded film
   const demoAnswers = (sp.ask || []).map((q) => {
     if (q.input) return { question: q.question, answer: formatValue(defaults[q.input], inputsById[q.input].unit) };
-    const best = q.choices.find((c) => Object.entries(c.set).every(([id, v]) => Math.abs(v - defaults[id]) < 1e-9)) || q.choices[0];
-    return { question: q.question, answer: best.label };
+    const best = q.choices.find((c) => Object.entries(c.set).every(([id, v]) => Math.abs(v - defaults[id]) < 1e-9));
+    return { question: q.question, answer: best ? best.label : 'Skipped: typical values' };
   });
 
   function filmFrame(t) {
