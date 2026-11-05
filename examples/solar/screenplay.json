@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "question": "Should I put solar on my roof?",
+  "source": {
+    "title": "Homeowner's Guide to Solar; Will I Save Money with Solar Energy?",
+    "publisher": "U.S. Department of Energy (public domain)",
+    "url": "https://www.energy.gov/eere/solar/homeowners-guide-going-solar",
+    "quotes": [
+      "Typically, solar panels perform best on south-facing roofs with a slope between 15 and 40 degrees, though other roofs may be suitable too.",
+      "Your savings also depend on the electricity rates set by your utility and how much the utility will compensate you for the excess solar energy you send back to the grid.",
+      "Net metering is an arrangement between solar energy system owners and utilities in which the system owners are compensated for any solar power generation that is exported to the electricity grid.",
+      "In general, a purchased solar system can be installed at a lower total cost than system installed using a solar loan, lease, or power purchase agreement (PPA).",
+      "If you pay cash for your solar system, the payback period refers to the length of time required before the system has paid for itself and all future power produced is free.",
+      "You should also consider the age of your roof and how long until it will need replacement.",
+      "Every household is different... so calculating an average amount of savings from going solar is nearly impossible."
+    ]
+  },
+  "model": {
+    "inputs": [
+      { "id": "size", "label": "System size", "unit": "kW", "kind": "lever", "min": 2, "max": 10, "step": 0.5, "default": 6, "source": "assumption" },
+      { "id": "selfUse", "label": "Solar you use at home", "unit": "%", "kind": "lever", "min": 20, "max": 90, "step": 5, "default": 50, "source": "assumption" },
+      { "id": "sunHours", "label": "Full-sun hours a day", "unit": "h", "kind": "condition", "min": 3, "max": 6.5, "step": 0.1, "default": 4.5, "source": "article", "quote": 0 },
+      { "id": "price", "label": "Price you pay for power", "unit": "$/kWh", "kind": "condition", "min": 0.12, "max": 0.45, "step": 0.01, "default": 0.25, "source": "article", "quote": 1 },
+      { "id": "exportRate", "label": "Credit for power you send out", "unit": "$/kWh", "kind": "condition", "min": 0, "max": 0.25, "step": 0.01, "default": 0.08, "source": "article", "quote": 2 }
+    ],
+    "constants": [
+      { "id": "costPerKw", "label": "Installed cost per kW", "unit": "$/kW", "value": 3000, "source": "assumption" },
+      { "id": "efficiency", "label": "Share of panel output that reaches your home", "unit": "", "value": 0.8, "source": "assumption" }
+    ],
+    "derived": [
+      { "id": "yearlyKwh", "label": "Power made each year", "unit": "kWh", "formula": "size * sunHours * 365 * efficiency" },
+      { "id": "usedKwh", "label": "Used at home", "unit": "kWh", "formula": "yearlyKwh * selfUse / 100" },
+      { "id": "exportedKwh", "label": "Sent to the grid", "unit": "kWh", "formula": "yearlyKwh - usedKwh" },
+      { "id": "cost", "label": "System cost", "unit": "$", "formula": "size * costPerKw" }
+    ],
+    "outputs": [
+      { "id": "saving", "label": "Saved each year", "unit": "$", "formula": "usedKwh * price + exportedKwh * exportRate" },
+      { "id": "payback", "label": "Years to pay back", "unit": "years", "formula": "cost / saving" }
+    ]
+  },
+  "cast": [
+    { "id": "home", "actor": "house", "source": "studio", "label": "Your home" },
+    { "id": "panels", "actor": "roof-panel", "plays": "size", "source": "studio", "label": "Panels" },
+    { "id": "sun", "actor": "sun", "plays": "sunHours", "source": "studio", "label": "Sun" },
+    { "id": "bill", "actor": "power-bill", "plays": "price", "source": "studio", "label": "Power bill" },
+    { "id": "meter", "actor": "gauge", "plays": "selfUse", "source": "studio", "label": "Used at home" },
+    { "id": "grid", "actor": "plug", "plays": "exportRate", "source": "studio", "label": "Grid credit" },
+    { "id": "coins", "actor": "coin-stack", "plays": "saving", "source": "studio", "label": "Yearly saving" },
+    { "id": "clock", "actor": "clock", "plays": "payback", "source": "studio", "label": "Payback" }
+  ],
+  "explain": [
+    { "shot": "establish", "focus": "home", "caption": "Should solar go on your roof? Here is how it works." },
+    { "shot": "introduce", "focus": "panels", "caption": "Panels turn sunlight into power. Bigger systems make more." },
+    { "shot": "cause", "focus": "sun", "affects": "panels", "caption": "More full-sun hours means more power from the same panels." },
+    { "shot": "introduce", "focus": "bill", "caption": "Power you make yourself is power you don't buy." },
+    { "shot": "cause", "focus": "meter", "affects": "coins", "caption": "Solar used at home saves the full price you pay." },
+    { "shot": "turn", "focus": "grid", "caption": "But extra power sent to the grid often earns much less." },
+    { "shot": "compare", "focus": "coins", "caption": "So savings depend on what you use, not just what you make." },
+    { "shot": "focus", "focus": "clock", "caption": "Payback is the years until savings cover the cost." },
+    { "shot": "handoff", "focus": "home", "caption": "Your turn. Change the numbers and watch what moves." }
+  ],
+  "simulate": { "controls": ["size", "selfUse", "sunHours", "price", "exportRate"], "prompt": "Try your own roof and your own power prices." },
+  "decide": {
+    "tradeoffs": [
+      "Paying cash usually costs less in total than a loan, lease or power purchase agreement.",
+      "A lease or power purchase agreement needs little upfront, but you don't own the system or its tax benefits.",
+      "A bigger system makes more power, but power you send out usually earns less than power you use."
+    ],
+    "leftOut": [
+      "Tax credits and rebates. These change often, so check what applies where you live today.",
+      "Shade and roof direction. South-facing roofs at 15–40 degrees usually do best.",
+      "Panel wear, maintenance, batteries, and power prices changing over the years.",
+      "Replacing your roof during the life of the panels."
+    ],
+    "questionsToAsk": [
+      "How does my utility credit the power I send to the grid?",
+      "How many years until my roof needs replacing?",
+      "Can I get at least three quotes from certified installers?",
+      "Which incentives apply to me right now?"
+    ]
+  }
+}
