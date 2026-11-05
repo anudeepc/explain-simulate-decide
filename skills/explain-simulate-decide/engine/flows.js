@@ -8,14 +8,14 @@ const GREY = new THREE.Color('#c9c2b6');
 
 // carrier look: track (radius, colour) and particles (geometry, colour, spacing, speed)
 const CARRIERS = {
-  energy: { track: [0.04, '#3f4552'], color: '#ffc93c', glow: 1.4, geo: () => new THREE.CapsuleGeometry(0.09, 0.22, 4, 10).rotateZ(Math.PI / 2), gap: 0.42, speed: 2.1, lift: 0.07 },
-  money: { path: [0.42, '#efe2c2', '#c9b48a'], color: '#e7b448', glow: 0.25, geo: () => new THREE.CylinderGeometry(0.2, 0.2, 0.06, 28).rotateX(Math.PI / 2), gap: 0.7, speed: 1.3, lift: 0.28, hop: true, metal: true },
-  water: { track: [0.1, '#a9d3ea', 0.45], color: '#4d9fd8', glow: 0.35, geo: () => new THREE.SphereGeometry(0.1, 16, 12), gap: 0.36, speed: 1.6, lift: 0 },
-  heat: { track: [0.07, '#b9806a'], color: '#ff7a3d', glow: 1.2, geo: () => new THREE.SphereGeometry(0.11, 16, 12), gap: 0.4, speed: 1.4, lift: 0.06 },
-  light: { track: null, color: '#fff1b0', glow: 2.2, geo: () => new THREE.CapsuleGeometry(0.05, 0.6, 4, 8), gap: 0.55, speed: 4.5, lift: 0, along: true },
-  goods: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#c98b5a', glow: 0.05, geo: () => new RoundedBoxGeometry(0.28, 0.24, 0.28, 2, 0.04), gap: 0.8, speed: 1.1, lift: 0.18 },
-  people: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#5b6b80', glow: 0.05, geo: () => new THREE.CapsuleGeometry(0.08, 0.2, 4, 10), gap: 0.7, speed: 0.9, lift: 0.22 },
-  data: { track: [0.04, '#3f4656'], color: '#5fd4e6', glow: 1.4, geo: () => new THREE.BoxGeometry(0.12, 0.12, 0.12), gap: 0.3, speed: 3, lift: 0.06 },
+  energy: { track: [0.04, '#3f4552'], color: '#ffc93c', glow: 1.4, geo: () => new THREE.CapsuleGeometry(0.09, 0.22, 4, 10).rotateZ(Math.PI / 2), gap: 0.42, speed: 1.35, lift: 0.07 },
+  money: { path: [0.42, '#efe2c2', '#c9b48a'], color: '#e7b448', glow: 0.25, geo: () => new THREE.CylinderGeometry(0.2, 0.2, 0.06, 28).rotateX(Math.PI / 2), gap: 0.7, speed: 0.85, lift: 0.28, hop: true, metal: true },
+  water: { track: [0.1, '#a9d3ea', 0.45], color: '#4d9fd8', glow: 0.35, geo: () => new THREE.SphereGeometry(0.1, 16, 12), gap: 0.36, speed: 1.05, lift: 0 },
+  heat: { track: [0.07, '#b9806a'], color: '#ff7a3d', glow: 1.2, geo: () => new THREE.SphereGeometry(0.11, 16, 12), gap: 0.4, speed: 0.95, lift: 0.06 },
+  light: { track: null, color: '#fff1b0', glow: 2.2, geo: () => new THREE.CapsuleGeometry(0.05, 0.6, 4, 8), gap: 0.55, speed: 2.8, lift: 0, along: true },
+  goods: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#c98b5a', glow: 0.05, geo: () => new RoundedBoxGeometry(0.28, 0.24, 0.28, 2, 0.04), gap: 0.8, speed: 0.75, lift: 0.18 },
+  people: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#5b6b80', glow: 0.05, geo: () => new THREE.CapsuleGeometry(0.08, 0.2, 4, 10), gap: 0.7, speed: 0.6, lift: 0.22 },
+  data: { track: [0.04, '#3f4656'], color: '#5fd4e6', glow: 1.4, geo: () => new THREE.BoxGeometry(0.12, 0.12, 0.12), gap: 0.3, speed: 1.9, lift: 0.06 },
 };
 
 /** A flat strip that follows the curve on the ground (a path, not a pipe). */

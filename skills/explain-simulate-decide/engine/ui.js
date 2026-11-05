@@ -18,7 +18,8 @@ const CSS = `
 .esd-scrub{width:min(30cqw,360px);accent-color:#c0623f}
 .esd-time{font-size:12px;font-variant-numeric:tabular-nums;color:#6d6a66;min-width:76px;text-align:center}
 .esd-panel{position:absolute;background:rgba(251,247,239,.96);border-radius:16px;box-shadow:0 10px 40px rgba(60,40,20,.16);padding:16px 18px;max-height:calc(100cqh - 90px);overflow:auto;user-select:text;box-sizing:border-box}
-.esd-sim{left:2cqw;top:50%;transform:translateY(-50%);width:clamp(230px,27cqw,330px);padding:14px 16px}
+.esd-sim{left:2cqw;top:calc(12.5cqh + 6px);width:clamp(230px,27cqw,330px);padding:14px 16px;max-height:calc(87.5cqh - 80px)}
+.esd-sim p{margin-bottom:8px}.esd-sim .esd-row{margin-bottom:7px}.esd-sim .esd-out{padding-top:7px}.esd-sim .esd-out .esd-row{margin-bottom:3px}.esd-sim .esd-actions{gap:2px 4px}.esd-sim .esd-actions button{padding:6px 10px}
 .esd h2{margin:0 0 4px;font-size:17px}
 .esd-panel p{margin:0 0 12px;color:#6d6a66;font-size:13px;line-height:1.45}
 .esd-row{margin:0 0 11px}
@@ -46,6 +47,8 @@ const CSS = `
 .esd-errors li{font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-bottom:4px}
 .esd-progress{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(251,247,239,.96);padding:16px 22px;border-radius:14px;font-weight:600;box-shadow:0 10px 40px rgba(60,40,20,.16)}
 .esd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@container (max-width:560px){.esd-bar{bottom:8px;gap:2px;padding:4px 5px}.esd-bar button{font-size:12px;padding:6px 10px}.esd-time,.esd-rec{display:none}}
+@container (max-width:380px){.esd-bar{bottom:5px}.esd-bar button{font-size:11px;padding:5px 9px}.esd-sound{display:none}}
 @container (max-width:760px){.esd-cols{grid-template-columns:1fr}.esd-sim{left:50%;top:auto;bottom:64px;transform:translateX(-50%);width:94cqw;max-height:42cqh}.esd-bar .esd-scrub{display:none}}
 `;
 
@@ -95,8 +98,8 @@ export function createUI(wrap, sp, model, h) {
   scrub.addEventListener('input', () => h.seekFraction(scrub.value / 1000));
   const time = el('span', { class: 'esd-time', text: '0:00' });
   const skipBtn = el('button', { text: 'Try the model', onclick: h.skipToModel });
-  const soundBtn = el('button', { 'aria-label': 'Sound', text: '♪ On', onclick: h.toggleSound });
-  const recBtn = el('button', { text: '● Record MP4', onclick: h.record });
+  const soundBtn = el('button', { class: 'esd-sound', 'aria-label': 'Sound', text: '♪ On', onclick: h.toggleSound });
+  const recBtn = el('button', { class: 'esd-rec', text: '● Record MP4', onclick: h.record });
   const bar = el('div', { class: 'esd-bar' }, playBtn, scrub, time, skipBtn, soundBtn, recBtn);
 
   // ---- "Make it yours": the page asks the viewer about their situation
@@ -156,7 +159,7 @@ export function createUI(wrap, sp, model, h) {
   const runBtn = hasClock ? el('button', { text: `▶ Run ${sp.world.time.span} ${sp.world.time.unit}s`, onclick: h.runClock }) : null;
   const sim = el('div', { class: 'esd-panel esd-sim', role: 'region', 'aria-label': 'Simulate', hidden: '' },
     el('h2', { text: 'Simulate' }),
-    el('p', { text: (sp.simulate.prompt || 'Change the numbers and watch what moves.') + ' You can also drag things in the scene.' }),
+    el('p', { text: (sp.simulate.prompt || 'Change the numbers and watch what moves.') + ' Drag a thing to change it. Drag empty space to look around, pinch to zoom, double-click to reset.' }),
     rows,
     el('div', { class: 'esd-out' }, outRows),
     el('div', { class: 'esd-actions' },

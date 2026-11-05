@@ -1,16 +1,19 @@
 // Shot timing. Every shot lasts as long as its caption takes to read, plus a hold.
 // Pure and deterministic: the same screenplay always gives the same timeline.
 
-export const READ_WPS = 2.6; // calm reading pace, words per second
-export const HOLD = 1.6; // seconds to sit with an idea after reading it
-export const MIN_SHOT = 3.5;
-export const TURN_EXTRA = 1.5; // the turning point gets more room
+// A viewer reads the caption while also watching the scene, so the pace is slower
+// than plain reading, and the reading time only counts while the caption is on screen.
+export const READ_WPS = 2.4; // calm reading pace, words per second
+export const HOLD = 2; // seconds to watch the scene after reading the caption
+export const CAPTION_SHARE = 0.73; // the caption is fully shown for this share of a shot (it fades in, then out)
+export const MIN_SHOT = 6;
+export const TURN_EXTRA = 2.5; // the turning point gets more room
 export const VOICE_PAD = 0.8;
-export const SIM_DEMO = 16; // scripted "your turn" segment in the film
-export const FOLLOW_MIN = 5.5; // a tracking shot needs room to travel
-export const TIMELAPSE_EXTRA = 2.5; // the clock needs time to run
-export const DECIDE = 10;
-export const TRAVEL = 0.45; // share of a shot the camera spends moving to its new setup
+export const SIM_DEMO = 26; // scripted "your turn" segment in the film: questions, controls, clock
+export const FOLLOW_MIN = 8; // a tracking shot needs room to travel
+export const TIMELAPSE_EXTRA = 4; // the clock needs time to run
+export const DECIDE = 18; // the Decide card holds a lot of text
+export const TRAVEL = 0.38; // share of a shot the camera spends moving to its new setup
 
 const words = (s = '') => s.trim().split(/\s+/).filter(Boolean).length;
 
@@ -19,8 +22,8 @@ const words = (s = '') => s.trim().split(/\s+/).filter(Boolean).length;
  * @param {number} [voiceSeconds] length of a narrated clip for this caption, if any
  */
 export function shotDuration(shot, voiceSeconds = 0) {
-  let d = Math.max(MIN_SHOT, words(shot.caption) / READ_WPS + HOLD);
-  if (voiceSeconds) d = Math.max(d, voiceSeconds + VOICE_PAD);
+  let d = Math.max(MIN_SHOT, (words(shot.caption) / READ_WPS + HOLD) / CAPTION_SHARE);
+  if (voiceSeconds) d = Math.max(d, (voiceSeconds + VOICE_PAD) / CAPTION_SHARE);
   if (shot.shot === 'turn') d += TURN_EXTRA;
   if (shot.shot === 'follow') d = Math.max(d, FOLLOW_MIN);
   if (shot.shot === 'timelapse') d += TIMELAPSE_EXTRA;

@@ -27,8 +27,8 @@ You choose the shot type, and the renderer decides the camera, framing and timin
 
 ## Timing (automatic)
 
-- **Length:** a shot lasts as long as its caption takes to read (about 2.6 words per second) plus a 1.6 s hold, and at least 3.5 s.
-- **Extra time:** `follow` lasts at least 5.5 s, `turn` gets an extra 1.5 s, and `timelapse` an extra 2.5 s.
-- **After Explain:** the recording adds a 16 s Simulate segment (questions, controls, clock) and a 10 s Decide segment.
+- **Length:** the caption stays on screen long enough to read at a calm pace (about 2.4 words per second) and then watch the scene for 2 s. The camera move and the fades come on top of that, so a 12-word caption gives a shot of about 9 s. No shot is shorter than 6 s.
+- **Extra time:** `follow` lasts at least 8 s, `turn` gets an extra 2.5 s, and `timelapse` an extra 4 s.
+- **After Explain:** the recording adds a 26 s Simulate segment (questions, controls, clock) and an 18 s Decide segment.
 
-Eight to eleven shots give a film of about 70–90 seconds.
+Eight to eleven shots give an Explain act of about 70–100 seconds, and a whole film of about two to two and a half minutes. Shorter captions make a faster film; don't add shots to fill time.

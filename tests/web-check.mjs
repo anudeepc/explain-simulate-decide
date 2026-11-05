@@ -29,16 +29,20 @@ try {
   await page.fill('#key', 'sk-ant-test');
   await page.fill('#article', 'Solar article text. '.repeat(40));
   await page.click('#generate');
-  await page.waitForFunction(() => [...document.querySelectorAll('#log li')].some((li) => /Ready|err/.test(li.textContent + li.className)), null, { timeout: 60000 });
-  const logText = await page.$$eval('#log li', (lis) => lis.map((l) => l.textContent));
+  await page.waitForFunction(() => ['done', 'error'].includes(document.querySelector('#progress')?.dataset.state), null, { timeout: 60000 });
+  const logText = await page.$$eval('#progress .pg-status, #progress .pg-steps li', (els) => els.map((l) => l.textContent));
   console.log(logText.join('\n'));
+  if (!/^Ready/.test(logText[0])) throw new Error('progress did not finish with Ready');
+  if (!logText.some((t) => /Fix 1 problem/.test(t))) throw new Error('repair round not shown as a step');
+  const bar = await page.$eval('#progress .pg-track', (t) => t.getAttribute('aria-valuenow'));
+  if (bar !== '100') throw new Error(`progress bar ended at ${bar}%`);
   if (calls !== 2) throw new Error(`expected 2 provider calls (1 repair), got ${calls}`);
   if (!/12 words/.test(bodies[1].messages.at(-1).content)) throw new Error('repair message did not include validator errors');
   if (!bodies[0].system.includes('explain-simulate-decide') || !bodies[0].system.includes('Shot types')) throw new Error('system prompt missing skill files');
   await page.waitForTimeout(800);
   await page.screenshot({ path: 'test-results/web-tool.png', fullPage: false });
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 60000 }), page.click('#dlHtml')]).catch(async (e) => {
-    console.log(await page.$$eval('#log li', (lis) => lis.map((l) => l.textContent).join('\n')));
+    console.log(await page.$$eval('#exportProgress li, #exportProgress .pg-status', (lis) => lis.map((l) => l.textContent).join('\n')));
     console.log(errors.join('\n'));
     throw e;
   });

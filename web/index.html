@@ -4,107 +4,133 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:* data: blob:; worker-src 'self' blob:; frame-src 'self'; base-uri 'none'; form-action 'none'">
-<title>Explain, Simulate, Decide — turn any article into a model you can run</title>
-<meta name="description" content="Free, open-source tool: upload an article and get a short directed 3D explainer you can operate. Explain, Simulate, Decide.">
+<title>Explain, Simulate, Decide: turn any article into a model you can run</title>
+<meta name="description" content="Free, open-source tool: paste an article and get a short 3D film that explains it, then hands you the model to run with your own numbers.">
+<link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="hero">
-  <p class="eyebrow">Explain · Simulate · Decide</p>
-  <h1>Don’t read the report.<br>Run the model.</h1>
-  <p class="lede">Drop in any article. Get a short directed film that explains how it works, then hands you the model to operate, then steps back so <em>you</em> decide. Free and open source. Your key, your browser.</p>
-  <p class="links"><a href="#make">Make one</a> · <a href="https://github.com/anudeepc/explain-simulate-decide">GitHub</a> · <a href="../examples/solar/solar.html">Full-screen demo</a></p>
-</header>
+<div class="mat">
+  <header class="top">
+    <a class="mark" href="./">Explain, Simulate, Decide</a>
+    <nav aria-label="Project">
+      <a href="https://github.com/anudeepc/explain-simulate-decide">Source on GitHub</a>
+      <a href="../examples/solar/solar.html">Open the demo full screen</a>
+    </nav>
+  </header>
 
-<section class="compare" aria-label="Before and after">
-  <div class="before">
-    <h2><span class="tag">Before</span> The report and the form</h2>
-    <div class="report">
-      <h3>Homeowner’s Guide to Solar</h3>
-      <p>Typically, solar panels perform best on south-facing roofs with a slope between 15 and 40 degrees, though other roofs may be suitable too. Your savings also depend on the electricity rates set by your utility and how much the utility will compensate you for the excess solar energy you send back to the grid. Net metering is an arrangement between solar energy system owners and utilities in which the system owners are compensated for any solar power generation that is exported to the electricity grid. In general, a purchased solar system can be installed at a lower total cost than system installed using a solar loan, lease, or power purchase agreement (PPA). If you pay cash for your solar system, the payback period refers to the length of time required before the system has paid for itself…</p>
-      <div class="fakeform" aria-hidden="true">
-        <span>Name</span><i></i><span>Postcode</span><i></i><span>Monthly bill</span><i></i><b>Get a quote</b>
-      </div>
-    </div>
-    <p class="caption">You read, then you fill in a form, and someone else runs the numbers.</p>
-  </div>
-  <div class="after">
-    <h2><span class="tag on">After</span> The same facts, as a model you run</h2>
-    <div class="frame"><iframe src="../examples/solar/solar.html" title="Solar explainer demo" loading="lazy"></iframe></div>
-    <p class="caption">It explains each step, lets you change the inputs, then leaves the decision with you.</p>
-  </div>
-</section>
-
-<main id="make" class="tool">
-  <h2>Make one from your article</h2>
-  <ol class="steps">
-    <li>
-      <h3>1. Article</h3>
-      <textarea id="article" rows="9" placeholder="Paste the article text here…"></textarea>
-      <div class="row">
-        <label class="file">Upload PDF / .txt / .md <input id="file" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"></label>
-        <input id="url" type="url" placeholder="…or a URL (many sites block this; paste text if so)">
-        <button id="fetchUrl" type="button">Fetch</button>
-      </div>
-      <p id="articleInfo" class="hint"></p>
-    </li>
-    <li>
-      <h3>2. AI provider (your own key)</h3>
-      <div class="row">
-        <select id="provider"></select>
-        <input id="model" list="models" placeholder="model">
-        <datalist id="models"></datalist>
-      </div>
-      <div class="row">
-        <input id="base" type="url" placeholder="Base URL (…/v1)" hidden>
-        <input id="key" type="password" autocomplete="off" placeholder="API key">
-        <label class="check"><input id="remember" type="checkbox"> remember on this device</label>
-      </div>
-      <p class="hint">The key is kept in this tab only (unless you tick “remember”) and is sent only to the provider you pick. No server of ours sees your article or key.</p>
-    </li>
-    <li>
-      <h3>3. Settings</h3>
-      <div class="row">
-        <label>Cast <select id="cast">
-          <option value="auto">As written (default)</option>
-          <option value="studio">Studio cast (clay objects)</option>
-          <option value="open">Open library (CC0 models)</option>
-          <option value="custom">Custom-built shapes</option>
-        </select></label>
-        <label>Voice <select id="voice">
-          <option value="off">Off: captions and music</option>
-          <option value="browser">Browser voice (free)</option>
-          <option value="elevenlabs">ElevenLabs (your key)</option>
-          <option value="openai">OpenAI voice (your key)</option>
-        </select></label>
-        <input id="voiceKey" type="password" autocomplete="off" placeholder="Voice API key" hidden>
-      </div>
-    </li>
-    <li>
-      <h3>4. Generate</h3>
-      <button id="generate" class="primary" type="button">Generate explainer</button>
-      <ol id="log" class="log" aria-live="polite"></ol>
-    </li>
-  </ol>
-
-  <section id="result" hidden>
-    <div id="stage" class="stage"></div>
-    <div class="row actions">
-      <button id="dlHtml" type="button" class="primary">Download HTML</button>
-      <button id="dlMp4" type="button">Record MP4</button>
-      <button id="dlJson" type="button">Download screenplay</button>
-      <button id="toggleEdit" type="button">Edit screenplay</button>
-    </div>
-    <div id="editor" hidden>
-      <textarea id="json" rows="18" spellcheck="false"></textarea>
-      <button id="rerender" type="button">Check and re-render</button>
+  <section class="hero" aria-labelledby="hero-title">
+    <h1 id="hero-title">Don’t read the report. Run the model.</h1>
+    <div class="hero-side">
+      <p class="lede">Paste an article. You get a short 3D film that shows how the topic works, then hands you the model to run with your own numbers, then lays out the options and leaves the choice to you.</p>
+      <a class="jump" href="#make">Make one from your article</a>
     </div>
   </section>
-</main>
 
-<footer>
-  <p>Open source (MIT). The AI writes only a screenplay; a fixed renderer directs the film, so no AI-written code ever runs in your browser. Numbers marked * are assumptions you can change.</p>
-</footer>
+  <figure class="demo">
+    <div id="hero" class="demo-stage" role="region" aria-label="Live 3D explainer: should I put solar on my roof?"></div>
+    <figcaption>Live 3D, drawn in your browser with three.js. This one explains home solar from U.S. Department of Energy guides. Press <b>Try the model</b> to run it with your own numbers, then drag the scene to look around it.</figcaption>
+  </figure>
+
+  <section class="acts" aria-labelledby="acts-title">
+    <h2 id="acts-title" class="sr">How it compares with reading the report</h2>
+    <figure class="report" aria-label="Before: the report and the form">
+      <div class="sheet">
+        <h3>Homeowner’s Guide to Solar</h3>
+        <p>Typically, solar panels perform best on south-facing roofs with a slope between 15 and 40 degrees, though other roofs may be suitable too. Your savings also depend on the electricity rates set by your utility and how much the utility will compensate you for the excess solar energy you send back to the grid. Net metering is an arrangement between solar energy system owners and utilities in which the system owners are compensated for any solar power generation that is exported to the electricity grid…</p>
+        <div class="fakeform" aria-hidden="true">
+          <span>Name</span><i></i><span>Postcode</span><i></i><span>Monthly bill</span><i></i><b>Get a quote</b>
+        </div>
+      </div>
+      <figcaption>Before: you read, you fill in a form, and someone else runs the numbers.</figcaption>
+    </figure>
+    <ol class="three">
+      <li><h3>Explain</h3><p>A directed film follows the sunlight, power and money through a small world, one idea per shot.</p></li>
+      <li><h3>Simulate</h3><p>The page asks for your bill, your state and your habits, then runs the same world with your numbers.</p></li>
+      <li><h3>Decide</h3><p>Your options side by side, with the trade-offs, what the model leaves out, and questions to ask. It never tells you what to choose.</p></li>
+    </ol>
+  </section>
+
+  <main id="make" class="tool" aria-labelledby="make-title">
+    <h2 id="make-title">Make one from your article</h2>
+    <p class="tool-note">Everything runs in this browser tab. Your article and key go only to the AI provider you pick.</p>
+    <ol class="steps">
+      <li>
+        <h3>Your article</h3>
+        <label class="sr" for="article">Article text</label>
+        <textarea id="article" rows="9" placeholder="Paste the article text here"></textarea>
+        <div class="row">
+          <label class="file"><input id="file" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"><span>Upload a PDF or text file</span></label>
+          <span class="or">or</span>
+          <label class="sr" for="url">Article URL</label>
+          <input id="url" type="url" placeholder="Paste a link (many sites block this)">
+          <button id="fetchUrl" type="button">Fetch</button>
+        </div>
+        <p id="articleInfo" class="hint" aria-live="polite"></p>
+      </li>
+      <li>
+        <h3>Your AI</h3>
+        <div class="row">
+          <label class="field">Provider <select id="provider"></select></label>
+          <label class="field grow">Model <input id="model" list="models"></label>
+          <datalist id="models"></datalist>
+        </div>
+        <div class="row">
+          <label class="field grow" id="baseField" hidden>Base URL <input id="base" type="url" placeholder="https://…/v1"></label>
+          <label class="field grow">API key <input id="key" type="password" autocomplete="off"></label>
+          <label class="check"><input id="remember" type="checkbox"> Remember on this device</label>
+        </div>
+        <p class="hint">The key stays in this tab unless you tick Remember. No server of ours sees your article or key.</p>
+      </li>
+      <li>
+        <h3>Look and sound</h3>
+        <div class="row">
+          <label class="field">Props <select id="cast">
+            <option value="auto">As the screenplay says</option>
+            <option value="studio">Clay studio props</option>
+            <option value="open">Open library (CC0 models)</option>
+            <option value="custom">Simple built shapes</option>
+          </select></label>
+          <label class="field">Voice <select id="voice">
+            <option value="off">Off: captions and music</option>
+            <option value="browser">Browser voice (free)</option>
+            <option value="elevenlabs">ElevenLabs (your key)</option>
+            <option value="openai">OpenAI voice (your key)</option>
+          </select></label>
+          <label class="field grow" id="voiceKeyField" hidden>Voice API key <input id="voiceKey" type="password" autocomplete="off"></label>
+        </div>
+      </li>
+      <li>
+        <h3>Make it</h3>
+        <div class="row">
+          <button id="generate" class="primary" type="button">Make the explainer</button>
+          <button id="cancel" type="button" hidden>Stop</button>
+        </div>
+        <div id="progress" class="progress" hidden></div>
+      </li>
+    </ol>
+
+    <section id="result" class="result" hidden aria-label="Your explainer">
+      <div id="stage" class="stage"></div>
+      <div class="row actions">
+        <button id="dlHtml" type="button" class="primary">Download HTML</button>
+        <button id="dlMp4" type="button">Record MP4</button>
+        <button id="dlJson" type="button">Download screenplay</button>
+        <button id="toggleEdit" type="button" aria-expanded="false">Edit screenplay</button>
+      </div>
+      <div id="exportProgress" class="progress small" hidden></div>
+      <div id="editor" hidden>
+        <label class="sr" for="json">Screenplay JSON</label>
+        <textarea id="json" rows="18" spellcheck="false"></textarea>
+        <button id="rerender" type="button">Check and play again</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Open source under the MIT licence. The AI writes only a screenplay, and a fixed renderer directs the film, so no AI-written code runs in your browser. Numbers marked * are assumptions you can change. Type is Archivo, under the SIL Open Font License.</p>
+  </footer>
+</div>
 <script type="module" src="app.js"></script>
 </body>
 </html>

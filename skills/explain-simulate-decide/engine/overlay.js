@@ -67,12 +67,24 @@ export function drawCaption(ctx, W, H, text, alpha) {
   ctx.restore();
 }
 
-export function drawActs(ctx, W, H, act, question) {
+/** The source line under the act chips. */
+export const sourceLine = (sp) => `Source: ${sp.source?.publisher || sp.source?.title || ''}   ·   * = assumption, change it to fit your situation`;
+
+export function drawActs(ctx, W, H, act, question, source = '') {
   const fs = Math.round(H * 0.018);
   ctx.save();
-  ctx.font = `600 ${fs}px ${FONT}`;
   let x = W * 0.03;
   const y = H * 0.045;
+  // a soft plate behind the header keeps it readable over bright props (the sun)
+  ctx.font = `600 ${fs}px ${FONT}`;
+  let chips = 0;
+  for (const [i, name] of ['Explain', 'Simulate', 'Decide'].entries()) chips += ctx.measureText(`${i + 1}  ${name}`).width + fs * 2.1;
+  ctx.font = `500 ${fs * 1.05}px ${FONT}`;
+  const top = chips + (question ? fs * 0.8 + ctx.measureText(question).width : 0);
+  ctx.font = `500 ${Math.round(H * 0.0135)}px ${FONT}`;
+  const plateW = Math.min(W * 0.94 - x, Math.max(top, ctx.measureText(source).width) + fs * 1.6);
+  card(ctx, x - fs * 0.6, y - fs * 0.6, plateW, fs * (source ? 4.6 : 3.2), fs * 0.9, 0.72);
+  ctx.font = `600 ${fs}px ${FONT}`;
   ['Explain', 'Simulate', 'Decide'].forEach((name, i) => {
     const on = name.toLowerCase() === act;
     const label = `${i + 1}  ${name}`;
@@ -321,8 +333,7 @@ export function drawSource(ctx, W, H, sp, alpha) {
   ctx.fillStyle = INK;
   ctx.font = `500 ${fs}px ${FONT}`;
   ctx.textBaseline = 'top';
-  const src = sp.source?.publisher || sp.source?.title || '';
-  ctx.fillText(`Source: ${src}   ·   * = assumption, change it to fit your situation`, W * 0.03, H * 0.045 + H * 0.018 * 2.7);
+  ctx.fillText(sourceLine(sp), W * 0.03, H * 0.045 + H * 0.018 * 2.7);
   ctx.restore();
 }
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { shotDuration, buildTimeline, stateAt, SIM_DEMO, DECIDE } from '../skills/explain-simulate-decide/engine/timing.js';
+import { shotDuration, buildTimeline, stateAt, SIM_DEMO, DECIDE, READ_WPS, HOLD, CAPTION_SHARE, MIN_SHOT, TURN_EXTRA, VOICE_PAD, TRAVEL } from '../skills/explain-simulate-decide/engine/timing.js';
 import { layoutWorld, lanes, routeFlow } from '../skills/explain-simulate-decide/engine/layout.js';
 import { cameraSetups, poseAt } from '../skills/explain-simulate-decide/engine/camera.js';
 
@@ -9,13 +9,16 @@ const solar = JSON.parse(readFileSync(new URL('../examples/solar/screenplay.json
 const close = (a, b) => Math.abs(a - b) < 1e-6;
 
 test('shot duration follows reading time with a floor', () => {
-  assert.ok(close(shotDuration({ shot: 'focus', caption: 'one two three four five six seven eight nine ten' }), 10 / 2.6 + 1.6));
-  assert.equal(shotDuration({ shot: 'focus', caption: 'Hi.' }), 3.5);
-  assert.ok(close(shotDuration({ shot: 'turn', caption: 'Hi.' }), 3.5 + 1.5));
+  // the caption must stay on screen long enough to read, then to watch the scene
+  assert.ok(close(shotDuration({ shot: 'focus', caption: 'one two three four five six seven eight nine ten' }), (10 / READ_WPS + HOLD) / CAPTION_SHARE));
+  assert.equal(shotDuration({ shot: 'focus', caption: 'Hi.' }), MIN_SHOT);
+  assert.ok(close(shotDuration({ shot: 'turn', caption: 'Hi.' }), MIN_SHOT + TURN_EXTRA));
+  // a twelve-word caption gets at least 5 s of reading time while fully shown
+  assert.ok(shotDuration({ shot: 'focus', caption: 'a b c d e f g h i j k l' }) * CAPTION_SHARE >= 5);
 });
 
 test('voice clips lengthen shots when longer than reading time', () => {
-  assert.equal(shotDuration({ shot: 'focus', caption: 'Hi.' }, 6), 6.8);
+  assert.ok(close(shotDuration({ shot: 'focus', caption: 'Hi.' }, 8), (8 + VOICE_PAD) / CAPTION_SHARE));
 });
 
 test('timeline is contiguous: explain shots, simulate demo, decide', () => {
@@ -87,7 +90,7 @@ test('camera: one setup per segment; travels, then makes its move', () => {
   const cut = poseAt(setups, 1, 0.01, { reducedMotion: true });
   assert.ok(cut.position.every((v, k) => close(v, setups[1].at(0).position[k])), 'reduced motion cuts');
   const follow = solar.explain.findIndex((s, i) => s.shot === 'follow' && !solar.world.nodes.find((n) => n.id === solar.world.flows.find((f) => f.id === s.focus).from).sky);
-  const a = poseAt(setups, follow, 0.5).position;
-  const b = poseAt(setups, follow, 0.9).position;
+  const a = poseAt(setups, follow, TRAVEL + 0.02).position;
+  const b = poseAt(setups, follow, 0.95).position;
   assert.ok(Math.hypot(a[0] - b[0], a[2] - b[2]) > 0.5, 'follow shot travels along the flow');
 });

@@ -371,15 +371,34 @@ async function start(root, sp, options, api) {
     return SPAN * easeInOut(k);
   };
 
+  // the viewer's own turn and zoom of the camera in Simulate, on top of the directed pose
+  const view = { az: 0, el: 0, zoom: 1 };
+  const ZOOM_MIN = 0.5;
+  const ZOOM_MAX = 1.8;
+  const viewTouched = () => view.az !== 0 || view.el !== 0 || view.zoom !== 1;
+  function viewed(pose) {
+    if (!viewTouched()) return pose;
+    const [tx, ty, tz] = pose.target;
+    const dx = pose.position[0] - tx;
+    const dy = pose.position[1] - ty;
+    const dz = pose.position[2] - tz;
+    const r = Math.hypot(dx, dy, dz) * view.zoom;
+    const az = Math.atan2(dx, dz) + view.az;
+    // keep the camera above the plinth and short of straight down
+    const polar = Math.min(1.45, Math.max(0.2, Math.acos(dy / Math.hypot(dx, dy, dz)) - view.el));
+    return { position: [tx + r * Math.sin(polar) * Math.sin(az), ty + r * Math.cos(polar), tz + r * Math.sin(polar) * Math.cos(az)], target: pose.target };
+  }
+
   function liveFrame(now) {
     const target = mode === 'decide' ? setups[decideIndex].at(1) : setups[simIndex].at(1);
     const k = easeInOut(Math.min(1, (now - liveSince) / 1600));
     const from = poseFrom || target;
     const sway = reducedMotion ? 0 : Math.sin(now / 4000) * 0.25;
-    const pose = {
-      position: target.position.map((v, i) => lerp(from.position[i], v, k) + (i === 0 ? sway : 0)),
+    const directed = {
+      position: target.position.map((v, i) => lerp(from.position[i], v, k) + (i === 0 && !viewTouched() ? sway : 0)),
       target: target.target.map((v, i) => lerp(from.target[i], v, k)),
     };
+    const pose = mode === 'live' ? viewed(directed) : directed;
     const tau = liveTau(now);
     const e = emphasisFor({ act: mode === 'decide' ? 'decide' : 'simulate' });
     const labels = mode === 'live' ? world.nodes.filter((n) => n.plays || n.store).map((n) => ({ node: n.id, alpha: 0.95, hint: hovered === n.id })) : [];
@@ -488,7 +507,7 @@ async function start(root, sp, options, api) {
 
     // ---- overlay
     ctx2.clearRect(0, 0, W, H);
-    overlay.drawActs(ctx2, W, H, frame.act, sp.question);
+    overlay.drawActs(ctx2, W, H, frame.act, sp.question, overlay.sourceLine(sp));
     const items = [];
     for (const lb of frame.labels) {
       let text;
@@ -665,6 +684,9 @@ async function start(root, sp, options, api) {
   function moveCamera() {
     poseFrom = currentPose();
     liveSince = performance.now();
+    view.az = 0;
+    view.el = 0;
+    view.zoom = 1;
   }
   function afterFilm() {
     if ((sp.ask || []).length) enterAsk();
@@ -672,6 +694,7 @@ async function start(root, sp, options, api) {
   }
   function enterAsk() {
     pause();
+    c2.style.touchAction = '';
     if (mode === 'film') moveCamera();
     mode = 'ask';
     ui.showSim(false);
@@ -683,6 +706,7 @@ async function start(root, sp, options, api) {
     pause();
     moveCamera();
     mode = 'live';
+    c2.style.touchAction = 'none'; // one finger orbits the scene instead of scrolling the page
     ui.showAsk(false);
     ui.showDecide(false);
     ui.showSim(true);
@@ -691,6 +715,7 @@ async function start(root, sp, options, api) {
   }
   function enterDecide() {
     moveCamera();
+    c2.style.touchAction = '';
     mode = 'decide';
     ui.showSim(false);
     ui.showDecide(true);
@@ -718,7 +743,8 @@ async function start(root, sp, options, api) {
     if (playing) startAudio(t);
   }
 
-  // ---- direct manipulation: drag a node to change the input it plays
+  // ---- direct manipulation: drag a node to change the input it plays;
+  // drag empty space to look around the world, pinch to zoom, double-click to reset
   const ray = new THREE.Raycaster();
   const draggable = world.nodes.filter((n) => n.plays && inputsById[n.plays]).map((n) => n.id);
   const pick = (ev) => {
@@ -733,8 +759,25 @@ async function start(root, sp, options, api) {
     return best?.id || null;
   };
   let drag = null;
+  let orbit = null;
+  const pointers = new Map();
+  const pinchGap = () => {
+    const [a, b] = [...pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y) || 1;
+  };
   c2.addEventListener('pointermove', (ev) => {
     if (mode !== 'live') return;
+    if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (orbit && pointers.size >= 2) {
+      view.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, orbit.zoom0 * (orbit.gap0 / pinchGap())));
+      return;
+    }
+    if (orbit) {
+      const r = c2.getBoundingClientRect();
+      view.az = orbit.az0 - ((ev.clientX - orbit.x0) / r.width) * Math.PI * 1.1;
+      view.el = Math.min(0.9, Math.max(-0.9, orbit.el0 + ((ev.clientY - orbit.y0) / r.height) * 1.4));
+      return;
+    }
     if (drag) {
       const inp = inputsById[nodeById[drag.id].plays];
       let v = drag.v0 + ((drag.y0 - ev.clientY) / (H * 0.4)) * (inp.max - inp.min);
@@ -745,20 +788,52 @@ async function start(root, sp, options, api) {
       return;
     }
     hovered = pick(ev);
-    c2.style.cursor = hovered ? 'ns-resize' : '';
+    c2.style.cursor = hovered ? 'ns-resize' : 'grab';
   });
   c2.addEventListener('pointerdown', (ev) => {
     if (mode !== 'live') return;
-    const id = pick(ev);
-    if (!id) return;
-    if (runStart === null) keepGhost();
-    drag = { id, y0: ev.clientY, v0: liveValues[nodeById[id].plays] };
-    hovered = id;
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     c2.setPointerCapture(ev.pointerId);
+    if (pointers.size >= 2) {
+      // a second finger turns the gesture into a pinch
+      drag = null;
+      orbit = { ...(orbit || { x0: ev.clientX, y0: ev.clientY, az0: view.az, el0: view.el }), zoom0: view.zoom, gap0: pinchGap() };
+      return;
+    }
+    const id = pick(ev);
+    if (id) {
+      if (runStart === null) keepGhost();
+      drag = { id, y0: ev.clientY, v0: liveValues[nodeById[id].plays] };
+      hovered = id;
+      return;
+    }
+    orbit = { x0: ev.clientX, y0: ev.clientY, az0: view.az, el0: view.el, zoom0: view.zoom, gap0: 1 };
+    c2.style.cursor = 'grabbing';
   });
-  const endDrag = () => (drag = null);
+  const endDrag = (ev) => {
+    pointers.delete(ev.pointerId);
+    if (pointers.size === 0) {
+      drag = null;
+      orbit = null;
+      if (mode === 'live') c2.style.cursor = 'grab';
+    } else if (orbit) {
+      const [p] = [...pointers.values()];
+      orbit = { x0: p.x, y0: p.y, az0: view.az, el0: view.el, zoom0: view.zoom, gap0: 1 };
+    }
+  };
   c2.addEventListener('pointerup', endDrag);
   c2.addEventListener('pointercancel', endDrag);
+  // trackpad pinch (and ctrl + wheel) zooms; a plain wheel still scrolls the page
+  c2.addEventListener(
+    'wheel',
+    (ev) => {
+      if (mode !== 'live' || !ev.ctrlKey) return;
+      ev.preventDefault();
+      view.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, view.zoom * Math.exp(ev.deltaY * 0.01)));
+    },
+    { passive: false },
+  );
+  c2.addEventListener('dblclick', () => mode === 'live' && moveCamera());
 
   function tick(now) {
     if (!recording) {
