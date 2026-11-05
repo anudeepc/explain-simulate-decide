@@ -11,10 +11,12 @@ export function serve(root = resolve('.')) {
       let p = join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
       if (!p.startsWith(root)) throw new Error('outside');
       if (p.endsWith('/')) p += 'index.html';
+      const body = await readFile(p);
       res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
-      res.end(await readFile(p));
+      res.end(body);
     } catch {
-      res.writeHead(404).end();
+      if (!res.headersSent) res.writeHead(404);
+      res.end();
     }
   }).listen(0);
   return { url: `http://localhost:${server.address().port}`, close: () => server.close() };
