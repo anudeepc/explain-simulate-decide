@@ -303,9 +303,28 @@
       "input": "elecPrice"
     },
     {
-      "question": "What do you pay for gas, per kWh?",
-      "help": "Bills in therms: divide the price per therm by 29.3.",
-      "input": "gasPrice"
+      "question": "Is gas cheap or pricey where you live?",
+      "help": "Not sure? Pick About average. You can type your own price later.",
+      "choices": [
+        {
+          "label": "Cheaper than most",
+          "set": {
+            "gasPrice": 0.04
+          }
+        },
+        {
+          "label": "About average",
+          "set": {
+            "gasPrice": 0.06
+          }
+        },
+        {
+          "label": "Pricier than most",
+          "set": {
+            "gasPrice": 0.09
+          }
+        }
+      ]
     },
     {
       "question": "Will you insulate first?",
@@ -344,24 +363,24 @@
     {
       "shot": "follow",
       "focus": "warmth",
-      "caption": "A heat pump moves heat in. It doesn't burn fuel."
+      "caption": "A heat pump runs on electricity, which usually costs more than gas."
     },
     {
       "shot": "turn",
       "focus": "elec",
-      "caption": "It takes about one unit of electricity to move three of heat."
+      "caption": "But one unit of electricity moves about three units of heat."
     },
     {
       "shot": "cause",
       "focus": "gasStop",
       "drive": "gasPrice",
-      "caption": "You stop buying gas. Pricier gas means more saved."
+      "caption": "So you stop buying gas. Pricier gas means more saved."
     },
     {
       "shot": "cause",
       "focus": "elecBill",
       "drive": "elecPrice",
-      "caption": "But electricity often costs more than gas, which eats into savings."
+      "caption": "The electricity bill grows, and pricier power eats into savings."
     },
     {
       "shot": "focus",

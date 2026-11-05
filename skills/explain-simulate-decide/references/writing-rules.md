@@ -24,6 +24,8 @@ The goal is more understanding, not persuasion. A smart 12-year-old should follo
 - **Plain and answerable.** "What is your average monthly power bill?", not "Enter household consumption".
 - **Say where to find the answer** in `help`: "It's on the front of your bill."
 - **Choices for categories** (state, habits, which option). Use 2–5 short labels a person would say ("Home most days").
+- **Always offer "don't know".** One choice sets exactly the default values: "Not sure", "About average", "Somewhere else". The recorded film shows that answer too.
+- **Never ask the viewer to do arithmetic.** If a bill uses another unit, ask a category question instead ("Is gas cheap or pricey where you live?").
 - **Never ask for anything identifying.** Ask for a state or region, not an address. Ask for a bill amount, not an account number.
 
 ## Labels

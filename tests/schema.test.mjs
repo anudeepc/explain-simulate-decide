@@ -61,6 +61,9 @@ test('sources', () => {
   expectError((s) => (s.model.inputs[0].source = 'vibes'), /source/);
   expectError((s) => delete s.model.constants[0].source, /source/);
   expectError((s) => s.source.quotes.push({ url: 'https://x' }), /must be a sentence/);
+  expectError((s) => delete s.source.quotes.find((q) => typeof q === 'object').url, /needs "url"/);
+  expectError((s) => delete s.source.quotes.find((q) => typeof q === 'object').accessed, /needs "accessed"/);
+  expectError((s) => (s.source.quotes.find((q) => typeof q === 'object').accessed = 'last week'), /needs "accessed"/);
 });
 
 test('world: nodes', () => {
@@ -89,6 +92,8 @@ test('ask', () => {
   expectError((s) => (s.ask[1].choices = s.ask[1].choices.slice(0, 1)), /2–5 choices/);
   expectError((s) => delete s.ask[0].input, /needs "input"/);
   expectError((s) => (s.ask[1].choices[0].quote = [99]), /quote must be an index/);
+  expectError((s) => (s.ask[2].choices = s.ask[2].choices.filter((c) => c.set.selfUse !== 40)), /ask\[2\]: no choice matches the default values/);
+  expectError((s) => (s.model.inputs.find((i) => i.id === 'battery').default = 5), /ask\[3\]: no choice matches the default values/);
 });
 
 test('shots and captions', () => {
@@ -116,6 +121,9 @@ test('banned words', () => {
   expectError((s) => (s.explain[0].caption = 'Boost engagement with solar.'), /"engagement"/);
   expectError((s) => (s.decide.leftOut[0] = 'A gamified view.'), /"gamified"/);
   expectError((s) => (flow(s, 'direct').label = 'Gamified power'), /"gamified"/);
+  expectError((s) => (s.explain[0].caption = 'Act now, before prices rise.'), /"act now".*urgency/);
+  expectError((s) => (s.decide.tradeoffs[0] = 'A game-changing system.'), /"game-changing"/);
+  expectError((s) => (s.ask[0].help = 'Unlock your savings.'), /"unlock"/);
 });
 
 test('prop names match the studio registry', async () => {

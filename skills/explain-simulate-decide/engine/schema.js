@@ -7,7 +7,19 @@ export const SHOTS = ['establish', 'introduce', 'focus', 'follow', 'cause', 'com
 export const CARRIERS = ['energy', 'money', 'water', 'heat', 'light', 'goods', 'people', 'data'];
 export const TIME_UNITS = ['day', 'week', 'month', 'year'];
 export const SHAPES = ['box', 'sphere', 'cylinder', 'cone', 'torus'];
-export const BANNED = [/\bgamif\w*/i, /\bengagement\b/i];
+// Words from references/writing-rules.md, each with what to say instead.
+export const BANNED = [
+  [/\bgamif\w*/i, 'Call it a guide, a simulation or a model.'],
+  [/\bengagement\b/i, 'Say "understanding" instead.'],
+  [/\brevolutionary\b/i, 'Describe what it does instead.'],
+  [/\bgame[- ]chang\w*/i, 'Describe what it changes instead.'],
+  [/\bunlock\w*/i, 'Say what the person can do instead.'],
+  [/\bsupercharg\w*/i, 'Say what it does instead.'],
+  [/\bdon[’']?t miss out\b/i, 'The page never pushes. Remove the urgency.'],
+  [/\bact now\b/i, 'The page never pushes. Remove the urgency.'],
+  [/\bbefore it[’']?s too late\b/i, 'The page never pushes. Remove the urgency.'],
+];
+const DATE = /^\d{4}-\d{2}(-\d{2})?$/;
 export const MAX_CAPTION_WORDS = 12;
 // Plain unit conversions may appear inside formulas; every other number must be a named constant.
 export const ALLOWED_LITERALS = [0, 1, 2, 7, 10, 12, 24, 30, 52, 60, 100, 365, 1000];
@@ -42,7 +54,14 @@ export function validate(sp) {
   if (!isStr(sp.question)) err('question is required');
   if (!sp.source || typeof sp.source !== 'object') err('source is required (title, url, quotes)');
   const quotes = arr(sp.source?.quotes);
-  quotes.forEach((q, n) => isStr(quoteText(q)) || err(`source.quotes[${n}]: must be a sentence, or {"text", "url"}`));
+  quotes.forEach((q, n) => {
+    const where = `source.quotes[${n}]`;
+    if (!isStr(quoteText(q))) return err(`${where}: must be a sentence, or {"text", "url", "publisher", "accessed"}`);
+    if (typeof q !== 'object') return;
+    // a researched figure: the reader must be able to open the page and see when it was read
+    if (!/^https?:\/\//.test(q.url || '')) err(`${where}: a researched quote needs "url", the page you opened`);
+    if (!DATE.test(q.accessed || '')) err(`${where}: a researched quote needs "accessed", the date you read the page (YYYY-MM-DD)`);
+  });
 
   // ---- model
   const m = sp.model || {};
@@ -187,7 +206,7 @@ export function validate(sp) {
       if (nd.store === undefined) err(`${where}: target only applies to store nodes`);
       checkRefs(checkFormula(nd.target, `${where} target`), `${where} target`, staticIds);
     }
-    if (nd.appears !== undefined && !inputById[nd.appears]) err(`${where}: appears "${nd.appears}" must be an input (the node shows when it is above 0)`);
+    if (nd.appears !== undefined && !inputById[nd.appears]) err(`${where}: appears "${nd.appears}" must be an input (the node shows when that input is above its minimum)`);
     if (nd.sky !== undefined && typeof nd.sky !== 'boolean') err(`${where}: sky must be true or false`);
   });
   nodes.forEach((nd, n) => {
@@ -232,6 +251,9 @@ export function validate(sp) {
         }
         if (c.quote !== undefined && ![].concat(c.quote).every((x) => Number.isInteger(x) && x >= 0 && x < quotes.length)) err(`${where}.choices[${k}]: quote must be an index (or list of indexes) into source.quotes`);
       });
+      // a viewer who doesn't know (and the recorded film) needs an answer that matches the defaults
+      const isDefault = (c) => c?.set && typeof c.set === 'object' && Object.entries(c.set).every(([id, v]) => inputById[id] && v === inputById[id].default);
+      if (q.choices.length && !q.choices.some(isDefault)) err(`${where}: no choice matches the default values. Add one, such as "Not sure" or "About average", that sets the defaults.`);
     } else err(`${where}: needs "input" (a number to type) or "choices"`);
   });
 
@@ -292,9 +314,9 @@ export function validate(sp) {
     ...['tradeoffs', 'leftOut', 'questionsToAsk'].flatMap((k) => arr(sp.decide?.[k])),
   ];
   for (const t of texts.filter(isStr)) {
-    for (const re of BANNED) {
+    for (const [re, instead] of BANNED) {
       const hit = t.match(re);
-      if (hit) err(`Avoid the word "${hit[0].toLowerCase()}" ("${t}"). Say "understanding" instead.`);
+      if (hit) err(`Avoid "${hit[0].toLowerCase()}" ("${t}"). ${instead}`);
     }
   }
   return errors;

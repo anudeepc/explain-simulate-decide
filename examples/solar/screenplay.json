@@ -16,47 +16,56 @@
       {
         "text": "The average U.S. residential electricity price rose from 16.0 cents per kilowatthour (kWh) in 2023 to 16.5 cents/kWh in 2024",
         "url": "https://www.eia.gov/todayinenergy/detail.php?id=65244",
-        "publisher": "U.S. EIA"
+        "publisher": "U.S. EIA",
+        "accessed": "2026-11-05"
       },
       {
         "text": "The average electric monthly bill for U.S. residential customers was $144 in 2024",
         "url": "https://www.eia.gov/todayinenergy/detail.php?id=65244",
-        "publisher": "U.S. EIA"
+        "publisher": "U.S. EIA",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Right now, systems average about $2.60 per watt before incentives.",
         "url": "https://www.energysage.com/local-data/solar-panel-cost/",
-        "publisher": "EnergySage"
+        "publisher": "EnergySage",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Solar batteries typically cost $15,647 before any available incentives",
         "url": "https://www.energysage.com/local-data/energy-storage-cost/",
-        "publisher": "EnergySage"
+        "publisher": "EnergySage",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Solar to Battery to Home/Grid Round Trip Efficiency: 89%",
         "url": "https://energylibrary.tesla.com/docs/Public/EnergyStorage/Powerwall/3/InstallManual/BackupSwitch/en-us/GUID-EC527BC7-4750-4425-BBC4-DB8C000339B3.html",
-        "publisher": "Tesla Powerwall 3 manual"
+        "publisher": "Tesla Powerwall 3 manual",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Export compensation is usually lower than the retail rate.",
         "url": "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/demand-side-management/customer-generation/net-energy-metering-and-net-billing",
-        "publisher": "California Public Utilities Commission"
+        "publisher": "California Public Utilities Commission",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Installed cost per watt by state: AZ $2.25, CA $2.52, TX $2.25, FL $2.12, NY $2.77.",
         "url": "https://www.energysage.com/local-data/solar-panel-cost/",
-        "publisher": "EnergySage (table)"
+        "publisher": "EnergySage (table)",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Peak sun hours per day by state: AZ 6.5, CA 5.82, TX 5.64, FL 5.44, NY 3.58.",
         "url": "https://www.energysage.com/solar/many-sunlight-hours-need-calculating-peak-sun-hours/",
-        "publisher": "EnergySage (table)"
+        "publisher": "EnergySage (table)",
+        "accessed": "2026-11-05"
       },
       {
         "text": "Average residential price, August 2026, cents/kWh: AZ 15.05, CA 29.75, TX 15.91, FL 14.99, NY 28.65.",
         "url": "https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a",
-        "publisher": "U.S. EIA, Electric Power Monthly Table 5.6.A"
+        "publisher": "U.S. EIA, Electric Power Monthly Table 5.6.A",
+        "accessed": "2026-11-05"
       }
     ]
   },
@@ -402,7 +411,7 @@
     },
     {
       "question": "Where do you live?",
-      "help": "Sets typical sun, power price and install cost for that state. You can change each one later.",
+      "help": "Sets typical sun, power price and install cost. Somewhere else uses typical US values. You can change each one later.",
       "choices": [
         {
           "label": "Arizona",
@@ -444,19 +453,6 @@
           ]
         },
         {
-          "label": "Florida",
-          "set": {
-            "sunHours": 5.4,
-            "price": 0.15,
-            "costPerKw": 2120
-          },
-          "quote": [
-            13,
-            14,
-            15
-          ]
-        },
-        {
           "label": "New York",
           "set": {
             "sunHours": 3.6,
@@ -467,6 +463,18 @@
             13,
             14,
             15
+          ]
+        },
+        {
+          "label": "Somewhere else",
+          "set": {
+            "sunHours": 4.5,
+            "price": 0.165,
+            "costPerKw": 2600
+          },
+          "quote": [
+            7,
+            9
           ]
         }
       ]
@@ -484,7 +492,7 @@
         {
           "label": "Home some days",
           "set": {
-            "selfUse": 45
+            "selfUse": 40
           }
         },
         {

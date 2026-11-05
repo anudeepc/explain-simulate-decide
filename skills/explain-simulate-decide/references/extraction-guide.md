@@ -8,7 +8,7 @@ An answer that ignores where someone lives and what they pay is a guess. Before 
 
 - **What they can read off a bill or statement:** monthly power bill, loan balance, rent, current rate. These become `ask` questions with `input`.
 - **What they know as a category:** their state or region, their habits ("home most days"), the option they lean toward. These become `ask` questions with `choices`, and each choice sets several inputs at once.
-- **What depends on place and changes often:** install costs, prices, export credits, interest rates, incentives. Research these (web search), quote them with their URL and date, and offer a few regions as choices. If you can talk to the person, ask where they live first and research their area.
+- **What depends on place and changes often:** install costs, prices, export credits, interest rates, incentives. Research these (web search), quote them word for word with their URL and the date you read them, and offer a few regions as choices. If you can talk to the person, ask where they live first and research their area.
 
 Don't ask the viewer for anything they can't answer in under a minute. Fill gaps with typical values labelled as assumptions.
 
@@ -68,7 +68,7 @@ What does your small model leave out that could change the answer? Examples: inc
 - **Use the article's numbers first.** Quote them exactly in `source.quotes` and point to them with `"quote": <index>`.
 - **Fill the gaps with assumptions,** labelled `"source": "assumption"`. Pick ordinary middle values and sensible ranges. The viewer sees an asterisk and can change them.
 - **Put meaningful numbers in `constants`** with a label and source. Only plain unit conversions (100, 365, 12, 24, 60, 1000…) may appear directly inside formulas.
-- **Check the defaults give a believable answer** (for example, solar payback of 5–20 years, not 0.3 or 400).
+- **Check the defaults give a believable answer** (for example, solar payback somewhere between 5 and 25 years, not 0.3 or 400).
 - **Guard against outcomes that break.** If a value can reach zero or go negative, protect divisions with `max(x, 1)` and cap open-ended results with `min(…, 100)`. Then "never pays back" shows as 100 years instead of 8,000 or an error.
 - **Keep formulas short.** A derived value per idea is easier to cast and to explain.
 

@@ -36,7 +36,7 @@ Or copy `skills/explain-simulate-decide/` into `~/.claude/skills/`. Then ask:
 The skill thinks the topic through before it draws anything:
 
 - It asks you up to three questions that change the answer, such as where you live, your average monthly bill, and whether you'd send spare power to the grid or store it in a battery.
-- It looks up current local figures (install cost, power prices, export credits) and quotes each one with its source.
+- It looks up current local figures (install cost, power prices, export credits) and quotes each one word for word with its source and the date it was read.
 - It maps the topic as a system: what flows where, and what builds up over time.
 
 It then writes a screenplay, validates it, renders the page, and checks its own work against a list (every number sourced, Decide never recommends).

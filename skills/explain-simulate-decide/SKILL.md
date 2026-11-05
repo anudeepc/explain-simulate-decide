@@ -19,8 +19,9 @@ You read the article and write a **screenplay**: a small JSON file. A fixed rend
    Say why you are asking, and accept "don't know". Their answers become the defaults. The page will still ask any viewer the same questions (step 8). Skip this step in the web tool or when no one is there to answer.
 
 3. **Check local and current numbers.** When the answer depends on place or price (install cost, power price, rates, incentives), use web search to find current figures for the person's area. Otherwise find a few typical regions.
-   - Prefer government statistics and well-known trackers, and note the date.
-   - Quote each figure's exact sentence, or its table, as `{"text", "url", "publisher"}` in `source.quotes`.
+   - Prefer government statistics and well-known trackers.
+   - Quote only pages you actually opened. Copy the sentence word for word; for a table, copy the row values as shown and add "(table)" to the publisher.
+   - Store each one as `{"text", "url", "publisher", "accessed"}` in `source.quotes`, where `accessed` is the date you read it (YYYY-MM-DD).
    - A number you can't find a source for is an `assumption`. Never guess and present the guess as fact.
    - Ask before searching if the user hasn't allowed web access.
 
@@ -43,14 +44,15 @@ You read the article and write a **screenplay**: a small JSON file. A fixed rend
 
 7. **Build the world.**
    - **Nodes** use props from `references/prop-catalog.md`. Panels can sit `on` a house. The sun sits in the `sky`. A jar shows a store.
+   - An option that isn't always there, such as a battery, gets `appears`: it grows into the world when its input is above its minimum.
    - **Flows** go between nodes. Each has a carrier (`energy`, `money`, `water`, `heat`, `light`, `goods`, `people`, `data`) and a `rate` formula.
    - Flows of the same carrier and unit share one scale, so a trickle beside a stream shows the difference without words.
 
-8. **Write the questions the page asks** (`ask`, 2–5). Ask for the facts that make the answer theirs:
+8. **Write the questions the page asks** (`ask`, usually 2–5). Ask for the facts that make the answer theirs:
    - A number they can find on a bill, with a hint about where to look.
    - Choices for things people know as a category: their state, their habits, which option they lean toward.
 
-   Each answer sets one or more inputs.
+   Each answer sets one or more inputs. Every choices question needs one option that sets exactly the defaults ("Not sure", "About average", "Somewhere else"). Leave `ask` out only when no viewer's answer would change the result.
 
 9. **Write the shots.** Write 6–12 `explain` shots, one idea per shot, with captions of 12 words or fewer.
    - Follow the system in the order it works: source, flow, store.
@@ -74,13 +76,15 @@ You read the article and write a **screenplay**: a small JSON file. A fixed rend
     ```
 
 13. **Check your work** before handing it over:
-    - [ ] Every number has a quote or is labelled an assumption. Researched figures carry their URL and date.
+    - [ ] Every number has a quote or is labelled an assumption. Researched figures carry their URL and the date you read them.
+    - [ ] You opened every URL you quote, and each quote matches the page word for word.
     - [ ] The default values give a believable answer. Run the options in your head: does each one come out roughly as the sources suggest?
     - [ ] Every flow's rate is in the right units, and flows that share a carrier and unit are comparable.
     - [ ] The `turn` corrects a misconception the article actually raises, and the world makes it visible (two streams side by side, a jar that never fills).
-    - [ ] The `ask` questions are ones a person can answer in under a minute.
+    - [ ] The `ask` questions are ones a person can answer in under a minute, and each choices question has an option for "don't know".
     - [ ] Captions are 12 words or fewer, in plain words, and each term is explained before it is used.
     - [ ] Decide gives no recommendation, and `leftOut` names the model's real limits.
+    - [ ] None of the words listed under "Words we don't use" in `references/writing-rules.md`.
 
 14. **Hand over.**
     - Give the user the file path. They can open it in a browser and press **Record MP4** for a 1080p 60 fps video.

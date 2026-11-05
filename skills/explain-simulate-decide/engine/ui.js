@@ -175,7 +175,7 @@ export function createUI(wrap, sp, model, h) {
   const quoteEl = (q) => {
     const text = quoteText(q);
     const url = typeof q === 'object' && /^https?:\/\//.test(q.url || '') ? q.url : null;
-    return el('blockquote', {}, text, url ? el('span', {}, ' — ', el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: q.publisher || 'source' })) : null);
+    return el('blockquote', {}, text, url ? el('span', {}, ' — ', el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: q.publisher || 'source' }), q.accessed ? `, read ${q.accessed}` : '') : null);
   };
   const cmpBody = el('tbody');
   const cmpHead = el('tr');

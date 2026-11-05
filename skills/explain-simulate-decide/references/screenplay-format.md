@@ -12,7 +12,7 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
     "url": "https://…",
     "quotes": [
       "exact sentence from the article",
-      { "text": "exact sentence from another source", "url": "https://…", "publisher": "U.S. EIA" }
+      { "text": "exact sentence from another source", "url": "https://…", "publisher": "U.S. EIA", "accessed": "2026-11-05" }
     ]
   },
   "model": {
@@ -46,7 +46,8 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
     { "question": "What is your average monthly power bill?", "help": "Add up your last few bills and divide.", "input": "monthlyBill" },
     { "question": "Where do you live?", "choices": [
         { "label": "Arizona", "set": { "sunHours": 6.5, "price": 0.15 }, "quote": [7, 8] },
-        { "label": "New York", "set": { "sunHours": 3.6, "price": 0.29 }, "quote": [7, 8] } ] }
+        { "label": "New York", "set": { "sunHours": 3.6, "price": 0.29 }, "quote": [7, 8] },
+        { "label": "Somewhere else", "set": { "sunHours": 4.5, "price": 0.165 } } ] }
   ],
   "explain": [
     { "shot": "establish", "caption": "Should solar go on your roof? Here is how it works." },
@@ -77,7 +78,7 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
 **Sources**
 - `"source": "article"` needs `"quote"`, the index of an entry in `source.quotes`. Otherwise use `"source": "assumption"`.
 - Constants follow the same rule.
-- A quote is either a sentence (from the main article) or `{ "text", "url", "publisher" }` (from research).
+- A quote is either a sentence (from the main article) or `{ "text", "url", "publisher", "accessed" }` (from research). A researched quote needs a `url` you opened and `accessed`, the date you read it (`YYYY-MM-DD`).
 
 **Formulas**
 - Allowed: numbers, `+ - * /`, parentheses, `min(…)`, `max(…)`, `round(x, digits)`, and ids.
@@ -106,7 +107,7 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
 
 **Ask** (0–5): each has a `question`, an optional `help`, and either:
 - `input`: the viewer types a number; or
-- `choices`: 2–5 options, each with a `label`, `set` (input → value, inside its range) and an optional `quote` (an index or a list of indexes).
+- `choices`: 2–5 options, each with a `label`, `set` (input → value, inside its range) and an optional `quote` (an index or a list of indexes). One option must set exactly the defaults, so a viewer who doesn't know has a typical answer.
 
 **Explain**
 - 3–12 shots.
@@ -123,7 +124,7 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
 - `tradeoffs`, `leftOut` and `questionsToAsk` each hold 1–6 sentences.
 - Optional `compare`: 2–3 options, each with a `label` and `set`. They're shown side by side with the viewer's own numbers.
 
-**Words:** the checker rejects "gamified" and "engagement".
+**Words:** the checker rejects every word under "Words we don't use" in `writing-rules.md`.
 
 ## What the renderer does with it
 

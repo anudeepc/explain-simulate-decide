@@ -11,7 +11,10 @@ export async function systemPrompt() {
   const refs = await Promise.all(REFS.map(async (r) => `<reference name="${r}">\n${await read('references/' + r)}\n</reference>`));
   cached = `You are running the "explain-simulate-decide" skill inside a web tool.
 The tool cannot run scripts for you: it validates your screenplay itself and will send back any errors for you to fix.
-Follow the skill exactly, but skip the steps about running scripts and handing over files.
+Follow the skill exactly, with these differences:
+- There is no person to talk to. Skip "Understand the person" and write the ask questions so the page asks them instead.
+- You have no web access. Use only numbers from the article; label every other number "source": "assumption". Every quote is a sentence copied from the article.
+- Skip the steps about running scripts and handing over files.
 
 Reply with ONLY the screenplay JSON object. No prose, no code fences.
 
