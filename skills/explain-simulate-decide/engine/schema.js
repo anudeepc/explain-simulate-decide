@@ -131,6 +131,7 @@ export function validate(sp) {
     if (!SHOTS.includes(s.shot)) err(`${where}: shot "${s.shot}" must be one of ${SHOTS.join(', ')}`);
     if (!castIds.has(s.focus)) err(`${where}: focus "${s.focus}" is not in cast`);
     if (s.shot === 'cause' && !castIds.has(s.affects)) err(`${where}: cause shots need "affects" = a cast id`);
+    if (s.drive !== undefined && !inputs.some((i) => i.id === s.drive)) err(`${where}: drive "${s.drive}" is not an input`);
     if (!isStr(s.caption)) err(`${where}: caption is required`);
     else if (words(s.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(s.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
   });

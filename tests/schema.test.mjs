@@ -54,6 +54,7 @@ test('shots and captions', () => {
   expectError((s) => (s.explain[1].shot = 'dolly'), /shot "dolly"/);
   expectError((s) => (s.explain[1].focus = 'ghost'), /focus "ghost"/);
   expectError((s) => delete s.explain[2].affects, /affects/);
+  expectError((s) => (s.explain[6].drive = 'cost'), /drive "cost"/);
 });
 
 test('cast rules', () => {
