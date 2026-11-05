@@ -1,7 +1,7 @@
 // Builds the AI instructions from the skill's own files at runtime, so the web
 // tool and the Claude Code skill always follow the same rules.
 const SKILL = new URL('../skills/explain-simulate-decide/', import.meta.url);
-const REFS = ['extraction-guide.md', 'screenplay-format.md', 'shot-types.md', 'writing-rules.md', 'cast-catalog.md'];
+const REFS = ['extraction-guide.md', 'system-guide.md', 'screenplay-format.md', 'shot-types.md', 'writing-rules.md', 'prop-catalog.md'];
 
 let cached = null;
 export async function systemPrompt() {

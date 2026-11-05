@@ -31,8 +31,8 @@ if (errors.length) {
 }
 
 // open-library models are embedded so the page works offline
-for (const c of sp.cast) {
-  if (c.source === 'open' && c.url && !c.url.startsWith('data:')) {
+for (const c of sp.world.nodes) {
+  if (c.url && !c.url.startsWith('data:')) {
     try {
       const bytes = c.url.startsWith('http') ? Buffer.from(await (await fetch(c.url)).arrayBuffer()) : readFileSync(resolve(dirname(file), c.url));
       c.url = `data:model/gltf-binary;base64,${bytes.toString('base64')}`;

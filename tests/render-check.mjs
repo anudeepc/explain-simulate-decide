@@ -61,8 +61,13 @@ try {
   const b = await grab(times[2]);
   if (a !== b) errors.push('Frames are not deterministic');
   // live mode
-  await p.evaluate(() => window.ESD.enterLive());
+  await p.evaluate(() => window.ESD.enterAsk());
   await p.waitForTimeout(1800);
+  await p.screenshot({ path: join(outDir, 'live-ask.png') });
+  await p.evaluate(() => { window.ESD.enterLive(); window.ESD.runClock(); });
+  await p.waitForTimeout(3500);
+  await p.screenshot({ path: join(outDir, 'live-running.png') });
+  await p.waitForTimeout(4000);
   await p.screenshot({ path: join(outDir, 'live-simulate.png') });
   await p.evaluate(() => window.ESD.enterDecide());
   await p.waitForTimeout(1800);

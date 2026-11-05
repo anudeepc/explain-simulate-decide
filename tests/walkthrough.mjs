@@ -1,28 +1,16 @@
-// Records a screen walkthrough of the web tool: landing → Demo generate → film →
-// Simulate (sliders move) → Decide. Output: a WebM in the given folder.
-// Usage: node tests/walkthrough.mjs <outDir>
+// Records a screen walkthrough of an explainer page: parts of the film, then
+// "Make it yours" (answers typed and picked), the clock running, a slider, and Decide.
+// Usage: node tests/walkthrough.mjs <outDir> [page]   (default page: examples/solar/solar.html)
 import { chromium } from 'playwright';
 import { serve } from './serve.mjs';
 
 const outDir = process.argv[2] || 'test-results/walkthrough';
+const pagePath = process.argv[3] || 'examples/solar/solar.html';
 const srv = serve();
 const browser = await chromium.launch({ channel: 'chrome' });
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir: outDir, size: { width: 1280, height: 720 } } });
 const page = await ctx.newPage();
 const wait = (ms) => page.waitForTimeout(ms);
-const scrollTo = async (y, ms = 1200) => {
-  await page.evaluate(async ([y, ms]) => {
-    const start = scrollY, t0 = performance.now();
-    await new Promise((done) => {
-      const step = (now) => {
-        const k = Math.min(1, (now - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-        scrollTo(0, start + (y - start) * e);
-        k < 1 ? requestAnimationFrame(step) : done();
-      };
-      requestAnimationFrame(step);
-    });
-  }, [y, ms]);
-};
 const slide = async (id, to, ms = 1800) => {
   await page.evaluate(async ([id, to, ms]) => {
     const s = document.getElementById(`esd-${id}`);
@@ -38,34 +26,41 @@ const slide = async (id, to, ms = 1800) => {
     });
   }, [id, to, ms]);
 };
+const playFrom = async (shot, seconds) => {
+  await page.evaluate((shot) => {
+    const seg = window.ESD.timeline.segments.find((s) => s.shot === shot);
+    window.ESD.seek(seg.start);
+    window.ESD.play();
+  }, shot);
+  await wait(seconds * 1000);
+};
 
 try {
-  await page.goto(`${srv.url}/web/`);
-  await wait(2500);                                   // hero
-  await scrollTo(520); await wait(4500);              // before / after
-  const make = await page.$eval('#make', (el) => el.getBoundingClientRect().top + scrollY - 20);
-  await scrollTo(make); await wait(1500);
-  await page.fill('#article', 'Paste any article here: a report, a guide, a policy, a study…');
+  await page.goto(`${srv.url}/${pagePath}`);
+  await page.waitForFunction(() => window.ESD?.duration, null, { timeout: 30000 });
+  await page.evaluate(() => window.ESD.ready);
   await wait(800);
-  await page.selectOption('#provider', 'demo'); await wait(800);
-  await page.click('#generate');
-  await page.waitForFunction(() => [...document.querySelectorAll('#log li')].some((li) => /Ready/.test(li.textContent)), null, { timeout: 60000 });
-  await wait(1500);
-  const stageTop = await page.$eval('#stage', (el) => el.getBoundingClientRect().top + scrollY - 10);
-  await scrollTo(stageTop, 900);
-  await page.evaluate(() => window.ESDTool.player.play());
-  await wait(26000);                                  // first part of the film
-  await page.evaluate(() => window.ESDTool.player.seek(38));
-  await page.evaluate(() => window.ESDTool.player.play());
-  await wait(12000);                                  // turning point → handoff
-  await page.evaluate(() => window.ESDTool.player.enterLive());
-  await wait(2500);
-  await slide('size', 9); await wait(800);
-  await slide('selfUse', 80); await wait(800);
-  await slide('price', 0.4); await wait(800);
-  await slide('exportRate', 0.02); await wait(1500);
+  await playFrom('establish', 21); // establish, sunlight, used as it's made, savings
+  await playFrom('turn', 12); // the turning point, the battery
+  await playFrom('timelapse', 9); // savings over the years
+  await page.evaluate(() => window.ESD.enterAsk());
+  await wait(2000);
+  await page.click('#esd-ask-0');
+  await page.keyboard.type('220', { delay: 160 });
+  await wait(600);
+  for (const label of ['California', 'Home most days', 'Store it in a home battery']) {
+    await page.click(`.esd-ask button:has-text("${label}")`);
+    await wait(900);
+  }
+  await wait(800);
+  await page.click('text=Show me my numbers →');
+  await wait(7500); // the clock runs 25 years with their numbers
+  await slide('battery', 0, 2200);
+  await wait(1200);
+  await page.click('.esd-sim button:has-text("Run 25 years")');
+  await wait(7000);
   await page.click('text=I’m ready to decide →');
-  await wait(6000);
+  await wait(7000);
 } finally {
   await ctx.close();
   await browser.close();

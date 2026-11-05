@@ -1,9 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "question": "Should I put solar on my roof?",
   "source": {
     "title": "Homeowner's Guide to Solar; Will I Save Money with Solar Energy?",
-    "publisher": "U.S. Department of Energy (public domain)",
+    "publisher": "U.S. Department of Energy, U.S. EIA, EnergySage, CPUC",
     "url": "https://www.energy.gov/eere/solar/homeowners-guide-going-solar",
     "quotes": [
       "Typically, solar panels perform best on south-facing roofs with a slope between 15 and 40 degrees, though other roofs may be suitable too.",
@@ -12,7 +12,52 @@
       "In general, a purchased solar system can be installed at a lower total cost than system installed using a solar loan, lease, or power purchase agreement (PPA).",
       "If you pay cash for your solar system, the payback period refers to the length of time required before the system has paid for itself and all future power produced is free.",
       "You should also consider the age of your roof and how long until it will need replacement.",
-      "Every household is different... so calculating an average amount of savings from going solar is nearly impossible."
+      "Every household is different... so calculating an average amount of savings from going solar is nearly impossible.",
+      {
+        "text": "The average U.S. residential electricity price rose from 16.0 cents per kilowatthour (kWh) in 2023 to 16.5 cents/kWh in 2024",
+        "url": "https://www.eia.gov/todayinenergy/detail.php?id=65244",
+        "publisher": "U.S. EIA"
+      },
+      {
+        "text": "The average electric monthly bill for U.S. residential customers was $144 in 2024",
+        "url": "https://www.eia.gov/todayinenergy/detail.php?id=65244",
+        "publisher": "U.S. EIA"
+      },
+      {
+        "text": "Right now, systems average about $2.60 per watt before incentives.",
+        "url": "https://www.energysage.com/local-data/solar-panel-cost/",
+        "publisher": "EnergySage"
+      },
+      {
+        "text": "Solar batteries typically cost $15,647 before any available incentives",
+        "url": "https://www.energysage.com/local-data/energy-storage-cost/",
+        "publisher": "EnergySage"
+      },
+      {
+        "text": "Solar to Battery to Home/Grid Round Trip Efficiency: 89%",
+        "url": "https://energylibrary.tesla.com/docs/Public/EnergyStorage/Powerwall/3/InstallManual/BackupSwitch/en-us/GUID-EC527BC7-4750-4425-BBC4-DB8C000339B3.html",
+        "publisher": "Tesla Powerwall 3 manual"
+      },
+      {
+        "text": "Export compensation is usually lower than the retail rate.",
+        "url": "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/demand-side-management/customer-generation/net-energy-metering-and-net-billing",
+        "publisher": "California Public Utilities Commission"
+      },
+      {
+        "text": "Installed cost per watt by state: AZ $2.25, CA $2.52, TX $2.25, FL $2.12, NY $2.77.",
+        "url": "https://www.energysage.com/local-data/solar-panel-cost/",
+        "publisher": "EnergySage (table)"
+      },
+      {
+        "text": "Peak sun hours per day by state: AZ 6.5, CA 5.82, TX 5.64, FL 5.44, NY 3.58.",
+        "url": "https://www.energysage.com/solar/many-sunlight-hours-need-calculating-peak-sun-hours/",
+        "publisher": "EnergySage (table)"
+      },
+      {
+        "text": "Average residential price, August 2026, cents/kWh: AZ 15.05, CA 29.75, TX 15.91, FL 14.99, NY 28.65.",
+        "url": "https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a",
+        "publisher": "U.S. EIA, Electric Power Monthly Table 5.6.A"
+      }
     ]
   },
   "model": {
@@ -23,21 +68,79 @@
         "unit": "kW",
         "kind": "lever",
         "min": 2,
-        "max": 10,
+        "max": 12,
         "step": 0.5,
-        "default": 6,
+        "default": 7,
+        "source": "assumption"
+      },
+      {
+        "id": "battery",
+        "label": "Home battery",
+        "unit": "kWh",
+        "kind": "lever",
+        "min": 0,
+        "max": 20,
+        "step": 1,
+        "default": 0,
         "source": "assumption"
       },
       {
         "id": "selfUse",
-        "label": "Solar you use at home",
+        "label": "Solar used as it's made",
         "unit": "%",
         "kind": "lever",
         "min": 20,
-        "max": 90,
+        "max": 80,
         "step": 5,
-        "default": 50,
+        "default": 40,
         "source": "assumption"
+      },
+      {
+        "id": "monthlyBill",
+        "label": "Your monthly power bill",
+        "unit": "$",
+        "kind": "condition",
+        "min": 40,
+        "max": 500,
+        "step": 5,
+        "default": 145,
+        "source": "article",
+        "quote": 8
+      },
+      {
+        "id": "price",
+        "label": "Price you pay for power",
+        "unit": "$/kWh",
+        "kind": "condition",
+        "min": 0.1,
+        "max": 0.45,
+        "step": 0.01,
+        "default": 0.165,
+        "source": "article",
+        "quote": 7
+      },
+      {
+        "id": "exportRate",
+        "label": "Credit for power you send out",
+        "unit": "$/kWh",
+        "kind": "condition",
+        "min": 0,
+        "max": 0.3,
+        "step": 0.01,
+        "default": 0.05,
+        "source": "assumption"
+      },
+      {
+        "id": "costPerKw",
+        "label": "Installed cost per kW",
+        "unit": "$/kW",
+        "kind": "condition",
+        "min": 1800,
+        "max": 4500,
+        "step": 50,
+        "default": 2600,
+        "source": "article",
+        "quote": 9
       },
       {
         "id": "sunHours",
@@ -48,74 +151,93 @@
         "max": 6.5,
         "step": 0.1,
         "default": 4.5,
-        "source": "article",
-        "quote": 0
-      },
-      {
-        "id": "price",
-        "label": "Price you pay for power",
-        "unit": "$/kWh",
-        "kind": "condition",
-        "min": 0.12,
-        "max": 0.45,
-        "step": 0.01,
-        "default": 0.25,
-        "source": "article",
-        "quote": 1
-      },
-      {
-        "id": "exportRate",
-        "label": "Credit for power you send out",
-        "unit": "$/kWh",
-        "kind": "condition",
-        "min": 0,
-        "max": 0.25,
-        "step": 0.01,
-        "default": 0.08,
-        "source": "article",
-        "quote": 2
+        "source": "assumption"
       }
     ],
     "constants": [
-      {
-        "id": "costPerKw",
-        "label": "Installed cost per kW",
-        "unit": "$/kW",
-        "value": 3000,
-        "source": "assumption"
-      },
       {
         "id": "efficiency",
         "label": "Share of panel output that reaches your home",
         "unit": "",
         "value": 0.8,
         "source": "assumption"
+      },
+      {
+        "id": "roundTrip",
+        "label": "Power a battery gives back",
+        "unit": "",
+        "value": 0.89,
+        "source": "article",
+        "quote": 11
+      },
+      {
+        "id": "batteryCost",
+        "label": "Installed battery cost per kWh (about $15,600 for 13.5 kWh)",
+        "unit": "$/kWh",
+        "value": 1150,
+        "source": "assumption"
       }
     ],
     "derived": [
       {
+        "id": "useKwh",
+        "label": "Power your home uses a year",
+        "unit": "kWh",
+        "formula": "monthlyBill * 12 / price"
+      },
+      {
         "id": "yearlyKwh",
-        "label": "Power made each year",
+        "label": "Power the panels make a year",
         "unit": "kWh",
         "formula": "size * sunHours * 365 * efficiency"
       },
       {
-        "id": "usedKwh",
-        "label": "Used at home",
+        "id": "direct",
+        "label": "Used as it's made",
         "unit": "kWh",
-        "formula": "yearlyKwh * selfUse / 100"
+        "formula": "min(yearlyKwh * selfUse / 100, useKwh)"
+      },
+      {
+        "id": "surplus",
+        "label": "Not used right away",
+        "unit": "kWh",
+        "formula": "yearlyKwh - direct"
+      },
+      {
+        "id": "shifted",
+        "label": "Stored and used later",
+        "unit": "kWh",
+        "formula": "min(surplus * roundTrip, battery * 365, useKwh - direct)"
       },
       {
         "id": "exportedKwh",
         "label": "Sent to the grid",
         "unit": "kWh",
-        "formula": "yearlyKwh - usedKwh"
+        "formula": "surplus - shifted / roundTrip"
+      },
+      {
+        "id": "boughtKwh",
+        "label": "Still bought from the grid",
+        "unit": "kWh",
+        "formula": "useKwh - direct - shifted"
+      },
+      {
+        "id": "billSaving",
+        "label": "Bill you avoid",
+        "unit": "$",
+        "formula": "(direct + shifted) * price"
+      },
+      {
+        "id": "exportCredit",
+        "label": "Export credit",
+        "unit": "$",
+        "formula": "exportedKwh * exportRate"
       },
       {
         "id": "cost",
         "label": "System cost",
         "unit": "$",
-        "formula": "size * costPerKw"
+        "formula": "size * costPerKw + battery * batteryCost"
       }
     ],
     "outputs": [
@@ -123,144 +245,365 @@
         "id": "saving",
         "label": "Saved each year",
         "unit": "$",
-        "formula": "usedKwh * price + exportedKwh * exportRate"
+        "formula": "billSaving + exportCredit"
       },
       {
-        "id": "payback",
-        "label": "Years to pay back",
-        "unit": "years",
-        "formula": "cost / saving"
+        "id": "newBill",
+        "label": "Your monthly bill after",
+        "unit": "$",
+        "formula": "max(boughtKwh * price - exportCredit, 0) / 12"
+      }
+    ],
+    "stores": [
+      {
+        "id": "savings",
+        "label": "Savings so far",
+        "unit": "$",
+        "start": 0,
+        "change": "saving"
+      }
+    ],
+    "milestones": [
+      {
+        "id": "paidBack",
+        "label": "Paid back in",
+        "store": "savings",
+        "reaches": "cost"
       }
     ]
   },
-  "cast": [
+  "world": {
+    "time": {
+      "unit": "year",
+      "span": 25
+    },
+    "nodes": [
+      {
+        "id": "sun",
+        "prop": "sun",
+        "label": "Sun",
+        "plays": "sunHours",
+        "sky": true
+      },
+      {
+        "id": "home",
+        "prop": "house",
+        "label": "Your home",
+        "plays": "selfUse"
+      },
+      {
+        "id": "panels",
+        "prop": "roof-panel",
+        "label": "Panels",
+        "plays": "size",
+        "on": "home"
+      },
+      {
+        "id": "bat",
+        "prop": "battery",
+        "label": "Home battery",
+        "plays": "battery",
+        "appears": "battery"
+      },
+      {
+        "id": "grid",
+        "prop": "power-pole",
+        "label": "The grid",
+        "plays": "exportRate"
+      },
+      {
+        "id": "jar",
+        "prop": "jar",
+        "label": "Savings",
+        "store": "savings",
+        "target": "cost"
+      }
+    ],
+    "flows": [
+      {
+        "id": "light",
+        "from": "sun",
+        "to": "panels",
+        "carrier": "light",
+        "rate": "sunHours",
+        "label": "Sunlight",
+        "unit": "h/day"
+      },
+      {
+        "id": "direct",
+        "from": "panels",
+        "to": "home",
+        "carrier": "energy",
+        "rate": "direct",
+        "label": "Used as it's made",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "charge",
+        "from": "panels",
+        "to": "bat",
+        "carrier": "energy",
+        "rate": "shifted / roundTrip",
+        "label": "Stored for later",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "discharge",
+        "from": "bat",
+        "to": "home",
+        "carrier": "energy",
+        "rate": "shifted",
+        "label": "Used in the evening",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "export",
+        "from": "panels",
+        "to": "grid",
+        "carrier": "energy",
+        "rate": "exportedKwh",
+        "label": "Sent to the grid",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "import",
+        "from": "grid",
+        "to": "home",
+        "carrier": "energy",
+        "rate": "boughtKwh",
+        "label": "Bought from the grid",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "avoided",
+        "from": "home",
+        "to": "jar",
+        "carrier": "money",
+        "rate": "billSaving",
+        "label": "Bill you avoid",
+        "unit": "$/yr"
+      },
+      {
+        "id": "credit",
+        "from": "grid",
+        "to": "jar",
+        "carrier": "money",
+        "rate": "exportCredit",
+        "label": "Export credit",
+        "unit": "$/yr"
+      }
+    ]
+  },
+  "ask": [
     {
-      "id": "home",
-      "actor": "house",
-      "source": "studio",
-      "label": "Your home"
+      "question": "What is your average monthly power bill?",
+      "help": "Add up your last few bills and divide by how many.",
+      "input": "monthlyBill"
     },
     {
-      "id": "panels",
-      "actor": "roof-panel",
-      "plays": "size",
-      "source": "studio",
-      "label": "Panels"
+      "question": "Where do you live?",
+      "help": "Sets typical sun, power price and install cost for that state. You can change each one later.",
+      "choices": [
+        {
+          "label": "Arizona",
+          "set": {
+            "sunHours": 6.5,
+            "price": 0.15,
+            "costPerKw": 2250
+          },
+          "quote": [
+            13,
+            14,
+            15
+          ]
+        },
+        {
+          "label": "California",
+          "set": {
+            "sunHours": 5.8,
+            "price": 0.3,
+            "costPerKw": 2520
+          },
+          "quote": [
+            13,
+            14,
+            15
+          ]
+        },
+        {
+          "label": "Texas",
+          "set": {
+            "sunHours": 5.6,
+            "price": 0.16,
+            "costPerKw": 2250
+          },
+          "quote": [
+            13,
+            14,
+            15
+          ]
+        },
+        {
+          "label": "Florida",
+          "set": {
+            "sunHours": 5.4,
+            "price": 0.15,
+            "costPerKw": 2120
+          },
+          "quote": [
+            13,
+            14,
+            15
+          ]
+        },
+        {
+          "label": "New York",
+          "set": {
+            "sunHours": 3.6,
+            "price": 0.29,
+            "costPerKw": 2770
+          },
+          "quote": [
+            13,
+            14,
+            15
+          ]
+        }
+      ]
     },
     {
-      "id": "sun",
-      "actor": "sun",
-      "plays": "sunHours",
-      "source": "studio",
-      "label": "Sun"
+      "question": "When are you usually at home?",
+      "help": "Panels make power in the daytime. Power used then saves the most.",
+      "choices": [
+        {
+          "label": "Out most days",
+          "set": {
+            "selfUse": 30
+          }
+        },
+        {
+          "label": "Home some days",
+          "set": {
+            "selfUse": 45
+          }
+        },
+        {
+          "label": "Home most days",
+          "set": {
+            "selfUse": 65
+          }
+        }
+      ]
     },
     {
-      "id": "bill",
-      "actor": "power-bill",
-      "plays": "price",
-      "source": "studio",
-      "label": "Power bill"
+      "question": "What should happen to solar power you don't use straight away?",
+      "choices": [
+        {
+          "label": "Send it to the grid for a credit",
+          "set": {
+            "battery": 0
+          }
+        },
+        {
+          "label": "Store it in a home battery",
+          "set": {
+            "battery": 10
+          }
+        }
+      ]
     },
     {
-      "id": "meter",
-      "actor": "gauge",
-      "plays": "selfUse",
-      "source": "studio",
-      "label": "Used at home"
-    },
-    {
-      "id": "grid",
-      "actor": "plug",
-      "plays": "exportRate",
-      "source": "studio",
-      "label": "Grid credit"
-    },
-    {
-      "id": "coins",
-      "actor": "coin-stack",
-      "plays": "saving",
-      "source": "studio",
-      "label": "Yearly saving"
-    },
-    {
-      "id": "clock",
-      "actor": "clock",
-      "plays": "payback",
-      "source": "studio",
-      "label": "Payback"
+      "question": "What does your utility pay for power you send out?",
+      "help": "Ask about net metering or net billing. It is often much less than you pay.",
+      "input": "exportRate"
     }
   ],
   "explain": [
     {
       "shot": "establish",
-      "focus": "home",
       "caption": "Should solar go on your roof? Here is how it works."
     },
     {
-      "shot": "introduce",
-      "focus": "panels",
-      "caption": "Panels turn sunlight into power. Bigger systems make more."
+      "shot": "follow",
+      "focus": "light",
+      "caption": "Sunlight lands on the panels. More sun, more power."
+    },
+    {
+      "shot": "follow",
+      "focus": "direct",
+      "caption": "Power you use as it's made is power you don't buy."
     },
     {
       "shot": "cause",
-      "focus": "sun",
-      "affects": "panels",
-      "caption": "More full-sun hours means more power from the same panels."
+      "focus": "avoided",
+      "caption": "So every unit you don't buy goes into savings."
     },
     {
-      "shot": "introduce",
-      "focus": "bill",
-      "caption": "Power you make yourself is power you don't buy."
-    },
-    {
-      "shot": "cause",
-      "focus": "meter",
-      "affects": "coins",
-      "caption": "Solar used at home saves the full price you pay."
+      "shot": "follow",
+      "focus": "export",
+      "caption": "Power you don't use right away goes out to the grid."
     },
     {
       "shot": "turn",
-      "focus": "grid",
-      "caption": "But extra power sent to the grid often earns much less.",
-      "drive": "exportRate"
+      "focus": "credit",
+      "caption": "But the grid usually pays far less than you pay for power."
     },
     {
-      "shot": "compare",
-      "focus": "coins",
-      "caption": "So savings depend on what you use, not just what you make.",
-      "drive": "selfUse"
+      "shot": "cause",
+      "focus": "charge",
+      "drive": "battery",
+      "caption": "A battery can keep that power for the evening instead."
     },
     {
-      "shot": "focus",
-      "focus": "clock",
-      "caption": "Payback is the years until savings cover the cost."
+      "shot": "follow",
+      "focus": "import",
+      "caption": "At night, you still buy some power from the grid."
+    },
+    {
+      "shot": "timelapse",
+      "focus": "jar",
+      "caption": "Savings build up each year until they cover the cost."
     },
     {
       "shot": "handoff",
-      "focus": "home",
-      "caption": "Your turn. Change the numbers and watch what moves."
+      "caption": "Now make it yours. Answer a few questions."
     }
   ],
   "simulate": {
     "controls": [
       "size",
+      "battery",
       "selfUse",
-      "sunHours",
-      "price",
-      "exportRate"
+      "monthlyBill",
+      "exportRate",
+      "costPerKw"
     ],
-    "prompt": "Try your own roof and your own power prices."
+    "prompt": "Try your own roof, bill and prices."
   },
   "decide": {
+    "compare": [
+      {
+        "label": "Solar, no battery",
+        "set": {
+          "battery": 0
+        }
+      },
+      {
+        "label": "Solar + 10 kWh battery",
+        "set": {
+          "battery": 10
+        }
+      }
+    ],
     "tradeoffs": [
       "Paying cash usually costs less in total than a loan, lease or power purchase agreement.",
-      "A lease or power purchase agreement needs little upfront, but you don't own the system or its tax benefits.",
+      "A battery adds about $15,000, keeps more of your own power, and can run the house in an outage. On savings alone it rarely pays for itself.",
       "A bigger system makes more power, but power you send out usually earns less than power you use."
     ],
     "leftOut": [
       "Tax credits and rebates. These change often, so check what applies where you live today.",
       "Shade and roof direction. South-facing roofs at 15–40 degrees usually do best.",
-      "Panel wear, maintenance, batteries, and power prices changing over the years.",
+      "Panel wear, battery replacement, and power prices changing over the years.",
       "Replacing your roof during the life of the panels."
     ],
     "questionsToAsk": [

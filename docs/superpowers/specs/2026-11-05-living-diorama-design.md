@@ -39,3 +39,13 @@ over a simulated clock. The renderer builds one connected miniature world on a p
 ## Unchanged
 Single offline HTML, MP4 recording, safe formula parser, validator with plain-English errors,
 sourced numbers, Decide never recommends, the web tool.
+
+## Addendum: the skill thinks through the person's situation (requested 2026-11-05)
+- Skill step "Understand the person": in Claude Code, ask up to three questions that change the answer
+  (where they live, a number from a bill, which option they lean toward) before writing.
+- Skill step "Check local and current numbers": web-search current local figures (install cost, prices,
+  export credits), quote each with URL and publisher (`source.quotes` entries may be `{text, url, publisher}`).
+- Screenplay `ask[]` (0–5): the page asks every viewer the same kind of questions ("Make it yours") after the
+  film; a typed number sets one input, a choice sets several (e.g. a state sets sun hours, price and cost).
+- `decide.compare[]` (2–3 options, e.g. grid credit vs home battery) shown side by side with the viewer's numbers.
+- Nodes with `appears` (e.g. the battery) grow into the world when their input is above its minimum.

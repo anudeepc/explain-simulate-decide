@@ -1,15 +1,15 @@
-// The director: wires screenplay → model → cast → stage → camera → overlay.
-// renderAt(t) is a pure function of time in film mode, so playback, scrubbing
-// and recording always show exactly the same frame for the same t.
+// The director: screenplay → model → world (nodes, flows, stores) → camera → overlay.
+// filmFrame(t) is a pure function of time, so playback, scrubbing and recording
+// always show exactly the same frame for the same t.
 import * as THREE from './vendor/three/three.module.js';
 import { validate } from './schema.js';
 import { createModel, normalise, formatValue } from './model.js';
 import { parse, refs } from './formula.js';
-import { buildTimeline, stateAt, easeInOut, span, lerp, bump, TRAVEL } from './timing.js';
-import { layoutCast } from './layout.js';
+import { buildTimeline, stateAt, easeInOut, easeOut, span, lerp, TRAVEL, clamp01 } from './timing.js';
+import { layoutWorld, lanes, routeFlow, bounds, FOOT } from './layout.js';
 import { cameraSetups, poseAt } from './camera.js';
 import { createStage, toScreen } from './stage.js';
-import { createFlow } from './flow.js';
+import { createFlow } from './flows.js';
 import { resolveActor } from './cast/resolve.js';
 import * as overlay from './overlay.js';
 import { createUI, showErrors } from './ui.js';
@@ -18,6 +18,8 @@ import { speakBrowser, stopBrowser, decodeClips } from './voice.js';
 import { recordFilm } from './record.js';
 
 const GREY = new THREE.Color('#e4dccf');
+const RUN_SECONDS = 6; // how long "Run 25 years" takes live
+const TARGET_LEVEL = 0.72; // a store's target line sits at this share of its jar
 
 /**
  * Mount a screenplay into an element.
@@ -50,33 +52,64 @@ function sweep(p, def, lo, hi) {
 async function start(root, sp, options, api) {
   const opts = { cast: 'auto', voice: 'off', interactive: true, autoplay: false, music: true, ...options };
   const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+  const world = sp.world;
+  const clockDef = world.time || null;
+  const SPAN = clockDef?.span || 1;
 
   // ---- model
-  const model = createModel(sp.model);
-  const ranges = model.ranges();
+  const model = createModel(sp.model, clockDef || {});
   const defaults = model.defaults();
   const inputsById = Object.fromEntries(sp.model.inputs.map((i) => [i.id, i]));
-  const castById = Object.fromEntries(sp.cast.map((c) => [c.id, c]));
+  const nodeById = Object.fromEntries(world.nodes.map((n) => [n.id, n]));
+  const flowById = Object.fromEntries(world.flows.map((f) => [f.id, f]));
+  const rateAst = Object.fromEntries(world.flows.map((f) => [f.id, parse(f.rate)]));
+  const targetAst = Object.fromEntries(world.nodes.filter((n) => n.target !== undefined).map((n) => [n.id, parse(String(n.target))]));
+  const ranges = model.ranges(rateAst);
+  const milestoneOf = Object.fromEntries((sp.model.milestones || []).map((m) => [m.store, m]));
+  const hostOf = (id) => nodeById[id]?.on || id;
+  const COMPARING = ['cause', 'turn', 'compare'];
+  const siblingsOf = (fid) => world.flows.filter((g) => g.id !== fid && g.to === flowById[fid].to && g.carrier === flowById[fid].carrier).map((g) => g.id);
 
-  // which inputs each value depends on (for choosing what a shot "drives")
+  // flows of one kind share a scale, so a trickle next to a stream reads as less
+  const groupKey = (f) => `${f.carrier}|${f.unit || ''}`;
+  const groupMax = {};
+  {
+    const sim0 = model.simulate(defaults);
+    const scope0 = { ...sim0.base, ...model.levelsAt(sim0, 0) };
+    for (const f of world.flows) {
+      const k = groupKey(f);
+      groupMax[k] = Math.max(groupMax[k] || 0, Math.abs(model.evaluate(rateAst[f.id], scope0)) * 1.4, 1e-9);
+    }
+    for (const f of world.flows) {
+      const k = groupKey(f);
+      if (groupMax[k] <= 1e-9) groupMax[k] = Math.max(Math.abs(ranges[f.id]?.[1] || 1), 1e-9);
+    }
+  }
+
+  // which inputs a value depends on (to pick what a shot sweeps)
   const formulaOf = Object.fromEntries([...(sp.model.derived || []), ...sp.model.outputs].map((d) => [d.id, d.formula]));
   const depsCache = {};
   const inputDeps = (id) => {
     if (depsCache[id]) return depsCache[id];
     if (inputsById[id]) return (depsCache[id] = [id]);
-    if (!formulaOf[id]) return (depsCache[id] = []);
+    depsCache[id] = [];
+    const ast = formulaOf[id] ? parse(formulaOf[id]) : null;
+    if (!ast) return depsCache[id];
     const out = new Set();
-    for (const r of refs(parse(formulaOf[id]))) inputDeps(r).forEach((x) => out.add(x));
+    for (const r of refs(ast)) inputDeps(r).forEach((x) => out.add(x));
     return (depsCache[id] = [...out]);
   };
+  const pickLever = (deps) => deps.find((d) => inputsById[d].kind === 'lever') || deps[0] || null;
   const driveFor = (shot) => {
     if (shot.drive) return shot.drive;
-    if (['establish', 'handoff'].includes(shot.shot)) return null;
-    const plays = castById[shot.focus]?.plays;
-    if (!plays) return null;
-    if (inputsById[plays]) return plays;
-    const deps = inputDeps(plays);
-    return deps.find((d) => inputsById[d].kind === 'lever') || deps[0] || null;
+    if (['establish', 'handoff', 'follow', 'timelapse', 'turn'].includes(shot.shot)) return null; // the turn holds still unless told what to sweep
+    if (flowById[shot.focus]) {
+      const deps = new Set();
+      for (const r of refs(rateAst[shot.focus])) inputDeps(r).forEach((x) => deps.add(x));
+      return pickLever([...deps]);
+    }
+    const plays = nodeById[shot.focus]?.plays;
+    return plays ? pickLever(inputDeps(plays)) : null;
   };
 
   // ---- voice clips decide shot lengths when present
@@ -86,8 +119,6 @@ async function start(root, sp, options, api) {
     clips = await decodeClips(decodeCtx, opts.voiceClips);
   }
   const tl = buildTimeline(sp, { voice: clips.map((c) => c?.duration || 0) });
-  const layout = layoutCast(sp.cast);
-  let setups = cameraSetups(tl, sp, layout);
   const simIndex = tl.segments.findIndex((s) => s.act === 'simulate');
   const decideIndex = tl.segments.length - 1;
 
@@ -103,41 +134,79 @@ async function start(root, sp, options, api) {
   root.replaceChildren(wrap);
   const stage = createStage(c3);
   const ctx2 = c2.getContext('2d');
-  const flow = createFlow(stage.scene);
 
-  // ---- cast
+  // ---- nodes: build every prop, then place it (attached props ride on their host)
+  const layout = layoutWorld(world);
+  const pos = layout.nodes;
   const actors = {};
+  const holders = {};
   await Promise.all(
-    sp.cast.map(async (entry, n) => {
-      const actor = await resolveActor(entry, opts.cast, n);
-      const p = layout[entry.id];
-      actor.object.position.set(p.x, 0.06, p.z);
-      actor.object.rotation.y = p.rotY;
-      stage.scene.add(actor.object);
-      stage.addMark(p.x, p.z);
+    world.nodes.map(async (nd, n) => {
+      const actor = await resolveActor(nd, opts.cast, n);
+      const holder = new THREE.Group();
+      holder.add(actor.object);
       const mats = new Map();
       actor.object.traverse((o) => {
-        if (o.isMesh) {
-          const list = Array.isArray(o.material) ? o.material : [o.material];
-          list.forEach((m) => m?.color && !mats.has(m) && mats.set(m, m.color.clone()));
-        }
+        if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m?.color && !mats.has(m) && mats.set(m, m.color.clone()));
       });
-      actor.mats = mats;
-      actor.entry = entry;
-      actor.emphasis = 1;
-      actors[entry.id] = actor;
+      Object.assign(actor, { mats, entry: nd, emphasis: 1 });
+      actors[nd.id] = actor;
+      holders[nd.id] = holder;
     }),
   );
-  const heights = Object.fromEntries(Object.entries(actors).map(([id, a]) => [id, a.height]));
-  const reframe = (aspect) => (setups = cameraSetups(tl, sp, layout, { heights, aspect }));
-  reframe(16 / 9);
+  for (const nd of world.nodes) {
+    const holder = holders[nd.id];
+    if (nd.on) {
+      const host = actors[nd.on];
+      const slot = host.slots?.roof || host.slots?.top || { position: new THREE.Vector3(0, host.height, 0), rotation: new THREE.Euler() };
+      holder.position.copy(slot.position);
+      holder.rotation.copy(slot.rotation);
+      holders[nd.on].add(holder);
+    } else {
+      const p = pos[nd.id];
+      holder.position.set(p.x, p.y, p.z);
+      holder.rotation.y = p.rotY;
+      stage.scene.add(holder);
+    }
+  }
+  const groundIds = world.nodes.filter((n) => !n.on && !n.sky).map((n) => n.id);
+  stage.addBase(bounds(Object.fromEntries(groundIds.map((id) => [id, pos[id]]))));
+  stage.scene.updateMatrixWorld(true);
 
-  // keep material colours in sync with swaps actors make inside setValue
-  const refreshMats = (actor) => {
-    actor.object.traverse((o) => {
-      if (o.isMesh && o.material?.color && !actor.mats.has(o.material)) actor.mats.set(o.material, o.material.color.clone());
-    });
+  // ---- flows: route each one between its nodes' ports
+  const anchorWorld = (id) => {
+    const a = actors[id];
+    return holders[id].localToWorld(a.anchor ? a.anchor.clone() : new THREE.Vector3(0, a.height * 0.55, 0)).toArray();
   };
+  /** Where a flow leaves or enters a node; `top` when it sits on another node or trades with the sky. */
+  const portOf = (id, other) => {
+    const nd = nodeById[id];
+    const h = hostOf(id);
+    const g = pos[h];
+    return { p: anchorWorld(id), ground: [g.x, 0, g.z], foot: actors[h].footprint ?? FOOT, sky: !!nd.sky, top: nd.on || nodeById[other]?.sky ? anchorWorld(id) : undefined };
+  };
+  const laneOf = lanes(world);
+  const flows3d = {};
+  const flowPoints = {};
+  for (const f of world.flows) {
+    const pts = routeFlow(portOf(f.from, f.to), portOf(f.to, f.from), laneOf[f.id]);
+    flowPoints[f.id] = pts;
+    flows3d[f.id] = createFlow(stage.scene, f.carrier, pts);
+  }
+
+  // ---- camera framing info
+  const camNodes = {};
+  for (const nd of world.nodes) {
+    const h = hostOf(nd.id);
+    const p = pos[h];
+    const a = actors[h];
+    camNodes[nd.id] = nd.sky
+      ? { x: pos[nd.id].x, y: pos[nd.id].y, z: pos[nd.id].z, h: actors[nd.id].height, foot: 1.2, sky: true }
+      : { x: p.x, y: 0, z: p.z, h: a.height, foot: a.footprint ?? FOOT, host: nd.on };
+  }
+  const camSet = { nodes: camNodes, ground: groundIds, flows: Object.fromEntries(world.flows.map((f) => [f.id, { from: f.from, to: f.to, carrier: f.carrier, points: flowPoints[f.id] }])) };
+  let setups = cameraSetups(tl, sp, camSet);
+  const reframe = (aspect) => (setups = cameraSetups(tl, sp, camSet, { aspect }));
 
   // ---- sizing
   let W = 0;
@@ -158,32 +227,77 @@ async function start(root, sp, options, api) {
   new ResizeObserver(resize).observe(root);
   resize();
 
-  // ---- frame description (pure in t for film mode)
+  // ---- emphasis: who is in the light for this shot
+  const ALL_ON = () => ({ nodes: Object.fromEntries(world.nodes.map((n) => [n.id, 1])), flows: Object.fromEntries(world.flows.map((f) => [f.id, 1])), focusNode: null });
   const emphasisFor = (seg) => {
-    const e = {};
-    for (const id of Object.keys(actors)) e[id] = 1;
-    if (seg.act !== 'explain') {
-      if (seg.act === 'decide') for (const id of Object.keys(e)) e[id] = 0.75;
+    const e = ALL_ON();
+    if (seg.act === 'decide') {
+      for (const k of Object.keys(e.nodes)) e.nodes[k] = 0.8;
+      for (const k of Object.keys(e.flows)) e.flows[k] = 0.6;
       return e;
     }
+    if (seg.act !== 'explain') return e;
     const shot = sp.explain[seg.index];
-    if (['establish', 'handoff'].includes(shot.shot)) return e;
-    for (const id of Object.keys(e)) e[id] = id === shot.focus || id === shot.affects ? 1 : 0.25;
+    if (!shot.focus || ['establish', 'handoff'].includes(shot.shot)) return e;
+    const lit = new Set();
+    const litFlows = new Set();
+    if (flowById[shot.focus]) {
+      const f = flowById[shot.focus];
+      const group = [f.id, ...(COMPARING.includes(shot.shot) ? siblingsOf(f.id) : [])];
+      group.forEach((id) => {
+        litFlows.add(id);
+        [flowById[id].from, flowById[id].to].forEach((n) => lit.add(n).add(hostOf(n)));
+      });
+      e.focusNode = hostOf(f.to);
+    } else {
+      lit.add(shot.focus).add(hostOf(shot.focus));
+      world.nodes.filter((n) => n.on === shot.focus).forEach((n) => lit.add(n.id));
+      world.flows.filter((f) => f.from === shot.focus || f.to === shot.focus).forEach((f) => litFlows.add(f.id));
+      e.focusNode = hostOf(shot.focus);
+    }
+    for (const k of Object.keys(e.nodes)) e.nodes[k] = lit.has(k) ? 1 : 0.3;
+    for (const k of Object.keys(e.flows)) e.flows[k] = flowById[shot.focus]?.id === k ? 1 : litFlows.has(k) ? 0.75 : 0.2;
     return e;
   };
+  const mixEmphasis = (a, b, k) => ({
+    nodes: Object.fromEntries(Object.keys(b.nodes).map((id) => [id, lerp(a.nodes[id], b.nodes[id], k)])),
+    flows: Object.fromEntries(Object.keys(b.flows).map((id) => [id, lerp(a.flows[id], b.flows[id], k)])),
+    focusNode: b.focusNode,
+  });
+
+  // the clock in the film: runs during timelapse shots, then stays at the end
+  const firstLapse = sp.explain.findIndex((s) => s.shot === 'timelapse');
+  const filmTau = (seg, local) => {
+    if (!clockDef) return 0;
+    if (seg.act === 'explain') {
+      if (sp.explain[seg.index].shot === 'timelapse') return SPAN * easeInOut(span(local, 0.18, 0.88));
+      return firstLapse >= 0 && seg.index > firstLapse ? SPAN : 0;
+    }
+    if (seg.act === 'simulate') {
+      const start = firstLapse >= 0 ? SPAN : 0;
+      if (local < 0.66) return start;
+      if (local < 0.7) return lerp(start, 0, easeInOut(span(local, 0.66, 0.7)));
+      return SPAN * easeInOut(span(local, 0.7, 0.97));
+    }
+    return SPAN;
+  };
+
+  // answers shown on the painted "Make it yours" card in the recorded film
+  const demoAnswers = (sp.ask || []).map((q) => {
+    if (q.input) return { question: q.question, answer: formatValue(defaults[q.input], inputsById[q.input].unit) };
+    const best = q.choices.find((c) => Object.entries(c.set).every(([id, v]) => Math.abs(v - defaults[id]) < 1e-9)) || q.choices[0];
+    return { question: q.question, answer: best.label };
+  });
 
   function filmFrame(t) {
     const st = stateAt(tl, t);
     const seg = st.segment;
     const local = st.local;
     const values = { ...defaults };
-    const f = { seg, local, values, labels: [], caption: '', captionAlpha: 0, flow: null, act: seg.act, sim: null, decideAlpha: 0 };
-
-    // emphasis eases from the previous shot's
+    const f = { act: seg.act, values, tau: filmTau(seg, local), labels: [], caption: '', captionAlpha: 0, sim: null, ask: 0, decideAlpha: 0, readoutAlpha: 1, clockAlpha: 0, ringAlpha: 0 };
     const prev = emphasisFor(tl.segments[Math.max(0, st.index - 1)]);
     const cur = emphasisFor(seg);
-    const k = st.index === 0 ? 1 : easeInOut(span(local, 0, 0.3));
-    f.emphasis = Object.fromEntries(Object.keys(cur).map((id) => [id, lerp(prev[id], cur[id], k)]));
+    f.emphasis = mixEmphasis(prev, cur, st.index === 0 ? 1 : easeInOut(span(local, 0, 0.3)));
     f.pose = poseAt(setups, st.index, local, { reducedMotion });
     const textAlpha = span(local, 0.1, 0.22) * (1 - span(local, 0.95, 1));
 
@@ -196,25 +310,39 @@ async function start(root, sp, options, api) {
       }
       f.caption = shot.caption;
       f.captionAlpha = textAlpha;
-      if (shot.shot === 'cause') f.flow = { from: shot.focus, to: shot.affects, intensity: bump(span(local, 0.25, 1)) };
-      const labelled = [shot.focus, shot.affects].filter(Boolean);
-      if (shot.shot !== 'establish' && shot.shot !== 'handoff') f.labels = labelled.map((id) => ({ id, alpha: textAlpha }));
+      f.ringAlpha = shot.focus && !['establish', 'handoff'].includes(shot.shot) ? textAlpha : 0;
+      if (shot.focus && !['establish', 'handoff'].includes(shot.shot)) {
+        if (flowById[shot.focus]) {
+          f.labels.push({ flow: shot.focus, alpha: textAlpha });
+          if (COMPARING.includes(shot.shot)) siblingsOf(shot.focus).forEach((id) => f.labels.push({ flow: id, alpha: textAlpha }));
+        } else f.labels.push({ node: shot.focus, alpha: textAlpha });
+        if (drive && !flowById[shot.focus]) {
+          // also label the thing being swept, if another node plays it
+          const n = world.nodes.find((nd) => nd.plays === drive && nd.id !== shot.focus);
+          if (n) f.labels.push({ node: n.id, alpha: textAlpha });
+        } else if (drive) {
+          const n = world.nodes.find((nd) => nd.plays === drive);
+          if (n) f.labels.push({ node: n.id, alpha: textAlpha });
+        }
+      }
+      if (shot.shot === 'timelapse') f.clockAlpha = span(local, 0.12, 0.2) * (1 - span(local, 0.96, 1));
       f.readoutAlpha = st.index === 0 ? span(local, 0.7, 1) : 1;
     } else if (seg.act === 'simulate') {
-      const controls = sp.simulate.controls.slice(0, 3);
-      const part = 1 / controls.length;
-      const active = Math.min(controls.length - 1, Math.floor(local / part));
+      f.ask = span(local, 0.02, 0.07) * (1 - span(local, 0.26, 0.3));
+      const controls = sp.simulate.controls.slice(0, 2);
+      const part = 0.36 / controls.length;
       controls.forEach((id, i) => {
-        if (i > active) return;
+        const p0 = 0.3 + i * part;
+        if (local < p0) return;
         const inp = inputsById[id];
-        const p = i < active ? 1 : span((local - i * part) / part, 0.1, 0.95);
-        values[id] = sweep(p, inp.default, inp.min, inp.max);
+        values[id] = sweep(span(local, p0, p0 + part * 0.95), inp.default, inp.min, inp.max);
       });
-      f.caption = sp.simulate.prompt;
-      f.captionAlpha = textAlpha;
-      f.sim = { alpha: span(local, 0.02, 0.12) * (1 - span(local, 0.97, 1)), active: controls[active] };
-      f.labels = sp.cast.filter((c) => c.plays).map((c) => ({ id: c.id, alpha: span(local, 0.05, 0.2) * 0.95 * (1 - span(local, 0.97, 1)) }));
-      f.readoutAlpha = 1;
+      const active = controls[Math.min(controls.length - 1, Math.max(0, Math.floor((local - 0.3) / part)))];
+      f.caption = local > 0.3 ? sp.simulate.prompt : '';
+      f.captionAlpha = span(local, 0.32, 0.4) * (1 - span(local, 0.97, 1));
+      f.sim = { alpha: span(local, 0.28, 0.34) * (1 - span(local, 0.97, 1)), active: local < 0.66 ? active : null };
+      f.labels = world.nodes.filter((n) => n.plays || n.store).map((n) => ({ node: n.id, alpha: span(local, 0.3, 0.38) * (1 - span(local, 0.97, 1)) }));
+      f.clockAlpha = span(local, 0.68, 0.72) * (1 - span(local, 0.97, 1));
     } else {
       f.decideAlpha = span(local, 0.12, 0.3);
       f.readoutAlpha = 1 - span(local, 0, 0.2);
@@ -223,13 +351,28 @@ async function start(root, sp, options, api) {
   }
 
   // ---- live (interactive) state
-  let mode = 'film'; // film | live | decide
+  let mode = 'film'; // film | ask | live | decide
   let liveValues = { ...defaults };
   let liveSince = 0;
   let poseFrom = null;
+  let runStart = null; // performance.now() when the clock started running
+  let ghost = {}; // store node id → level from the previous try
+  let hovered = null;
+
+  const liveTau = (now) => {
+    if (!clockDef) return 0;
+    if (runStart === null) return SPAN;
+    const k = (now - runStart) / 1000 / RUN_SECONDS;
+    if (k >= 1) {
+      runStart = null;
+      ui.setRunning(false);
+      return SPAN;
+    }
+    return SPAN * easeInOut(k);
+  };
 
   function liveFrame(now) {
-    const target = mode === 'decide' ? setups[decideIndex] : setups[simIndex];
+    const target = mode === 'decide' ? setups[decideIndex].at(1) : setups[simIndex].at(1);
     const k = easeInOut(Math.min(1, (now - liveSince) / 1600));
     const from = poseFrom || target;
     const sway = reducedMotion ? 0 : Math.sin(now / 4000) * 0.25;
@@ -237,75 +380,159 @@ async function start(root, sp, options, api) {
       position: target.position.map((v, i) => lerp(from.position[i], v, k) + (i === 0 ? sway : 0)),
       target: target.target.map((v, i) => lerp(from.target[i], v, k)),
     };
-    const emphasis = Object.fromEntries(Object.keys(actors).map((id) => [id, mode === 'decide' ? 0.75 : 1]));
+    const tau = liveTau(now);
+    const e = emphasisFor({ act: mode === 'decide' ? 'decide' : 'simulate' });
+    const labels = mode === 'live' ? world.nodes.filter((n) => n.plays || n.store).map((n) => ({ node: n.id, alpha: 0.95, hint: hovered === n.id })) : [];
     return {
       act: mode === 'decide' ? 'decide' : 'simulate',
       values: liveValues,
+      tau,
       pose,
-      emphasis,
-      labels: mode === 'live' ? sp.cast.filter((c) => c.plays).map((c) => ({ id: c.id, alpha: 0.95 })) : [],
+      emphasis: e,
+      labels,
       caption: '',
       captionAlpha: 0,
-      readoutAlpha: mode === 'live' ? 0 : 0,
-      flow: null,
+      readoutAlpha: 0,
+      clockAlpha: mode === 'live' && clockDef ? 1 : 0,
+      ringAlpha: hovered ? 0.9 : 0,
+      ringNode: hovered,
+      ghost: mode === 'live',
     };
   }
+
+  // ---- model state for a set of values (cached: the same values give the same run)
+  let simKey = '';
+  let simCache = null;
+  const simFor = (values) => {
+    const key = JSON.stringify(values);
+    if (key !== simKey) {
+      simKey = key;
+      simCache = model.simulate(values);
+    }
+    return simCache;
+  };
+  const storeView = (nd, sim, levels) => {
+    const level = levels[nd.store];
+    const target = targetAst[nd.id] ? model.evaluate(targetAst[nd.id], sim.base) : null;
+    const top = Math.max(1e-9, target && target > 0 ? target / TARGET_LEVEL : Math.abs(ranges[nd.store]?.[1] || 1));
+    return { level, target, top };
+  };
+  const timeWord = (n) => `${clockDef.unit}${Math.abs(n - 1) < 1e-9 ? '' : 's'}`;
+  const milestoneText = (m, sim) => {
+    const t = sim.reached[m.id];
+    return t === null ? `Not within ${SPAN} ${timeWord(SPAN)}` : `${formatValue(t, '')} ${timeWord(t)}`;
+  };
+  const readouts = (sim) => [
+    ...sp.model.outputs.map((o) => ({ id: o.id, label: o.label, value: formatValue(sim.base[o.id], o.unit) })),
+    ...(sp.model.milestones || []).map((m) => ({ id: m.id, label: m.label, value: milestoneText(m, sim) })),
+  ];
+  const compareRows = (values) => {
+    const opts2 = sp.decide.compare || [];
+    const head = readouts(simFor(values)).map((r) => r.label);
+    const rows = opts2.map((o) => {
+      const sim = model.simulate({ ...values, ...o.set });
+      return { label: o.label, cells: readouts(sim).map((r) => r.value) };
+    });
+    return { head, rows };
+  };
 
   // ---- apply a frame to the scene and paint the overlay
   const tmp = new THREE.Vector3();
   function apply(frame, timeForFlow, painted) {
-    const all = model.run(frame.values);
-    for (const [id, actor] of Object.entries(actors)) {
-      const plays = actor.entry.plays;
-      if (plays && ranges[plays]) actor.setValue(normalise(all[plays], ranges[plays]));
+    const sim = simFor(frame.values);
+    const levels = model.levelsAt(sim, frame.tau);
+    const scope = { ...sim.base, ...levels };
+    const appear = {};
+    for (const nd of world.nodes) {
+      const inp = nd.appears ? inputsById[nd.appears] : null;
+      appear[nd.id] = inp ? easeOut(clamp01((frame.values[nd.appears] - inp.min) / (0.12 * (inp.max - inp.min) || 1))) : 1;
+    }
+    for (const nd of world.nodes) {
+      const actor = actors[nd.id];
+      if (nd.store) {
+        const v = storeView(nd, sim, levels);
+        actor.setValue(clamp01(v.level / v.top));
+        actor.setTarget?.(v.target !== null ? clamp01(v.target / v.top) : null);
+        const m = milestoneOf[nd.store];
+        const at = m ? sim.reached[m.id] : null;
+        actor.setReached?.(at !== null && at !== undefined ? clamp01((frame.tau - at) / (SPAN * 0.05)) : 0);
+        actor.setGhost?.(frame.ghost && ghost[nd.id] !== undefined ? clamp01(ghost[nd.id] / v.top) : null);
+      } else if (nd.plays && ranges[nd.plays]) actor.setValue(normalise(scope[nd.plays], ranges[nd.plays]));
       else actor.setValue(0.6);
-      refreshMats(actor);
-      const e = frame.emphasis[id] ?? 1;
+      const s = Math.max(0.001, appear[nd.id]);
+      holders[nd.id].scale.setScalar(s);
+      holders[nd.id].visible = appear[nd.id] > 0.002;
+      actor.object.traverse((o) => {
+        if (o.isMesh && o.material?.color && !actor.mats.has(o.material)) actor.mats.set(o.material, o.material.color.clone());
+      });
+      const e = frame.emphasis.nodes[nd.id] ?? 1;
       if (Math.abs(e - actor.emphasis) > 0.001 || e < 1) {
         for (const [m, base] of actor.mats) m.color.copy(base).lerp(GREY, (1 - e) * 0.7);
         actor.emphasis = e;
       }
     }
-    if (frame.flow) {
-      const a = actors[frame.flow.from].object.position.clone().setY(actors[frame.flow.from].height * 0.7);
-      const b = actors[frame.flow.to].object.position.clone().setY(actors[frame.flow.to].height * 0.7);
-      flow.update(a, b, frame.flow.intensity, (timeForFlow * 0.35) % 1);
-    } else flow.update(null, null, 0, 0);
+    for (const f of world.flows) {
+      const rate = model.evaluate(rateAst[f.id], scope);
+      flows3d[f.id].update({
+        amount: clamp01(Math.max(0, rate) / groupMax[groupKey(f)]),
+        emphasis: frame.emphasis.flows[f.id] ?? 1,
+        visible: Math.min(appear[f.from], appear[f.to]),
+        time: timeForFlow,
+      });
+    }
+    const ringNode = frame.ringNode || frame.emphasis.focusNode;
+    if (ringNode && pos[ringNode] && !pos[ringNode].sky) stage.markFocus(pos[ringNode].x, pos[ringNode].z, frame.ringAlpha);
+    else stage.markFocus(0, 0, 0);
     stage.look(frame.pose.position, frame.pose.target);
     stage.render();
 
-    // overlay
+    // ---- overlay
     ctx2.clearRect(0, 0, W, H);
     overlay.drawActs(ctx2, W, H, frame.act, sp.question);
-    const placed = [];
-    const lh = H * 0.017 * 3.6;
     const items = [];
-    for (const { id, alpha } of frame.labels) {
-      const actor = actors[id];
-      tmp.copy(actor.object.position).setY(actor.height + 0.35);
+    for (const lb of frame.labels) {
+      let text;
+      if (lb.flow) {
+        const f = flowById[lb.flow];
+        tmp.copy(flows3d[f.id].midpoint()).setY(tmp.y + 0.5);
+        text = { title: f.label, value: formatValue(model.evaluate(rateAst[f.id], scope), f.unit || '') };
+      } else {
+        const nd = nodeById[lb.node];
+        if (appear[nd.id] < 0.5) continue;
+        const a = actors[nd.id];
+        holders[nd.id].localToWorld(tmp.set(0, a.height + 0.3, 0));
+        if (nd.store) {
+          const v = storeView(nd, sim, levels);
+          text = { title: nd.label, value: formatValue(v.level, model.meta(nd.store).unit || '') + (v.target !== null ? ` of ${formatValue(v.target, model.meta(nd.store).unit || '')}` : '') };
+        } else if (nd.plays) {
+          const meta = model.meta(nd.plays);
+          text = { title: meta.label, value: formatValue(scope[nd.plays], meta.unit || ''), assumption: inputsById[nd.plays]?.source === 'assumption' };
+        } else text = { title: nd.label, value: '' };
+        if (lb.hint) text.title += '  ↕ drag';
+      }
       const s = toScreen(stage.camera, tmp, W, H);
-      if (s.visible) items.push({ id, alpha, actor, s });
+      if (s.visible) items.push({ ...text, alpha: lb.alpha, s });
     }
     items.sort((a, b) => b.s.y - a.s.y);
-    for (const { id, alpha, actor, s } of items) {
-      const plays = actor.entry.plays;
-      const meta = plays ? model.meta(plays) : null;
-      const isAssumption = plays && inputsById[plays]?.source === 'assumption';
-      const title = meta?.label || actor.entry.label || id;
-      const lw = Math.max(110, title.length * H * 0.0095);
-      let y = s.y;
-      // nudge labels upward until they no longer overlap ones already placed
+    const placed = [];
+    const lh = H * 0.017 * 3.6;
+    for (const it of items) {
+      const lw = Math.max(110, Math.max(it.title.length, it.value.length) * H * 0.0095);
+      let y = it.s.y;
       for (let guard = 0; guard < 8; guard++) {
-        const hit = placed.find((r) => Math.abs(r.x - s.x) < (r.w + lw) / 2 + 6 && Math.abs(r.y - y) < lh);
+        const hit = placed.find((r) => Math.abs(r.x - it.s.x) < (r.w + lw) / 2 + 6 && Math.abs(r.y - y) < lh);
         if (!hit) break;
         y = hit.y - lh - 4;
       }
-      placed.push({ x: s.x, y, w: lw });
-      overlay.drawLabel(ctx2, H, s.x, y, title, plays ? formatValue(all[plays], meta.unit) : '', alpha, isAssumption);
+      placed.push({ x: it.s.x, y, w: lw });
+      overlay.drawLabel(ctx2, H, it.s.x, y, it.title, it.value, it.alpha, it.assumption);
+    }
+    if (clockDef && frame.clockAlpha > 0.01) {
+      const unit = clockDef.unit[0].toUpperCase() + clockDef.unit.slice(1);
+      overlay.drawClock(ctx2, W, H, `${unit} ${Math.round(frame.tau)} of ${SPAN}`, frame.clockAlpha);
     }
     if (painted) {
-      const items = sp.model.outputs.map((o) => ({ label: o.label, value: formatValue(all[o.id], o.unit) }));
-      overlay.drawReadout(ctx2, W, H, items, frame.readoutAlpha ?? 0);
+      overlay.drawReadout(ctx2, W, H, readouts(sim), frame.readoutAlpha ?? 0);
       if (frame.sim) {
         const controls = sp.simulate.controls.map((id) => {
           const inp = inputsById[id];
@@ -313,11 +540,12 @@ async function start(root, sp, options, api) {
         });
         overlay.drawSimPanel(ctx2, W, H, controls, frame.sim.alpha, frame.sim.active);
       }
-      overlay.drawDecideCard(ctx2, W, H, sp, frame.decideAlpha || 0);
+      overlay.drawAskCard(ctx2, W, H, demoAnswers, frame.ask || 0);
+      overlay.drawDecideCard(ctx2, W, H, sp, frame.decideAlpha || 0, frame.decideAlpha > 0.01 && sp.decide.compare ? compareRows(defaults) : null);
     }
     overlay.drawCaption(ctx2, W, H, frame.caption, frame.captionAlpha);
     overlay.drawSource(ctx2, W, H, sp, 1);
-    return all;
+    return sim;
   }
 
   // ---- audio
@@ -328,7 +556,11 @@ async function start(root, sp, options, api) {
   const stopAudio = () => {
     score?.stop();
     score = null;
-    clipNodes.forEach((n) => { try { n.stop(); } catch {} });
+    clipNodes.forEach((n) => {
+      try {
+        n.stop();
+      } catch {}
+    });
     clipNodes = [];
     stopBrowser();
   };
@@ -358,6 +590,18 @@ async function start(root, sp, options, api) {
   let last = 0;
   let lastSeg = -1;
   const filmEnd = () => (opts.interactive ? tl.explainEnd : tl.total);
+  const shown = (values) => Object.fromEntries(readouts(simFor(values)).map((r) => [r.id, r.value]));
+  const refreshLive = () => {
+    ui.setValues(liveValues, shown(liveValues));
+    const c = compareRows(liveValues);
+    ui.setCompare(c.head, c.rows);
+  };
+  /** Remember where each store ended, so the next try shows a ghost of it. */
+  const keepGhost = () => {
+    const sim = simFor(liveValues);
+    const levels = model.levelsAt(sim, SPAN);
+    for (const nd of world.nodes) if (nd.store) ghost[nd.id] = levels[nd.store];
+  };
 
   const ui = createUI(wrap, sp, model, {
     togglePlay: () => (playing ? pause() : play()),
@@ -365,21 +609,31 @@ async function start(root, sp, options, api) {
       enterFilm();
       seek(fr * filmEnd());
     },
-    skipToModel: () => enterLive(),
+    skipToModel: () => afterFilm(),
     toggleSound: () => {
       soundOn = !soundOn;
       ui.setSound(soundOn);
       if (playing && mode === 'film') startAudio(t);
       else stopAudio();
     },
+    applyAsk: (vals) => {
+      liveValues = { ...defaults, ...vals };
+      ghost = {};
+      enterLive();
+      runClock();
+    },
+    showAsk: () => enterAsk(),
     setInput: (id, v) => {
+      if (runStart === null) keepGhost();
       liveValues = { ...liveValues, [id]: v };
-      ui.setValues(model.run(liveValues));
+      refreshLive();
     },
     reset: () => {
+      keepGhost();
       liveValues = { ...defaults };
-      ui.setValues(model.run(liveValues));
+      refreshLive();
     },
+    runClock: () => runClock(),
     toDecide: () => enterDecide(),
     backToModel: () => enterLive(),
     replay: () => {
@@ -392,32 +646,55 @@ async function start(root, sp, options, api) {
   ui.setSound(soundOn);
   if (!opts.interactive) ui.showBar(false);
 
+  function runClock() {
+    if (!clockDef) return;
+    runStart = performance.now();
+    ui.setRunning(true);
+  }
   function enterFilm() {
     if (mode !== 'film') {
       mode = 'film';
+      ui.showAsk(false);
       ui.showSim(false);
       ui.showDecide(false);
     }
   }
   function currentPose() {
-    return { position: stage.camera.position.toArray(), target: poseAt(setups, stateAt(tl, t).index, stateAt(tl, t).local).target };
+    return { position: stage.camera.position.toArray(), target: stage.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(10).add(stage.camera.position).toArray() };
+  }
+  function moveCamera() {
+    poseFrom = currentPose();
+    liveSince = performance.now();
+  }
+  function afterFilm() {
+    if ((sp.ask || []).length) enterAsk();
+    else enterLive();
+  }
+  function enterAsk() {
+    pause();
+    if (mode === 'film') moveCamera();
+    mode = 'ask';
+    ui.showSim(false);
+    ui.showDecide(false);
+    ui.showAsk(true);
+    ui.announce('Make it yours. Answer what you know.');
   }
   function enterLive() {
     pause();
-    poseFrom = currentPose();
-    liveSince = performance.now();
+    moveCamera();
     mode = 'live';
+    ui.showAsk(false);
     ui.showDecide(false);
     ui.showSim(true);
-    ui.setValues(model.run(liveValues));
+    refreshLive();
     ui.announce(sp.simulate.prompt || '');
   }
   function enterDecide() {
-    poseFrom = currentPose();
-    liveSince = performance.now();
+    moveCamera();
     mode = 'decide';
     ui.showSim(false);
     ui.showDecide(true);
+    refreshLive();
     ui.announce('You decide.');
   }
 
@@ -441,6 +718,48 @@ async function start(root, sp, options, api) {
     if (playing) startAudio(t);
   }
 
+  // ---- direct manipulation: drag a node to change the input it plays
+  const ray = new THREE.Raycaster();
+  const draggable = world.nodes.filter((n) => n.plays && inputsById[n.plays]).map((n) => n.id);
+  const pick = (ev) => {
+    const r = c2.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), stage.camera);
+    let best = null;
+    for (const id of draggable) {
+      if (!holders[id].visible) continue;
+      const hit = ray.intersectObject(actors[id].object, true)[0];
+      if (hit && (!best || hit.distance < best.d)) best = { id, d: hit.distance };
+    }
+    return best?.id || null;
+  };
+  let drag = null;
+  c2.addEventListener('pointermove', (ev) => {
+    if (mode !== 'live') return;
+    if (drag) {
+      const inp = inputsById[nodeById[drag.id].plays];
+      let v = drag.v0 + ((drag.y0 - ev.clientY) / (H * 0.4)) * (inp.max - inp.min);
+      const step = inp.step || (inp.max - inp.min) / 100;
+      v = Math.min(inp.max, Math.max(inp.min, Math.round((v - inp.min) / step) * step + inp.min));
+      liveValues = { ...liveValues, [inp.id]: v };
+      refreshLive();
+      return;
+    }
+    hovered = pick(ev);
+    c2.style.cursor = hovered ? 'ns-resize' : '';
+  });
+  c2.addEventListener('pointerdown', (ev) => {
+    if (mode !== 'live') return;
+    const id = pick(ev);
+    if (!id) return;
+    if (runStart === null) keepGhost();
+    drag = { id, y0: ev.clientY, v0: liveValues[nodeById[id].plays] };
+    hovered = id;
+    c2.setPointerCapture(ev.pointerId);
+  });
+  const endDrag = () => (drag = null);
+  c2.addEventListener('pointerup', endDrag);
+  c2.addEventListener('pointercancel', endDrag);
+
   function tick(now) {
     if (!recording) {
       if (mode === 'film') {
@@ -448,7 +767,7 @@ async function start(root, sp, options, api) {
           t += Math.min(0.1, (now - last) / 1000);
           if (t >= filmEnd()) {
             t = filmEnd();
-            if (opts.interactive) enterLive();
+            if (opts.interactive) afterFilm();
             else pause();
           }
         }
@@ -490,7 +809,7 @@ async function start(root, sp, options, api) {
 
   async function record({ width = 1920, height = 1080, fps = 60, onProgress, seconds } = {}) {
     pause();
-    const saved = { W, H, mode };
+    const savedMode = mode;
     recording = true;
     enterFilm();
     stage.setSize(width, height, 1);
@@ -521,7 +840,7 @@ async function start(root, sp, options, api) {
     } finally {
       recording = null;
       resize();
-      if (saved.mode === 'live') enterLive();
+      if (savedMode === 'live') enterLive();
     }
   }
 
@@ -558,11 +877,14 @@ async function start(root, sp, options, api) {
       apply(filmFrame(time), time, true);
     },
     record,
+    enterAsk,
     enterLive,
     enterDecide,
+    runClock,
     setInputs: (vals) => {
+      keepGhost();
       liveValues = { ...liveValues, ...vals };
-      ui.setValues(model.run(liveValues));
+      refreshLive();
     },
   });
   if (opts.autoplay) play();

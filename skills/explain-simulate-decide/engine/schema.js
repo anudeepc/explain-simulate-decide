@@ -1,10 +1,12 @@
 // Checks a screenplay and returns plain-English errors. Empty array = valid.
 // The renderer refuses to play anything that fails here.
-import { parse, orderFormulas } from './formula.js';
+import { parse, refs, orderFormulas } from './formula.js';
+import { PROPS } from './cast/names.js';
 
-export const SHOTS = ['establish', 'introduce', 'focus', 'cause', 'compare', 'turn', 'handoff'];
+export const SHOTS = ['establish', 'introduce', 'focus', 'follow', 'cause', 'compare', 'turn', 'timelapse', 'handoff'];
+export const CARRIERS = ['energy', 'money', 'water', 'heat', 'light', 'goods', 'people', 'data'];
+export const TIME_UNITS = ['day', 'week', 'month', 'year'];
 export const SHAPES = ['box', 'sphere', 'cylinder', 'cone', 'torus'];
-export const CAST_SOURCES = ['studio', 'open', 'custom'];
 export const BANNED = [/\bgamif\w*/i, /\bengagement\b/i];
 export const MAX_CAPTION_WORDS = 12;
 // Plain unit conversions may appear inside formulas; every other number must be a named constant.
@@ -14,6 +16,7 @@ const ID = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const RESERVED = ['min', 'max', 'round'];
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
 const isStr = (x) => typeof x === 'string' && x.trim().length > 0;
+const arr = (x) => (Array.isArray(x) ? x : []);
 const words = (s) => s.trim().split(/\s+/).filter(Boolean).length;
 
 function literals(ast, out = []) {
@@ -26,24 +29,30 @@ function literals(ast, out = []) {
   return out;
 }
 
+/** Text of a quote, whether written as a string or {text, url}. */
+export const quoteText = (q) => (typeof q === 'string' ? q : q?.text);
+
 /** @param {any} sp */
 export function validate(sp) {
   const errors = [];
   const err = (m) => errors.push(m);
   if (!sp || typeof sp !== 'object' || Array.isArray(sp)) return ['Screenplay must be a JSON object'];
 
-  if (sp.version !== 1) err('version must be 1');
+  if (sp.version !== 2) err('version must be 2');
   if (!isStr(sp.question)) err('question is required');
-  const quotes = Array.isArray(sp.source?.quotes) ? sp.source.quotes : [];
   if (!sp.source || typeof sp.source !== 'object') err('source is required (title, url, quotes)');
+  const quotes = arr(sp.source?.quotes);
+  quotes.forEach((q, n) => isStr(quoteText(q)) || err(`source.quotes[${n}]: must be a sentence, or {"text", "url"}`));
 
   // ---- model
   const m = sp.model || {};
-  const inputs = Array.isArray(m.inputs) ? m.inputs : [];
-  const constants = Array.isArray(m.constants) ? m.constants : [];
-  const derived = Array.isArray(m.derived) ? m.derived : [];
-  const outputs = Array.isArray(m.outputs) ? m.outputs : [];
   if (!sp.model) err('model is required');
+  const inputs = arr(m.inputs);
+  const constants = arr(m.constants);
+  const derived = arr(m.derived);
+  const outputs = arr(m.outputs);
+  const stores = arr(m.stores);
+  const milestones = arr(m.milestones);
 
   const ids = new Set();
   const addId = (id, where) => {
@@ -56,21 +65,35 @@ export function validate(sp) {
       if (!Number.isInteger(x.quote) || x.quote < 0 || x.quote >= quotes.length) err(`${where}: source "article" needs "quote" = index into source.quotes`);
     } else if (x.source !== 'assumption') err(`${where}: source must be "article" or "assumption"`);
   };
+  const inputById = Object.fromEntries(inputs.map((i) => [i.id, i]));
+  const storeIds = new Set(stores.map((s) => s.id));
+  /** Parse a formula, check its numbers and the ids it reads. */
+  const checkFormula = (src, where) => {
+    let ast;
+    try {
+      ast = parse(String(src));
+    } catch (e) {
+      err(`${where}: ${e.message}`);
+      return;
+    }
+    for (const num of literals(ast)) {
+      if (!ALLOWED_LITERALS.includes(num)) err(`${where} uses the number ${num}. Put it in "constants" with a label and source.`);
+    }
+    return ast;
+  };
 
   const levers = inputs.filter((i) => i.kind === 'lever');
   const conditions = inputs.filter((i) => i.kind === 'condition');
   if (levers.length < 2 || levers.length > 4) err(`model.inputs: need 2–4 levers (found ${levers.length})`);
-  if (conditions.length < 1 || conditions.length > 3) err(`model.inputs: need 1–3 conditions (found ${conditions.length})`);
+  if (conditions.length < 1 || conditions.length > 5) err(`model.inputs: need 1–5 conditions (found ${conditions.length})`);
   inputs.forEach((i, n) => {
     const where = `model.inputs[${n}] "${i.id}"`;
     addId(i.id, where);
     if (!['lever', 'condition'].includes(i.kind)) err(`${where}: kind must be "lever" or "condition"`);
     if (!isStr(i.label)) err(`${where}: label is required`);
     if (![i.min, i.max, i.default].every(isNum)) err(`${where}: min, max and default must be numbers`);
-    else {
-      if (i.min >= i.max) err(`${where}: min must be less than max`);
-      else if (i.default < i.min || i.default > i.max) err(`${where}: default must be between min and max`);
-    }
+    else if (i.min >= i.max) err(`${where}: min must be less than max`);
+    else if (i.default < i.min || i.default > i.max) err(`${where}: default must be between min and max`);
     checkSource(i, where);
   });
   constants.forEach((c, n) => {
@@ -81,74 +104,193 @@ export function validate(sp) {
     checkSource(c, where);
   });
   if (outputs.length < 1 || outputs.length > 2) err(`model: need 1–2 outputs (found ${outputs.length})`);
-  [...derived.map((d) => ['derived', d]), ...outputs.map((o) => ['outputs', o])].forEach(([kind, d], n) => {
+  let formulasOk = true;
+  [...derived.map((d) => ['derived', d]), ...outputs.map((o) => ['outputs', o])].forEach(([kind, d]) => {
     const where = `model.${kind} "${d.id}"`;
     addId(d.id, where);
     if (!isStr(d.label)) err(`${where}: label is required`);
-    try {
-      for (const num of literals(parse(d.formula))) {
-        if (!ALLOWED_LITERALS.includes(num)) err(`Formula for "${d.id}" uses the number ${num}. Put it in "constants" with a label and source.`);
-      }
-    } catch (e) {
-      err(`Formula for "${d.id}": ${e.message}`);
-    }
+    const ast = checkFormula(d.formula, `Formula for "${d.id}"`);
+    if (!ast) formulasOk = false;
+    else
+      for (const r of refs(ast))
+        if (storeIds.has(r)) {
+          err(`Formula for "${d.id}" reads the store "${r}". Derived values and outputs can't change over time: read stores in flows, store changes or milestones.`);
+          formulasOk = false;
+        }
   });
-  if (!errors.some((e) => e.startsWith('Formula'))) {
+  if (formulasOk) {
     try {
       orderFormulas([...derived, ...outputs], [...inputs, ...constants].map((x) => x.id));
     } catch (e) {
       err(e.message);
     }
   }
+  const staticIds = new Set(ids);
 
-  // ---- cast
-  const cast = Array.isArray(sp.cast) ? sp.cast : [];
-  if (cast.length < 2 || cast.length > 10) err(`cast: need 2–10 actors (found ${cast.length})`);
-  const castIds = new Set();
-  cast.forEach((c, n) => {
-    const where = `cast[${n}] "${c.id}"`;
-    if (!ID.test(c.id || '') || castIds.has(c.id)) err(`${where}: id must be unique letters, digits or _`);
-    castIds.add(c.id);
-    if (c.plays !== undefined && !ids.has(c.plays)) err(`${where}: plays "${c.plays}" is not a model value`);
-    if (!CAST_SOURCES.includes(c.source)) err(`${where}: source must be studio, open or custom`);
-    if (c.source === 'studio' && !isStr(c.actor)) err(`${where}: studio actors need "actor"`);
-    if (c.source === 'open' && (!isStr(c.url) || !isStr(c.credit))) err(`${where}: open-library actors need "url" and "credit"`);
-    if (c.source === 'custom') {
-      if (!Array.isArray(c.recipe) || c.recipe.length === 0 || c.recipe.length > 12) err(`${where}: custom actors need a "recipe" of 1–12 shapes`);
+  // stores and milestones
+  if (stores.length > 3) err(`model.stores: at most 3 (found ${stores.length})`);
+  stores.forEach((s, n) => addId(s.id, `model.stores[${n}] "${s.id}"`));
+  const allIds = new Set(ids);
+  const checkRefs = (ast, where, allowed) => {
+    if (!ast) return;
+    for (const r of refs(ast)) if (!allowed.has(r)) err(`${where} uses unknown value "${r}"`);
+  };
+  stores.forEach((s, n) => {
+    const where = `model.stores[${n}] "${s.id}"`;
+    if (!isStr(s.label)) err(`${where}: label is required`);
+    if (s.start === undefined) err(`${where}: start is required (a number or formula)`);
+    else checkRefs(checkFormula(s.start, `${where} start`), `${where} start`, staticIds);
+    if (!isStr(s.change)) err(`${where}: change is required (how much it changes per time unit)`);
+    else checkRefs(checkFormula(s.change, `${where} change`), `${where} change`, allIds);
+    if (s.floor !== undefined && !isNum(s.floor)) err(`${where}: floor must be a number`);
+  });
+  if (milestones.length > 2) err(`model.milestones: at most 2 (found ${milestones.length})`);
+  milestones.forEach((ms, n) => {
+    const where = `model.milestones[${n}] "${ms.id}"`;
+    addId(ms.id, where);
+    if (!isStr(ms.label)) err(`${where}: label is required`);
+    if (!storeIds.has(ms.store)) err(`${where}: store "${ms.store}" is not in model.stores`);
+    if (ms.reaches === undefined) err(`${where}: reaches is required (the level to watch for)`);
+    else checkRefs(checkFormula(ms.reaches, `${where} reaches`), `${where} reaches`, staticIds);
+  });
+
+  // ---- world
+  const w = sp.world || {};
+  if (!sp.world) err('world is required (time, nodes, flows)');
+  if (stores.length && !w.time) err('world.time is required when the model has stores');
+  if (w.time) {
+    if (!TIME_UNITS.includes(w.time.unit)) err(`world.time.unit must be one of ${TIME_UNITS.join(', ')}`);
+    if (!isNum(w.time.span) || w.time.span <= 0 || w.time.span > 100) err('world.time.span must be a number from 1 to 100');
+  }
+  const nodes = arr(w.nodes);
+  const flows = arr(w.flows);
+  if (nodes.length < 2 || nodes.length > 10) err(`world.nodes: need 2–10 (found ${nodes.length})`);
+  const nodeById = {};
+  nodes.forEach((nd, n) => {
+    const where = `world.nodes[${n}] "${nd.id}"`;
+    if (!ID.test(nd.id || '') || nodeById[nd.id]) err(`${where}: id must be unique letters, digits or _`);
+    nodeById[nd.id] = nd;
+    if (!isStr(nd.label)) err(`${where}: label is required`);
+    if (nd.recipe !== undefined) {
+      if (!Array.isArray(nd.recipe) || nd.recipe.length === 0 || nd.recipe.length > 12) err(`${where}: recipe needs 1–12 shapes`);
       else
-        c.recipe.forEach((p, k) => {
+        nd.recipe.forEach((p, k) => {
           if (!SHAPES.includes(p.shape)) err(`${where}: recipe[${k}] shape "${p.shape}" must be one of ${SHAPES.join(', ')}`);
           if (!Array.isArray(p.size) || p.size.length !== 3 || !p.size.every(isNum)) err(`${where}: recipe[${k}] size must be [x, y, z]`);
         });
+    } else if (nd.url !== undefined) {
+      if (!isStr(nd.url) || !isStr(nd.credit)) err(`${where}: open-library props need "url" and "credit"`);
+    } else if (!PROPS.includes(nd.prop)) err(`${where}: prop "${nd.prop}" is not in the catalog (${PROPS.join(', ')}). Use a "recipe" for anything else.`);
+    if (nd.plays !== undefined && !allIds.has(nd.plays)) err(`${where}: plays "${nd.plays}" is not a model value`);
+    if (nd.store !== undefined && !storeIds.has(nd.store)) err(`${where}: store "${nd.store}" is not in model.stores`);
+    if (nd.target !== undefined) {
+      if (nd.store === undefined) err(`${where}: target only applies to store nodes`);
+      checkRefs(checkFormula(nd.target, `${where} target`), `${where} target`, staticIds);
     }
+    if (nd.appears !== undefined && !inputById[nd.appears]) err(`${where}: appears "${nd.appears}" must be an input (the node shows when it is above 0)`);
+    if (nd.sky !== undefined && typeof nd.sky !== 'boolean') err(`${where}: sky must be true or false`);
+  });
+  nodes.forEach((nd, n) => {
+    if (nd.on === undefined) return;
+    const host = nodeById[nd.on];
+    if (!host || nd.on === nd.id) err(`world.nodes[${n}] "${nd.id}": on "${nd.on}" must be another node`);
+    else if (host.on !== undefined) err(`world.nodes[${n}] "${nd.id}": can't sit on "${nd.on}", which already sits on another node`);
+  });
+  if (flows.length < 1 || flows.length > 12) err(`world.flows: need 1–12 (found ${flows.length})`);
+  const flowIds = new Set();
+  flows.forEach((f, n) => {
+    const where = `world.flows[${n}] "${f.id}"`;
+    if (!ID.test(f.id || '') || flowIds.has(f.id) || nodeById[f.id]) err(`${where}: id must be unique (and not a node id)`);
+    flowIds.add(f.id);
+    if (!nodeById[f.from]) err(`${where}: from "${f.from}" is not a node`);
+    if (!nodeById[f.to]) err(`${where}: to "${f.to}" is not a node`);
+    if (f.from === f.to) err(`${where}: from and to must be different nodes`);
+    if (!CARRIERS.includes(f.carrier)) err(`${where}: carrier must be one of ${CARRIERS.join(', ')}`);
+    if (!isStr(f.label)) err(`${where}: label is required`);
+    if (!isStr(f.rate)) err(`${where}: rate is required (a formula)`);
+    else checkRefs(checkFormula(f.rate, `${where} rate`), `${where} rate`, allIds);
+  });
+
+  // ---- ask: questions the page puts to the viewer
+  const ask = arr(sp.ask);
+  if (sp.ask !== undefined && (!Array.isArray(sp.ask) || ask.length > 5)) err('ask: at most 5 questions');
+  ask.forEach((q, n) => {
+    const where = `ask[${n}]`;
+    if (!isStr(q.question)) err(`${where}: question is required`);
+    if (q.input !== undefined) {
+      if (!inputById[q.input]) err(`${where}: input "${q.input}" is not an input`);
+    } else if (Array.isArray(q.choices)) {
+      if (q.choices.length < 2 || q.choices.length > 5) err(`${where}: need 2–5 choices`);
+      q.choices.forEach((c, k) => {
+        if (!isStr(c.label)) err(`${where}.choices[${k}]: label is required`);
+        const set = c.set && typeof c.set === 'object' ? Object.entries(c.set) : [];
+        if (!set.length) err(`${where}.choices[${k}]: "set" must give at least one input a value`);
+        for (const [id, v] of set) {
+          const inp = inputById[id];
+          if (!inp) err(`${where}.choices[${k}]: "${id}" is not an input`);
+          else if (!isNum(v) || v < inp.min || v > inp.max) err(`${where}.choices[${k}]: ${id} = ${v} must be a number between ${inp.min} and ${inp.max}`);
+        }
+        if (c.quote !== undefined && ![].concat(c.quote).every((x) => Number.isInteger(x) && x >= 0 && x < quotes.length)) err(`${where}.choices[${k}]: quote must be an index (or list of indexes) into source.quotes`);
+      });
+    } else err(`${where}: needs "input" (a number to type) or "choices"`);
   });
 
   // ---- explain
-  const shots = Array.isArray(sp.explain) ? sp.explain : [];
+  const shots = arr(sp.explain);
   if (shots.length < 3 || shots.length > 12) err(`explain: need 3–12 shots (found ${shots.length})`);
   shots.forEach((s, n) => {
     const where = `explain[${n}]`;
     if (!SHOTS.includes(s.shot)) err(`${where}: shot "${s.shot}" must be one of ${SHOTS.join(', ')}`);
-    if (!castIds.has(s.focus)) err(`${where}: focus "${s.focus}" is not in cast`);
-    if (s.shot === 'cause' && !castIds.has(s.affects)) err(`${where}: cause shots need "affects" = a cast id`);
-    if (s.drive !== undefined && !inputs.some((i) => i.id === s.drive)) err(`${where}: drive "${s.drive}" is not an input`);
+    const wide = ['establish', 'handoff'].includes(s.shot);
+    if (s.focus === undefined) {
+      if (!wide) err(`${where}: focus is required (a node or flow id)`);
+    } else if (!nodeById[s.focus] && !flowIds.has(s.focus)) err(`${where}: focus "${s.focus}" is not a node or flow`);
+    if (['follow', 'cause'].includes(s.shot) && !flowIds.has(s.focus)) err(`${where}: ${s.shot} shots need focus = a flow id`);
+    if (s.shot === 'timelapse') {
+      if (!w.time) err(`${where}: timelapse needs world.time`);
+      if (!nodeById[s.focus]?.store) err(`${where}: timelapse needs focus = a node that shows a store`);
+    }
+    if (s.drive !== undefined && !inputById[s.drive]) err(`${where}: drive "${s.drive}" is not an input`);
     if (!isStr(s.caption)) err(`${where}: caption is required`);
     else if (words(s.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(s.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
   });
   if (shots.filter((s) => s.shot === 'turn').length !== 1) err('explain: needs exactly one "turn" shot (the common misconception)');
   if (!shots.some((s) => s.shot === 'establish')) err('explain: needs an "establish" shot');
+  if (!shots.some((s) => s.shot === 'follow' || s.shot === 'cause')) err('explain: needs at least one "follow" or "cause" shot, to show the system working');
 
   // ---- simulate & decide
   const controls = sp.simulate?.controls;
-  if (!Array.isArray(controls) || controls.length === 0) err('simulate.controls: list the input ids the viewer can change');
-  else controls.forEach((c) => inputs.some((i) => i.id === c) || err(`simulate: controls "${c}" is not an input`));
+  if (!Array.isArray(controls) || controls.length === 0 || controls.length > 6) err('simulate.controls: list 1–6 input ids the viewer can change');
+  else controls.forEach((c) => inputById[c] || err(`simulate: controls "${c}" is not an input`));
   for (const key of ['tradeoffs', 'leftOut', 'questionsToAsk']) {
     const list = sp.decide?.[key];
     if (!Array.isArray(list) || list.length < 1 || list.length > 6 || !list.every(isStr)) err(`decide.${key}: need 1–6 sentences`);
   }
+  const compare = sp.decide?.compare;
+  if (compare !== undefined) {
+    if (!Array.isArray(compare) || compare.length < 2 || compare.length > 3) err('decide.compare: need 2–3 options');
+    else
+      compare.forEach((o, k) => {
+        if (!isStr(o.label)) err(`decide.compare[${k}]: label is required`);
+        for (const [id, v] of Object.entries(o.set || {})) {
+          const inp = inputById[id];
+          if (!inp) err(`decide.compare[${k}]: "${id}" is not an input`);
+          else if (!isNum(v) || v < inp.min || v > inp.max) err(`decide.compare[${k}]: ${id} = ${v} must be between ${inp.min} and ${inp.max}`);
+        }
+      });
+  }
 
   // ---- words we never use
-  const texts = [sp.question, sp.simulate?.prompt, ...shots.map((s) => s.caption), ...inputs.map((i) => i.label), ...['tradeoffs', 'leftOut', 'questionsToAsk'].flatMap((k) => (Array.isArray(sp.decide?.[k]) ? sp.decide[k] : []))];
+  const texts = [
+    sp.question,
+    sp.simulate?.prompt,
+    ...shots.map((s) => s.caption),
+    ...inputs.map((i) => i.label),
+    ...nodes.map((n) => n.label),
+    ...flows.map((f) => f.label),
+    ...ask.flatMap((q) => [q.question, q.help, ...arr(q.choices).map((c) => c.label)]),
+    ...['tradeoffs', 'leftOut', 'questionsToAsk'].flatMap((k) => arr(sp.decide?.[k])),
+  ];
   for (const t of texts.filter(isStr)) {
     for (const re of BANNED) {
       const hit = t.match(re);

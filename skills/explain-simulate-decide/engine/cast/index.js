@@ -1,5 +1,7 @@
 // Studio cast registry. To add an actor: create cast/<name>.js exporting
-// `default function build(ctx) → { object, height, setValue(v01) }` and list it here.
+// `default function build(ctx) → { object, height, setValue(v01) }`, list it here and in names.js.
+// Optional extras: footprint (radius), anchor (Vector3 where flows attach), slots (where props sit on it),
+// setTarget / setReached / setGhost (store props).
 import sun from './sun.js';
 import house from './house.js';
 import roofPanel from './roof-panel.js';
@@ -25,6 +27,9 @@ import documentStack from './document.js';
 import scale from './scale.js';
 import arrowFlow from './arrow-flow.js';
 import barStack from './bar-stack.js';
+import jar from './jar.js';
+import powerPole from './power-pole.js';
+import bank from './bank.js';
 
 export const STUDIO = {
   sun,
@@ -52,4 +57,7 @@ export const STUDIO = {
   scale,
   'arrow-flow': arrowFlow,
   'bar-stack': barStack,
+  jar,
+  'power-pole': powerPole,
+  bank,
 };

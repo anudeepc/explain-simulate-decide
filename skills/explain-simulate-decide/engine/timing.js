@@ -6,7 +6,9 @@ export const HOLD = 1.6; // seconds to sit with an idea after reading it
 export const MIN_SHOT = 3.5;
 export const TURN_EXTRA = 1.5; // the turning point gets more room
 export const VOICE_PAD = 0.8;
-export const SIM_DEMO = 12; // scripted "your turn" segment in the film
+export const SIM_DEMO = 16; // scripted "your turn" segment in the film
+export const FOLLOW_MIN = 5.5; // a tracking shot needs room to travel
+export const TIMELAPSE_EXTRA = 2.5; // the clock needs time to run
 export const DECIDE = 10;
 export const TRAVEL = 0.45; // share of a shot the camera spends moving to its new setup
 
@@ -20,6 +22,8 @@ export function shotDuration(shot, voiceSeconds = 0) {
   let d = Math.max(MIN_SHOT, words(shot.caption) / READ_WPS + HOLD);
   if (voiceSeconds) d = Math.max(d, voiceSeconds + VOICE_PAD);
   if (shot.shot === 'turn') d += TURN_EXTRA;
+  if (shot.shot === 'follow') d = Math.max(d, FOLLOW_MIN);
+  if (shot.shot === 'timelapse') d += TIMELAPSE_EXTRA;
   return d;
 }
 

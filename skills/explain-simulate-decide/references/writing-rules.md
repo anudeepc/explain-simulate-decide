@@ -19,6 +19,13 @@ The goal is more understanding, not persuasion. A smart 12-year-old should follo
 - **Numbers belong to the actors and readouts,** not the captions. Captions explain relationships ("more sun means more power").
 - **Captions read as one story.** Use "But…" only on the `turn` shot, and "So…" for the consequence.
 
+## Questions the page asks (`ask`)
+
+- **Plain and answerable.** "What is your average monthly power bill?", not "Enter household consumption".
+- **Say where to find the answer** in `help`: "It's on the front of your bill."
+- **Choices for categories** (state, habits, which option). Use 2–5 short labels a person would say ("Home most days").
+- **Never ask for anything identifying.** Ask for a state or region, not an address. Ask for a bill amount, not an account number.
+
 ## Labels
 
 Input and output labels are short nouns a person would say: "Price you pay for power", not "Retail tariff (c/kWh)".

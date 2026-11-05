@@ -2,11 +2,11 @@
 
 **Don't read the report. Run the model.**
 
-Turn an article into a short, directed 3D explainer in three acts:
+Turn an article into a small **living world** that explains it, in three acts:
 
-1. **Explain.** A calm, directed film shows how the topic works, one idea per shot.
-2. **Simulate.** The same actors on the same stage respond to *your* sliders, so you see cause and effect for yourself.
-3. **Decide.** The camera steps back and you get the trade-offs, what the model leaves out, and questions to ask. The page never tells you what to choose.
+1. **Explain.** A directed film shows the system working. The sun lands on the panels, power flows into the home and out to the grid, and coins stream into a savings jar. The number of particles in each stream is its rate, so a trickle next to a stream needs no caption.
+2. **Simulate.** The page asks about *your* situation: your bill, your state, your habits, the option you lean toward. Then it runs the same world with your numbers. Drag things in the scene, move the sliders, and run the clock for 25 years.
+3. **Decide.** The camera steps back and compares your options side by side with your numbers. It lists the trade-offs, what the model leaves out, and questions to ask. The page never tells you what to choose.
 
 The output is **one offline HTML file**. It can also record itself to a **1080p 60 fps MP4** with a generated music bed.
 
@@ -33,7 +33,13 @@ Or copy `skills/explain-simulate-decide/` into `~/.claude/skills/`. Then ask:
 
 > Explain this article as an interactive explainer: https://…
 
-Claude reads the article and writes a screenplay. It then validates the screenplay, renders the page and checks its own work against a list (every number sourced, Decide never recommends).
+The skill thinks the topic through before it draws anything:
+
+- It asks you up to three questions that change the answer, such as where you live, your average monthly bill, and whether you'd send spare power to the grid or store it in a battery.
+- It looks up current local figures (install cost, power prices, export credits) and quotes each one with its source.
+- It maps the topic as a system: what flows where, and what builds up over time.
+
+It then writes a screenplay, validates it, renders the page, and checks its own work against a list (every number sourced, Decide never recommends).
 
 ### 2. The free web tool, with your own key
 
@@ -62,6 +68,13 @@ article ──► AI writes a screenplay (JSON) ──► validator ──► fi
               cast, shots, decide notes        errors           timing, motion
 ```
 
+The screenplay describes a **system**:
+
+- **Nodes:** things like a house, panels on its roof, the grid, and a savings jar.
+- **Flows:** energy, money, water, heat and so on, each with a rate formula.
+- **Stores:** amounts that build up over a clock, such as savings, with **milestones** like "paid back in 20.6 years".
+- **Questions** the page asks the viewer, and **options** to compare.
+
 The key design choice is that **the AI writes only the screenplay, never the film.** All the directing lives in code:
 
 - **Consistent quality.** Every film follows the same directing rules (staging, camera speed, easing, reading-time pacing), whatever model wrote the screenplay.
@@ -73,39 +86,40 @@ The key design choice is that **the AI writes only the screenplay, never the fil
 
 | Shot | Camera | What happens |
 |---|---|---|
-| `establish` | Wide, slow push-in | The whole set; the question appears |
-| `introduce` | ¾ angle, subject on a third | The actor sweeps through its range |
-| `cause` | Two-shot | A light flow travels from cause to effect, which visibly reacts |
-| `compare` | Front-on | Low vs high |
-| `turn` | Hold, then slow reveal | The common misconception is corrected |
-| `handoff` | Settles to the simulation view | The sliders appear |
+| `establish` | Wide, slow arc | The whole world, running; the question appears |
+| `follow` | Rides alongside a flow | Where the energy or money actually goes |
+| `cause` | Two-shot of a flow's ends | An input sweeps and the stream thickens and thins |
+| `turn` | Slow arc, longest shot | The common misconception, made visible (two streams side by side) |
+| `timelapse` | Medium on a store | The clock runs; the jar fills, crosses its line, a flag rises |
+| `handoff` | Settles to the simulation view | "Make it yours" questions appear |
 
 Only one thing moves at a time, and nothing moves unless it explains something. Shot length follows reading time. Camera moves become cuts when the viewer has turned on "reduce motion".
 
-### The cast
+### The props
 
-There are 25 studio actors in one matte clay style: everyday objects that each show one value from 0 to 1. A bill grows, a battery fills, a gauge needle swings, coins stack up, a clock sweeps.
+There are 28 studio props in one matte clay style, all everyday objects: a house with a roof slot for panels, a power pole, a bank, a glass jar that fills with coins, a battery, a sun, a cloud, and more. A prop can show a value, and in Simulate you can drag it to change that value.
 
-![The studio cast](docs/media/cast.png)
+![The studio props](docs/media/cast.png)
 
-The **Cast** setting chooses where actors come from:
+The **Cast** setting chooses where props come from:
 
-- **Studio:** the built-in clay cast above.
+- **Studio:** the built-in clay props above.
 - **Open library:** free CC0 glTF models, with credits added automatically.
 - **Custom-built:** simple shapes the AI describes as data.
 
-Any actor that can't be built falls back in this order: studio, then custom, then a labelled stand-in block. Every article renders.
+Any prop that can't be built falls back in this order: studio, then custom, then a labelled stand-in block. Every article renders.
 
 ## Repository layout
 
 ```
 skills/explain-simulate-decide/
   SKILL.md                 the skill (short; details in references/)
-  references/              extraction guide, screenplay format, shot types, writing rules, cast catalog
+  references/              extraction guide, system guide, screenplay format, shot types, writing rules, prop catalog
   scripts/                 validate.mjs, render.mjs
   engine/                  the renderer: plain ES modules, three.js vendored, no build step
 web/                       the free upload tool (static, GitHub Pages)
-examples/solar/            the demo screenplay and page
+examples/solar/            the demo: sourced figures, five states, battery option
+examples/heat-pump/        a second world: gas furnace vs heat pump
 tests/                     node --test unit tests + browser checks (Playwright)
 ```
 
@@ -120,7 +134,12 @@ node tests/record-mp4.mjs examples/solar/solar.html out.mp4 --channel chrome
 python3 -m http.server 8080 # then open http://localhost:8080/web/
 ```
 
-**Add an actor:** create `skills/explain-simulate-decide/engine/cast/<name>.js` exporting `build(ctx) → { object, height, setValue(v) }`, register it in `cast/index.js`, add a row to `references/cast-catalog.md`, and check it on `tests/cast-sheet.html`.
+**Add a prop:**
+
+1. Create `skills/explain-simulate-decide/engine/cast/<name>.js`, exporting `build(ctx) → { object, height, setValue(v) }`.
+2. Register it in `cast/index.js` and `cast/names.js`.
+3. Add a row to `references/prop-catalog.md`.
+4. Check it on `tests/cast-sheet.html`.
 
 ## Content principles
 

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "question": "Should I replace my gas furnace with a heat pump?",
   "source": {
     "title": "Thinking about a heat pump? (synthetic test article)",
@@ -107,6 +107,12 @@
         "label": "Yearly cost with a heat pump",
         "unit": "$",
         "formula": "heat / cop * elecPrice"
+      },
+      {
+        "id": "hpKwh",
+        "label": "Electricity the heat pump uses",
+        "unit": "kWh",
+        "formula": "heat / cop"
       }
     ],
     "outputs": [
@@ -115,128 +121,289 @@
         "label": "Saved each year",
         "unit": "$",
         "formula": "gasCost - hpCost"
-      },
+      }
+    ],
+    "stores": [
       {
-        "id": "payback",
-        "label": "Years to pay back",
-        "unit": "years",
-        "formula": "min(installCost / max(saving, 1), 100)"
+        "id": "savings",
+        "label": "Savings so far",
+        "unit": "$",
+        "start": 0,
+        "change": "saving"
+      }
+    ],
+    "milestones": [
+      {
+        "id": "paidBack",
+        "label": "Extra cost paid back in",
+        "store": "savings",
+        "reaches": "installCost"
       }
     ]
   },
-  "cast": [
+  "world": {
+    "time": {
+      "unit": "year",
+      "span": 20
+    },
+    "nodes": [
+      {
+        "id": "winter",
+        "prop": "cloud",
+        "label": "Winter",
+        "plays": "heatNeed",
+        "sky": true
+      },
+      {
+        "id": "grid",
+        "prop": "power-pole",
+        "label": "Electricity",
+        "plays": "elecPrice"
+      },
+      {
+        "id": "pump",
+        "label": "Heat pump",
+        "plays": "cop",
+        "recipe": [
+          {
+            "shape": "box",
+            "size": [
+              1.5,
+              1.1,
+              0.7
+            ],
+            "color": "#e3e6e8"
+          },
+          {
+            "shape": "torus",
+            "size": [
+              0.75,
+              0.75,
+              0.4
+            ],
+            "color": "#5b6b80",
+            "at": [
+              -0.2,
+              0.17,
+              0.36
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.3,
+              0.5,
+              0.06
+            ],
+            "color": "#8fae8b",
+            "at": [
+              0.48,
+              0.3,
+              0.36
+            ]
+          }
+        ]
+      },
+      {
+        "id": "home",
+        "prop": "house",
+        "label": "Your home",
+        "plays": "insulation"
+      },
+      {
+        "id": "gas",
+        "prop": "factory",
+        "label": "Gas company",
+        "plays": "gasPrice"
+      },
+      {
+        "id": "jar",
+        "prop": "jar",
+        "label": "Savings",
+        "store": "savings",
+        "target": "installCost"
+      }
+    ],
+    "flows": [
+      {
+        "id": "elec",
+        "from": "grid",
+        "to": "pump",
+        "carrier": "energy",
+        "rate": "hpKwh",
+        "label": "Electricity in",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "warmth",
+        "from": "pump",
+        "to": "home",
+        "carrier": "energy",
+        "rate": "heat",
+        "label": "Heat moved in",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "leak",
+        "from": "home",
+        "to": "winter",
+        "carrier": "heat",
+        "rate": "heat",
+        "label": "Heat lost through walls",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "gasStop",
+        "from": "gas",
+        "to": "jar",
+        "carrier": "money",
+        "rate": "gasCost",
+        "label": "Gas bill you stop paying",
+        "unit": "$/yr"
+      },
+      {
+        "id": "elecBill",
+        "from": "jar",
+        "to": "grid",
+        "carrier": "money",
+        "rate": "hpCost",
+        "label": "New electricity bill",
+        "unit": "$/yr"
+      }
+    ]
+  },
+  "ask": [
     {
-      "id": "home",
-      "actor": "house",
-      "plays": "insulation",
-      "source": "studio",
-      "label": "Your home"
+      "question": "How cold are your winters?",
+      "help": "Sets how much heat a typical home needs in a year.",
+      "choices": [
+        {
+          "label": "Mild",
+          "set": {
+            "heatNeed": 8000
+          }
+        },
+        {
+          "label": "Average",
+          "set": {
+            "heatNeed": 15000
+          }
+        },
+        {
+          "label": "Cold",
+          "set": {
+            "heatNeed": 25000
+          }
+        }
+      ]
     },
     {
-      "id": "winter",
-      "actor": "cloud",
-      "plays": "heatNeed",
-      "source": "studio",
-      "label": "Winter"
+      "question": "What do you pay for electricity?",
+      "help": "On your bill, per kWh.",
+      "input": "elecPrice"
     },
     {
-      "id": "pump",
-      "actor": "gauge",
-      "plays": "cop",
-      "source": "studio",
-      "label": "Heat pump"
+      "question": "What do you pay for gas, per kWh?",
+      "help": "Bills in therms: divide the price per therm by 29.3.",
+      "input": "gasPrice"
     },
     {
-      "id": "power",
-      "actor": "plug",
-      "plays": "elecPrice",
-      "source": "studio",
-      "label": "Electricity"
-    },
-    {
-      "id": "gas",
-      "actor": "power-bill",
-      "plays": "gasPrice",
-      "source": "studio",
-      "label": "Gas bill"
-    },
-    {
-      "id": "jar",
-      "actor": "piggy-bank",
-      "plays": "saving",
-      "source": "studio",
-      "label": "Yearly saving"
-    },
-    {
-      "id": "days",
-      "actor": "calendar",
-      "plays": "payback",
-      "source": "studio",
-      "label": "Payback"
+      "question": "Will you insulate first?",
+      "choices": [
+        {
+          "label": "No",
+          "set": {
+            "insulation": 0
+          }
+        },
+        {
+          "label": "A little",
+          "set": {
+            "insulation": 15
+          }
+        },
+        {
+          "label": "A lot",
+          "set": {
+            "insulation": 30
+          }
+        }
+      ]
     }
   ],
   "explain": [
     {
       "shot": "establish",
-      "focus": "home",
       "caption": "Gas furnace or heat pump? Here is what decides it."
     },
     {
-      "shot": "introduce",
-      "focus": "winter",
-      "caption": "Colder winters mean your home needs more heat."
+      "shot": "follow",
+      "focus": "leak",
+      "caption": "In winter, heat leaks out. You have to put it back."
     },
     {
-      "shot": "introduce",
-      "focus": "pump",
+      "shot": "follow",
+      "focus": "warmth",
       "caption": "A heat pump moves heat in. It doesn't burn fuel."
     },
     {
       "shot": "turn",
-      "focus": "pump",
-      "drive": "cop",
-      "caption": "One unit of electricity can bring in about three of heat."
+      "focus": "elec",
+      "caption": "It takes about one unit of electricity to move three of heat."
     },
     {
       "shot": "cause",
-      "focus": "power",
-      "affects": "jar",
+      "focus": "gasStop",
+      "drive": "gasPrice",
+      "caption": "You stop buying gas. Pricier gas means more saved."
+    },
+    {
+      "shot": "cause",
+      "focus": "elecBill",
+      "drive": "elecPrice",
       "caption": "But electricity often costs more than gas, which eats into savings."
     },
     {
-      "shot": "cause",
-      "focus": "gas",
-      "affects": "jar",
-      "caption": "Higher gas prices make the heat pump look better."
-    },
-    {
       "shot": "focus",
       "focus": "home",
+      "drive": "insulation",
       "caption": "Insulating first shrinks the heat you need at all."
     },
     {
-      "shot": "focus",
-      "focus": "days",
-      "drive": "elecPrice",
-      "caption": "Payback is the years until savings cover the extra cost."
+      "shot": "timelapse",
+      "focus": "jar",
+      "caption": "Savings add up until they cover the extra cost."
     },
     {
       "shot": "handoff",
-      "focus": "home",
-      "caption": "Your turn. Try your own prices and your own winter."
+      "caption": "Now make it yours. Answer a few questions."
     }
   ],
   "simulate": {
     "controls": [
+      "insulation",
+      "cop",
       "heatNeed",
       "elecPrice",
-      "gasPrice",
-      "cop",
-      "insulation"
+      "gasPrice"
     ],
     "prompt": "Try your own prices and your own winter."
   },
   "decide": {
+    "compare": [
+      {
+        "label": "Heat pump as it is",
+        "set": {
+          "insulation": 0
+        }
+      },
+      {
+        "label": "Insulate 25% first",
+        "set": {
+          "insulation": 25
+        }
+      }
+    ],
     "tradeoffs": [
       "Lower running costs are likely where gas is expensive, but not guaranteed where electricity is.",
       "A heat pump also cools in summer, but installation can cost more than a new furnace.",

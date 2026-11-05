@@ -22,4 +22,4 @@ if (errors.length) {
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
-console.log(`OK: "${sp.question}" — ${sp.explain.length} shots, ${sp.cast.length} actors, ${sp.model.inputs.length} inputs.`);
+console.log(`OK: "${sp.question}" — ${sp.explain.length} shots, ${sp.world.nodes.length} nodes, ${sp.world.flows.length} flows, ${sp.model.inputs.length} inputs.`);
