@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { validate } from '../skills/explain-simulate-decide/engine/schema.js';
+import { screenplayText } from '../skills/explain-simulate-decide/engine/ste.js';
 import { PROPS } from '../skills/explain-simulate-decide/engine/cast/names.js';
 
 const load = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url)));
@@ -180,7 +181,7 @@ test('scenes: the hero acting in a set, with subtitles in ASD-STE100 style', () 
   // each step can carry its own subtitle and framing; "use" works with the thing in hand
   bad((s) => (scene(s).beats = [{ do: 'use', caption: 'Open the bottle.' }]), /use needs "object"/);
   bad((s) => (scene(s).beats = [{ do: 'use', object: 'kit', camera: 'macro' }]), /camera must be close, medium, wide or detail/);
-  bad((s) => (scene(s).beats = [{ do: 'use', object: 'kit', caption: 'The bottle is opened by you.' }]), /beats\[0\] caption/);
+  bad((s) => (scene(s).beats = [{ do: 'use', object: 'kit', caption: 'The bottle is opened by you.' }]), /beats\[0\]\.caption: "is opened" is passive/);
   assert.deepEqual(validate((() => { const s = b(); scene(s).beats = [{ do: 'use', object: 'kit', camera: 'detail', caption: 'Open the bottle.' }]; return s; })()), []);
   bad((s) => (scene(s).beats[0].do = 'dance'), /do "dance" must be one of/);
   bad((s) => (scene(s).beats[0] = { do: 'walk' }), /walk needs "to"/);
@@ -201,7 +202,7 @@ test('places: built-in sets, hunted models and picture facades', () => {
     const sp = b();
     sp.places = [
       { id: 'home', kind: 'set', set: 'doorway' },
-      { id: 'regulator', kind: 'facade', label: 'Screening Office', image: 'https://example.org/office.jpg', credit: 'Photo: A. Person, CC BY-SA 4.0' },
+      { id: 'regulator', kind: 'facade', label: 'Test Office', image: 'https://example.org/office.jpg', credit: 'Photo: A. Person, CC BY-SA 4.0' },
       { id: 'clinic', kind: 'model', url: 'clinic.glb', credit: 'Model: B. Person, CC0' },
     ];
     sp.explain[1].set = 'home';
@@ -341,6 +342,25 @@ test('simulate and decide', () => {
   expectError((s) => (s.decide.questionsToAsk = 'x'), /questionsToAsk/);
   expectError((s) => (s.decide.compare = [s.decide.compare[0]]), /2–3 options/);
   expectError((s) => (s.decide.compare[1].set = { battery: 99 }), /battery = 99 must be between/);
+});
+
+test("all viewer text is in ASD-STE100, except the source's quotes", () => {
+  expectError((s) => (s.decide.tradeoffs[1] = 'The panels can be removed later.'), /^decide\.tradeoffs\[1\]: "be removed" is passive\. Use the active voice/);
+  expectError((s) => (node(s, 'home').label = 'Home with a very large roof that faces the sun for most of the long summer day and some of the winter'), /^world\.nodes\[\d+\]\.label: ".*" has \d+ words\. Keep each sentence to 20 words/);
+  expectError((s) => (s.model.inputs[0].note = 'Panels make power by day; the grid fills the gap at night.'), /^model\.inputs\[0\]\.note: Split ".*" into two sentences/);
+  // a caption problem shows once, at its own path
+  const sp = solar();
+  sp.explain[0].caption = 'The sun is used by the panels.';
+  assert.deepEqual(validate(sp).filter((e) => /passive/.test(e)), ['explain[0].caption: "is used" is passive. Use the active voice: say who does it (for example "you send the kit", not "the kit is sent").']);
+  // a logline can be several short sentences, 35 words or fewer in total
+  expectError((s) => (s.story.logline = 'Your roof catches sun all day; power you use yourself saves more than power you sell.'), /^story\.logline: Split/);
+  // fields the engine reads as ids or formulas are names, not prose
+  const ids = { model: { stores: [{ id: 'saved', label: 'Money saved', start: 'opening', change: 'saving', ceiling: 'limiting' }], milestones: [{ store: 'saved', reaches: 'reaching' }] }, world: { nodes: [{ id: 'jar', prop: 'jar', store: 'saved', target: 'missing', groups: [{ value: 'waiting', label: 'Waiting list' }] }] }, simulate: { controls: ['heating'] }, ask: [{ input: 'heating', question: 'How warm?' }] };
+  assert.deepEqual(screenplayText(ids).map((x) => x.text), ['Money saved', 'Waiting list', 'How warm?']);
+  // quotes are the source's own words: they stay as written
+  const q = solar();
+  q.source.quotes[0] = 'Further savings are achieved by the battery; this is determined by use.';
+  assert.deepEqual(validate(q), []);
 });
 
 test('banned words', () => {

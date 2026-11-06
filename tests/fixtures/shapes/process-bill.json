@@ -4,7 +4,7 @@
   "tone": "civic",
   "story": {
     "hero": "people",
-    "logline": "Every rule you live by began as a few written pages; it becomes law only when both houses agree on the very same words."
+    "logline": "Every rule you live by began as a few written pages. It becomes law only when both houses agree on the very same words."
   },
   "question": "How does a bill become a law?",
   "source": {
@@ -113,7 +113,7 @@
       "Two houses slow laws down, which also gives more time to spot mistakes."
     ],
     "leftOut": [
-      "Committees, amendments and court challenges are not shown."
+      "The film does not show committees, amendments or court challenges."
     ],
     "questionsToAsk": [
       "Which house is debating the bill I care about right now?"

@@ -4,9 +4,9 @@
   "tone": "health",
   "story": {
     "hero": "you",
-    "logline": "You get a letter inviting you to screening; out of 100 people like you, a few are helped and many more get a false alarm along the way."
+    "logline": "You get a letter that invites you to screening. Out of 100 people like you, the test helps a few. Many more get a false alarm along the way."
   },
-  "question": "What happens if 100 people like me get screened?",
+  "question": "What happens if 100 people like me have the screening test?",
   "source": {
     "title": "Test fixture written for this repo",
     "publisher": "Illustrative numbers",
@@ -18,7 +18,7 @@
     "inputs": [
       {
         "id": "tests",
-        "label": "Screening tests over ten years",
+        "label": "Tests over ten years",
         "unit": "tests",
         "kind": "lever",
         "min": 0,
@@ -243,10 +243,10 @@
       }
     ],
     "tradeoffs": [
-      "Screening finds some cases early, and gives many more people a worrying false alarm."
+      "The test finds some cases early. It also gives many more people a worrying false alarm."
     ],
     "leftOut": [
-      "How serious the condition is, and the harms of treatment that turns out not to be needed."
+      "How serious the condition is. The harm of treatment that a person turns out not to need."
     ],
     "questionsToAsk": [
       "What happens after a positive result, and how often is it a false alarm?"

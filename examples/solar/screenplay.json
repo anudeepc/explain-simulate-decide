@@ -4,7 +4,7 @@
   "tone": "energy",
   "story": {
     "hero": "home",
-    "logline": "Your roof catches sun all day; power you use yourself saves far more than power you sell, so how soon does solar pay you back?"
+    "logline": "Your roof catches sun all day. Power you use yourself saves far more than power you sell. So how soon does solar pay you back?"
   },
   "question": "Should I put solar on my roof?",
   "source": {
@@ -622,15 +622,15 @@
       }
     ],
     "tradeoffs": [
-      "Paying cash usually costs less in total than a loan, lease or power purchase agreement.",
+      "If you pay cash, it usually costs less in total than a loan, a lease or a Power Purchase Agreement.",
       "A battery adds about $15,000, keeps more of your own power, and can run the house in an outage. On savings alone it rarely pays for itself.",
       "A bigger system makes more power, but power you send out usually earns less than power you use."
     ],
     "leftOut": [
       "Tax credits and rebates. These change often, so check what applies where you live today.",
-      "Shade and roof direction. South-facing roofs at 15–40 degrees usually do best.",
+      "Shade and roof direction. Roofs that face south at 15–40 degrees usually do best.",
       "Panel wear, battery replacement, and power prices changing over the years.",
-      "Replacing your roof during the life of the panels."
+      "The cost to replace your roof during the life of the panels."
     ],
     "questionsToAsk": [
       "How does my utility credit the power I send to the grid?",

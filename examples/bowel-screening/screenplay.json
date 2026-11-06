@@ -4,7 +4,7 @@
   "tone": "health",
   "story": {
     "hero": "home",
-    "logline": "A letter brings a test kit to your door; most kits find nothing, and most people asked to come in do not have cancer. What does the test change for you?"
+    "logline": "A letter brings a test kit to your door. Most kits find nothing. Most people that the NHS asks to come in do not have cancer. What does the test change for you?"
   },
   "question": "Should I do the NHS bowel screening home test each time it arrives?",
   "source": {
@@ -218,7 +218,7 @@
     "outputs": [
       {
         "id": "sentEver",
-        "label": "Sent for further tests at least once",
+        "label": "Sent for more tests at least once",
         "unit": "%",
         "formula": "100 - 100 * pow(1 - positivity / 100, rounds)"
       },
@@ -275,7 +275,7 @@
       },
       {
         "id": "lab",
-        "label": "Screening lab",
+        "label": "Test lab",
         "recipe": [
           {
             "shape": "box",
@@ -479,7 +479,7 @@
         "to": "crowd",
         "carrier": "people",
         "rate": "max(0, posted - sentEver)",
-        "label": "No further tests needed, every time",
+        "label": "No more tests needed, every time",
         "unit": "%"
       },
       {
@@ -488,7 +488,7 @@
         "to": "hospital",
         "carrier": "people",
         "rate": "sentEver",
-        "label": "Further tests needed",
+        "label": "More tests needed",
         "unit": "%"
       },
       {
@@ -535,7 +535,7 @@
     },
     {
       "question": "If a kit found blood, would you have a colonoscopy?",
-      "help": "It's your choice. A nurse would talk it through with you first.",
+      "help": "It's your choice. A nurse would talk with you about it first.",
       "choices": [
         {
           "label": "Yes, or not sure yet",
@@ -782,22 +782,22 @@
       }
     ],
     "tradeoffs": [
-      "More kits give more chances to find cancer or polyps early, and more letters asking for further tests that turn out not to be cancer.",
-      "A colonoscopy explains the blood and polyps can often be removed during it, but it means emptying your bowel with laxatives, a hospital visit and a small risk: about 1 in 1,700 colonoscopies tears the bowel.",
-      "The kit is done at home and posted free, but it can miss a polyp or cancer that was not bleeding that day, so an all-clear letter is not a guarantee."
+      "More kits give you more chances to find cancer or polyps early. They also bring more letters that ask you to come in for more tests. Most of those tests find no cancer.",
+      "A colonoscopy looks for the cause of the blood. It can often remove polyps at the same time. But first you take laxatives to empty your bowel. Then you go to hospital. There is a small risk: about 1 in 1,700 colonoscopies tears the bowel.",
+      "You do the kit at home and post it free. But it can miss a polyp or cancer that did not bleed that day. So an all-clear letter is not a guarantee."
     ],
     "leftOut": [
-      "The crowd counts what screening finds, not lives saved. A review of trials of an older kit found screening avoided about 1 in 6 bowel cancer deaths; this page has no figure like that for today's kit.",
-      "It assumes every kit has the same chance of finding blood, whatever earlier kits showed. In real life, people found to have cancer or high-risk polyps leave home testing for hospital care or check-up colonoscopies.",
-      "Two NHS figures for kits that find blood differ: the leaflet says around 2 to 3 in 100, and 2024-25 programme data say 1.71 in 100. The model uses the newer figure; move the slider to see the older one.",
-      "Colonoscopy results use the NHS leaflet's rough shares for everyone; your own chances depend on age, sex, family history and health.",
+      "The crowd counts what the tests find, not the lives they save. A review of trials of an older kit found it avoided about 1 in 6 bowel cancer deaths. This page has no figure like that for today's kit.",
+      "The model gives every kit the same chance to find blood, whatever earlier kits showed. In real life, people with cancer or high-risk polyps stop the home kits. They get hospital care or check-up colonoscopies instead.",
+      "The NHS gives two figures for kits that find blood. The leaflet says around 2 to 3 in 100. The programme's 2024-25 data say 1.71 in 100. The model uses the newer figure. Move the slider to see the older one.",
+      "The colonoscopy results use the NHS leaflet's rough shares for everyone. Your own chances depend on your age, sex, family history and health.",
       "It leaves out symptoms. Anyone with symptoms of bowel cancer should see a GP, whatever their last kit said.",
-      "It covers England's programme. Scotland, Wales and Northern Ireland run their own, and Northern Ireland starts at 60."
+      "It covers England's programme. Scotland, Wales and Northern Ireland run their own programmes. Northern Ireland starts at 60."
     ],
     "questionsToAsk": [
-      "If my kit finds blood, how soon would I see the specialist nurse, and is a CT scan an option instead of a colonoscopy?",
+      "If my kit finds blood, how soon would I see the specialist nurse? Could I have a CT scan instead of a colonoscopy?",
       "What is my own risk from a colonoscopy, given my age and health?",
-      "Does my family history or a bowel condition mean I should be checked in a different way?",
+      "Does my family history or a bowel condition mean I need a different kind of check?",
       "I have symptoms now: should I see my GP rather than wait for my next kit?"
     ]
   }

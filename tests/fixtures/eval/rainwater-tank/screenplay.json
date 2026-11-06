@@ -4,7 +4,7 @@
   "tone": "water",
   "story": {
     "hero": "home",
-    "logline": "Your roof fills a tank with rain; summer rain is a trickle beside what your garden drinks, so how long until the tank runs dry and the tap takes over?"
+    "logline": "Your roof fills a tank with rain. Summer rain is a trickle beside what your garden drinks. So how long until the tank runs dry and the tap takes over?"
   },
   "question": "Will a rainwater tank keep my garden watered through summer?",
   "source": {
@@ -26,7 +26,7 @@
     "inputs": [
       { "id": "tankSize", "label": "Tank size", "unit": "L", "kind": "lever",
         "min": 2000, "max": 10000, "step": 500, "default": 5000, "source": "article", "quote": [4, 5, 6],
-        "note": "Default is the 5,000 litre middle ground; the range runs from the small 2,000 to the 10,000 litre tank." },
+        "note": "The default is the 5,000 litre middle ground. The range goes from the small 2,000 litre tank to the 10,000 litre tank." },
       { "id": "gardenUse", "label": "Water your garden uses on a summer day", "unit": "L/day", "kind": "lever",
         "min": 50, "max": 400, "step": 10, "default": 200, "source": "article", "quote": 3 },
       { "id": "roofArea", "label": "Roof that drains into the tank", "unit": "m²", "kind": "condition",
@@ -114,23 +114,23 @@
       { "label": "Large 10,000 L tank", "set": { "tankSize": 10000 } }
     ],
     "tradeoffs": [
-      "A bigger tank lasts further into a dry spell, but costs more and takes up more space.",
-      "A small tank fills in one big storm, but the extra spills away and it can be empty within days.",
-      "Watering less stretches the tank, but some plants may struggle in the hottest weeks.",
-      "A tank saves tap water, but it needs a pump, cleaning, and in some areas a permit."
+      "A bigger tank lasts longer into a dry spell. But it costs more and takes more space.",
+      "A small tank fills in one big storm. But the extra water spills away. The tank can then be empty within days.",
+      "If you water less, the tank lasts longer. But some plants may struggle in the hottest weeks.",
+      "A tank saves tap water. But it needs a pump and regular cleaning. In some areas, you also need official approval."
     ],
     "leftOut": [
       "Rain comes in storms, not as the steady daily trickle the model uses.",
-      "The model starts summer with a full tank; a dry spring would leave less in it.",
-      "Water that spills over the top in wet months is not shown.",
+      "The model starts summer with a full tank. A dry spring would leave less in it.",
+      "The model does not show water that spills over the top in wet months.",
       "The article gives no prices for tanks, pumps or tap water, so the model counts litres, not dollars.",
-      "Summer rainfall and the answer choices are assumptions; check rainfall records for your area.",
-      "Permit rules differ from place to place; check what applies to you."
+      "Summer rainfall and the answer choices are assumptions. Check rainfall records for your area.",
+      "The rules for approval differ from place to place. Check what applies to you."
     ],
     "questionsToAsk": [
       "How much of my roof can drain into a tank, and where would the tank sit?",
       "What pump does this tank need, and what does it cost to run?",
-      "Do I need a permit for a rainwater tank here?",
+      "Do I need approval for a rainwater tank here?",
       "How much rain usually falls here in the summer months?"
     ]
   }

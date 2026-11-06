@@ -4,9 +4,9 @@
   "tone": "civic",
   "story": {
     "hero": "you",
-    "logline": "You buy a few sugary drinks a week when a tax arrives; you'd expect paying more to cut your sugar, but changed recipes cut more, so what does the tax change for you?"
+    "logline": "You buy a few sugary drinks a week. Then a tax arrives. You might expect the higher price to cut your sugar. But changed recipes cut more. So what does the tax change for you?"
   },
-  "question": "What would change for me if sugary drinks were taxed?",
+  "question": "What would change for me if there was a tax on sugary drinks?",
   "source": {
     "title": "What a sugar tax on soft drinks changes",
     "publisher": "Test fixture (illustrative numbers)",
@@ -37,7 +37,7 @@
       { "id": "elasticity", "label": "Drop in buying for each 1% price rise", "unit": "", "value": 1.2, "source": "article", "quote": 2,
         "note": "12% less for every 10% price rise is a response of 1.2" },
       { "id": "typicalTax", "label": "The typical tax", "unit": "%", "value": 20, "source": "article", "quote": 0,
-        "note": "Makers' response is scaled to the tax: none with no tax, the set share at the typical 20%" },
+        "note": "The makers' response grows in step with the tax: none with no tax, the set share at the typical 20%" },
       { "id": "sugarCut", "label": "Sugar taken out of a changed drink", "unit": "%", "value": 40, "source": "assumption" }
     ],
     "derived": [
@@ -99,7 +99,7 @@
   ],
   "simulate": {
     "controls": ["tax", "reformShare", "drinksPerWeek", "pricePerDrink"],
-    "prompt": "Try a bigger or smaller tax, and your own drinks."
+    "prompt": "Try a bigger or smaller tax. Then try your own drinks."
   },
   "decide": {
     "compare": [
@@ -109,17 +109,17 @@
     ],
     "tradeoffs": [
       "New recipes cut the most sugar, but drinks just under the line still contain sugar.",
-      "The money raised can fund school sport or healthy meals, but it comes most from people who drink the most.",
+      "The money from the tax can pay for school sport or healthy meals. But most of it comes from people who drink the most.",
       "It takes a larger share of income from poorer households, who drink more soft drinks.",
       "A bigger tax cuts more sugar, but costs regular buyers more at the till."
     ],
     "leftOut": [
-      "The article gives no figure for how many makers change recipes. That share was picked so the model gives the article's 30% fall, and it is assumed to grow in step with the tax.",
-      "How much sugar a changed recipe loses is an assumption; it depends on where the line is set.",
+      "The article gives no figure for how many makers change recipes. This page sets that share so that the model gives the article's 30% fall. It makes the share grow in step with the tax.",
+      "How much sugar a changed recipe loses is an assumption. It depends on where the tax puts the line.",
       "People can switch to untaxed sugary foods, which this model does not count.",
-      "The buying response comes from a review of many studies; one country or one person can differ, and very large taxes are outside what was studied.",
-      "The 30% fall took three years in one country; this model shows the end result, not how long it takes.",
-      "Health effects, such as weight or tooth decay, are not modelled. Tax rules and lines differ by country, so check what applies to you."
+      "The buying response comes from a review of many studies. One country or one person can differ. Very large taxes are outside what the studies covered.",
+      "The 30% fall took three years in one country. This model shows the end result, not how long it takes.",
+      "The model leaves out health effects, such as weight or tooth decay. Tax rules and lines differ by country, so check what applies to you."
     ],
     "questionsToAsk": [
       "Where exactly is the sugar line, and which drinks fall under it?",

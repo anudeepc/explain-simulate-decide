@@ -4,7 +4,7 @@
   "tone": "health",
   "story": {
     "hero": "you",
-    "logline": "You scroll in bed most nights, hoping night mode protects your sleep; the scrolling, not the light, costs minutes that pile into sleep debt, so what changes if the phone goes down earlier?"
+    "logline": "You scroll in bed most nights and hope night mode protects your sleep. But the scrolling, not the light, costs you minutes. They pile into sleep debt. What if the phone goes down earlier?"
   },
   "question": "What happens to my sleep if I stop screens before bed?",
   "source": {
@@ -369,17 +369,17 @@
       }
     ],
     "tradeoffs": [
-      "Evening screens can be how you relax or keep in touch, but they cost some sleep that night.",
+      "Evening screens can be how you relax or keep in touch. But they cost some sleep that night.",
       "A phone outside the bedroom removes the pull to check it, but you may need another alarm clock.",
-      "A paper book or calm audio can fill the wind-down time, but a new habit takes a while to settle."
+      "A paper book or calm audio can fill the wind-down time. But a new habit takes a while to settle."
     ],
     "leftOut": [
-      "The article calls its numbers illustrative, and the 20 and 15 minute figures are averages; your own effect may be larger or smaller.",
-      "The article gives the loss per hour of screens; the model assumes half an hour costs half as much.",
-      "The model adds the screens-before-bed and screens-in-bed effects; the article doesn't say whether they overlap, so the real total could be smaller.",
-      "A weekend lie-in pays back part of the debt, but the article gives no figure, so the model leaves it out.",
+      "The article calls its numbers illustrative. The 20 and 15 minute figures are averages. Your own effect may be larger or smaller.",
+      "The article gives the loss per hour of screens. The model assumes that half an hour costs half as much.",
+      "The model adds the screens-before-bed and screens-in-bed effects. The article does not say if they overlap. So the real total could be smaller.",
+      "A weekend lie-in pays back part of the debt. But the article gives no figure, so the model leaves it out.",
       "Night mode helps a little, but the article gives no figure, so the model does not include it.",
-      "Stress, caffeine, noise and a regular bedtime also change sleep, and the model leaves them out."
+      "Stress, caffeine, noise and a regular bedtime also change sleep. The model leaves them out."
     ],
     "questionsToAsk": [
       "I have slept badly for weeks. What should we check first?",

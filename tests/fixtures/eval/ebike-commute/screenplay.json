@@ -4,7 +4,7 @@
   "tone": "climate",
   "story": {
     "hero": "you",
-    "logline": "You drive to work each day and wonder if an e-bike would help; charging seems to cancel the gain, yet per kilometre it emits a few percent of the car, so what does switching change?"
+    "logline": "You drive to work each day. Would an e-bike help? Its charge seems to cancel the gain. But per kilometre it emits a few percent of the car. So what does a switch change?"
   },
   "question": "Should I ride an e-bike to work instead of driving?",
   "source": {
@@ -201,7 +201,7 @@
       },
       {
         "id": "bikeCO2",
-        "label": "Charging CO2 a year",
+        "label": "CO2 from charging a year",
         "unit": "kg/yr",
         "formula": "bikeKm * bikePerKm"
       },
@@ -650,7 +650,7 @@
     },
     {
       "question": "How many of your commutes could the e-bike take?",
-      "help": "Think of rain, heavy loads and days you go further.",
+      "help": "Think of rain, heavy loads and days with longer trips.",
       "choices": [
         {
           "label": "A few",
@@ -762,8 +762,8 @@
     ],
     "tradeoffs": [
       "An e-bike costs around $2,500 up front, but each trip after that costs very little to power.",
-      "Keeping the car covers heavy loads, bad weather and long trips, but its other costs stay with you.",
-      "Riding every trip cuts the most CO2 and petrol, but asks the most of you on hard days."
+      "If you keep the car, it covers heavy loads, bad weather and long trips. But its other costs stay with you.",
+      "If you ride every trip, you cut the most CO2 and petrol. But it asks the most of you on hard days."
     ],
     "leftOut": [
       "E-bike servicing: the article says it needs servicing but gives no cost, so check what applies to you.",

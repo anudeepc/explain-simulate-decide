@@ -4,7 +4,7 @@
   "tone": "home",
   "story": {
     "hero": "you",
-    "logline": "Your commute disappears when you work from home; you expect the whole hour back, but most of it slips into work and chores, so how much free time do you really gain?"
+    "logline": "Your commute disappears when you work from home. You expect the whole hour back. But most of it slips into work and chores. So how much free time do you really gain?"
   },
   "question": "If I work from home, how much of my commute do I really get back?",
   "source": {
@@ -443,7 +443,7 @@
           }
         },
         {
-          "label": "When the work is done",
+          "label": "When I finish the work",
           "set": {
             "workShare": 50
           }
@@ -542,17 +542,17 @@
       }
     ],
     "tradeoffs": [
-      "Working from home saves the trip, but much of that time can slip into longer workdays.",
-      "Time at home helps with chores and family care, but that time is not free time.",
-      "People with long trips gain the most hours; people with short trips gain little.",
+      "If you work from home, you save the trip. But much of that time can slip into longer workdays.",
+      "Time at home helps with chores and family care. But that time is not free time.",
+      "People with long trips gain the most hours. People with short trips gain little.",
       "Some people who live alone gain hours but feel more isolated.",
       "A fixed finish time protects free time, but some jobs make it hard to stop on time."
     ],
     "leftOut": [
-      "The shares of saved time going to work and chores are survey averages; yours may be very different.",
-      "The article says the rest becomes free time or sleep; the model counts it all as free time.",
-      "Sleep and chores are held at the article's typical hours, and a five-day week is assumed; check what applies to you.",
-      "Feelings such as isolation, or finding it hard to stop working, are not counted.",
+      "The shares of saved time that go to work and chores are survey averages. Yours may be very different.",
+      "The article says the rest becomes free time or sleep. The model counts it all as free time.",
+      "The model keeps sleep and chores at the article's typical hours. It uses a five-day week. Check what applies to you.",
+      "The model does not count feelings such as isolation. It also leaves out how hard it can be to stop work.",
       "Costs such as heating at home or travel fares are left out."
     ],
     "questionsToAsk": [

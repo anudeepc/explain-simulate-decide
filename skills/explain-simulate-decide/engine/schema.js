@@ -5,7 +5,7 @@ import { PROPS, KINDS } from './cast/names.js';
 import { parseUnit, checkUnit, unitsOf, per } from './units.js';
 import { createModel, formatValue } from './model.js';
 import { TONES } from './look.js';
-import { steProblems } from './ste.js';
+import { steProblems, screenplayText } from './ste.js';
 import { ACTIONS, EXPRESSIONS } from './cast/actions.js';
 import { SETS, OBJECTS, PLACE_KINDS, placesOf, marksOf, spotsOf } from './sets/names.js';
 
@@ -384,7 +384,18 @@ export function validate(sp) {
   if (!errors.length) deadParts(sp).forEach(err);
 
   bannedWords(sp, err);
+  steText(sp, err);
   return errors;
+}
+
+/**
+ * Every piece of text the viewer reads (captions, labels, the question, the Decide lines…)
+ * is in ASD-STE100 style. Quotes are exempt: they are the source's own words.
+ */
+function steText(sp, err) {
+  for (const { where, text } of screenplayText(sp)) {
+    for (const m of steProblems(text)) err(`${where}: ${m}`);
+  }
 }
 
 /** Words we never use, in every piece of text a viewer reads. */
@@ -634,6 +645,7 @@ function validateProcess(sp) {
   checkStory(sp, nodes, flows, shots, err);
   checkDecide(sp, err);
   bannedWords(sp, err);
+  steText(sp, err);
   return errors;
 }
 
@@ -758,8 +770,8 @@ function deadParts(sp) {
 function checkStory(sp, nodes, flows, shots, err) {
   const st = sp.story;
   if (!st || typeof st !== 'object') return err('story is required: {"hero": <node id>, "logline": "…"}. Find the story before the world: see references/storytelling.md.');
-  if (!isStr(st.logline)) err('story.logline is required: one sentence with the hero, what they want, what they don\'t know yet, and the discovery');
-  else if (words(st.logline) > 35) err(`story.logline has ${words(st.logline)} words (max 35)`);
+  if (!isStr(st.logline)) err('story.logline is required: 35 words or fewer, in short sentences. Give the hero, what they want, what they don\'t know yet, and the discovery.');
+  else if (words(st.logline) > 35) err(`story.logline has ${words(st.logline)} words (max 35 in total). Keep it to a few short sentences.`);
   const hero = nodes.find((n) => n.id === st.hero);
   if (!hero) return err(`story.hero "${st.hero}" must be a node: the person or home the viewer stands in for`);
   if (hero.sky) err(`story.hero "${st.hero}" can't be in the sky: the hero is someone on the ground the viewer stands in for`);
@@ -856,9 +868,8 @@ function checkPlaces(sp, err) {
   });
 }
 
-/** Captions are the film's subtitles: short, and in ASD-STE100 style (see writing-rules.md). */
+/** Captions are the film's subtitles: short. Their ASD-STE100 style is checked with all other text, in steText. */
 function checkCaption(x, where, err) {
   if (!isStr(x.caption)) return err(`${where}: caption is required`);
   if (words(x.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(x.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
-  for (const m of steProblems(x.caption)) err(`${where} caption: ${m}`);
 }

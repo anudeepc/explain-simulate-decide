@@ -1,20 +1,20 @@
 # Prop catalog
 
-Studio props share one matte "clay" look and stand on the diorama as nodes. A prop with `plays` shows that value from 0 to 1 (the bottom to the top of its range). If `plays` is an input, the viewer can drag the prop up or down in Simulate to change it.
+Studio props share one matte "clay" look. They stand on the diorama as nodes. A prop with `plays` shows that value from 0 to 1 (the bottom to the top of its range). If `plays` is an input, the viewer can drag the prop up or down in Simulate to change the input.
 
 ## Places and parties (good hosts for flows)
 
 | Prop | Shows the value as | Good for |
 |---|---|---|
-| `house` | window glow | the home, the household, "you". Has a roof slot: put `roof-panel` on it with `on` |
+| `house` | window glow | the home, the household, "you". It has a roof slot. Put `roof-panel` on it with `on`. |
 | `factory` | chimney puffs | industry, production, emissions |
-| `bank` | glowing coin emblem | lenders, banks, funds, insurers, the tax office |
+| `bank` | a coin emblem that glows | lenders, banks, funds, insurers, the tax office |
 | `power-pole` | meter needle | the electricity grid, the utility |
-| `shopping-bag` | items rising out of the bag | shops, spending, consumption |
+| `shopping-bag` | items that rise out of the bag | shops, spending, consumption |
 | `car` | charge or fuel bar, headlights | travel, transport |
-| `person-figure` | bar beside the figure | one person, workload |
-| `crowd` | 100 small people; plays a value in `"%"` and lights that many, or shows up to 4 outcomes in colour with `groups` | populations, risks, "out of 100 people like you" |
-| `body` | standing figure with a glowing heart | health, symptoms, fitness, a dose |
+| `person-figure` | bar next to the figure | one person, workload |
+| `crowd` | 100 small people. It plays a value in `"%"` and lights that many people. Or it shows up to 4 outcomes in colour with `groups`. | populations, risks, "out of 100 people like you" |
+| `body` | a person figure with a heart that glows | health, symptoms, fitness, a dose |
 | `building` | office block whose windows light up | schools, hospitals, offices, councils, companies |
 | `hill` | grassy hill with trees and a field | land, farms, forests, a region |
 
@@ -29,8 +29,8 @@ Studio props share one matte "clay" look and stand on the diorama as nodes. A pr
 
 | Prop | Shows | Good for |
 |---|---|---|
-| `jar` | coins filling a glass jar, a target line, a flag when reached, a ghost ring of the last try | **money only**: savings, balances |
-| `tank` | a glass tank filling with liquid, with the same target line, flag and ghost ring | anything else that builds up: water, sleep debt, carbon, stock |
+| `jar` | coins that fill a glass jar, a target line, a flag at the target, a ghost ring of the last try | **money only**: savings, balances |
+| `tank` | a glass tank that fills with liquid, with the same target line, flag and ghost ring | anything else that builds up: water, sleep debt, carbon, stock |
 | `battery` | fill level | stored energy |
 | `piggy-bank` | glow and size | small savings goals |
 | `coin-stack` | number of coins | amounts of money |
@@ -47,19 +47,19 @@ Studio props share one matte "clay" look and stand on the diorama as nodes. A pr
 | `calendar` | highlighted days | days, frequency |
 | `plug` | glow along the cable | a connection, a device |
 | `phone` | screen fill | apps, screen time |
-| `power-bill` | bill amount bar | prices, bills |
+| `power-bill` | bar for the bill amount | prices, bills |
 | `document` | stack of pages | rules, paperwork, reports |
 | `scale` | beam tilt | balance, trade-off |
 | `tree` | canopy size | environment, growth |
-| `arrow-flow`, `bar-stack` | arrow or bars | generic amounts (prefer a flow) |
-| `stand-in` | labelled block | anything else; shows the node's `label` |
+| `arrow-flow`, `bar-stack` | arrow or bars | general amounts (a flow is better) |
+| `stand-in` | block with a label | anything else. It shows the `label` of the node. |
 
 ## No prop fits?
 
-Give the node a `kind` instead of a `prop` (see `story-shapes.md`), and the renderer picks a fitting look. A store node can leave out both: money gets a jar, energy a battery, and anything else a tank.
+Give the node a `kind`, not a `prop` (see `story-shapes.md`). Then the renderer chooses a look that fits. A store node can have neither. Then money gets a jar, energy gets a battery and all other amounts get a tank.
 
 ## Tips
 
-- **Pick the prop a viewer would guess with the sound off.**
-- **Nodes are places and things; flows are what moves.** Don't use a prop to show a rate if a flow can show it.
-- **Missing a prop?** Use a `recipe` of simple shapes, or a stand-in, and consider contributing a studio prop. Each one is a single file in `engine/cast/`, listed in `cast/index.js` and `cast/names.js`.
+- **Choose the prop that a viewer would guess with the sound off.**
+- **Nodes are places and things. Flows are what moves.** Do not use a prop to show a rate if a flow can show it.
+- **Is a prop missing?** Use a `recipe` of simple shapes, or a stand-in. You can also add a studio prop to the project. Each studio prop is one file in `engine/cast/`. The files `cast/index.js` and `cast/names.js` list each studio prop.

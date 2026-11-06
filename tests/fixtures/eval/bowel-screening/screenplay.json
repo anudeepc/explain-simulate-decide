@@ -4,9 +4,9 @@
   "tone": "health",
   "story": {
     "hero": "home",
-    "logline": "A test kit lands on your doormat; most positive results turn out not to be cancer, yet regular tests catch cancers early, so what does doing every test really change for you?"
+    "logline": "A test kit lands on your doormat. Most positive results turn out not to be cancer. But regular tests catch cancers early. So what changes for you if you do every test?"
   },
-  "question": "What changes if I do every bowel screening test I'm sent?",
+  "question": "What changes if I do every bowel screening test that the NHS sends me?",
   "source": {
     "title": "Bowel cancer screening: what the test can and can't tell you",
     "publisher": "Test fixture written for this repo (numbers are illustrative)",
@@ -273,7 +273,7 @@
   "ask": [
     {
       "question": "How many of your home tests do you expect to do?",
-      "help": "A kit is offered every two years from 50 to 74: 13 in all.",
+      "help": "You get a kit every two years from 50 to 74: 13 in all.",
       "choices": [
         {
           "label": "Every one, or not sure yet",
@@ -382,15 +382,15 @@
       }
     ],
     "tradeoffs": [
-      "Each test you do raises your chance of a cancer being found early, and also your chance of a colonoscopy that finds nothing.",
-      "A colonoscopy is usually safe but uncomfortable, and carries a small risk.",
-      "Skipping a test saves a little effort, but lets a cancer grow without being found."
+      "Each test you do raises your chance to find a cancer early. It also raises your chance of a colonoscopy that finds nothing.",
+      "A colonoscopy is usually safe, but it is uncomfortable. It also carries a small risk.",
+      "If you skip a test, you save a little effort. But a cancer can then grow without a test to find it."
     ],
     "leftOut": [
-      "The article says about a third of people who keep screening get at least one positive result. Treating each test as a fresh 5 in 100 chance gives about half after 13 tests, so this page likely shows more false alarms than the article. Positive results often come back in the same people, and the model leaves that out.",
-      "Cancers found early are assumed to rise in step with the share of tests you do. The article says regular testing matters more than one test, so skipping tests may cost more than shown.",
+      "The article says about a third of people who stay in screening get at least one positive result. The model gives each test a fresh 5 in 100 chance. That gives about half after 13 tests. So this page likely shows more false alarms than the article. Positive results often come back in the same people. The model leaves that out.",
+      "The model makes cancers found early rise in step with the share of tests you do. The article says regular tests matter more than one test. So if you skip tests, the cost may be more than this page shows.",
       "The model uses one average chance of cancer. Your own risk depends on age, family history and health.",
-      "The small risk of a colonoscopy is not counted, because the article gives no figure for it.",
+      "The model does not count the small risk of a colonoscopy. The article gives no figure for it.",
       "The numbers come from an illustrative article. Check the figures for the programme where you live.",
       "The model is for people with no symptoms. If you have symptoms, talk to your doctor whatever your last test said."
     ],

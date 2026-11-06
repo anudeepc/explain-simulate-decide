@@ -4,7 +4,7 @@
   "tone": "money",
   "story": {
     "hero": "you",
-    "logline": "You owe on your card and pay the minimum each month; nearly all of it goes on interest, so how long until you are clear, and what changes it?"
+    "logline": "You owe money on your card and pay the minimum each month. Nearly all of it goes on interest. How long until you are clear? What changes it?"
   },
   "question": "Should I keep paying the minimum on my credit card, or pay a fixed amount each month?",
   "source": {
@@ -34,7 +34,7 @@
       },
       {
         "id": "newSpend",
-        "label": "New purchases on the card each month",
+        "label": "New spending on the card each month",
         "unit": "$/month",
         "kind": "lever",
         "min": 0,
@@ -95,7 +95,7 @@
           0,
           5
         ],
-        "note": "You pay, and interest is added, once a month."
+        "note": "You pay once a month. The card adds interest once a month too."
       }
     ],
     "derived": [
@@ -229,7 +229,7 @@
       {
         "id": "shop",
         "prop": "shopping-bag",
-        "label": "New purchases",
+        "label": "New spending",
         "plays": "newSpend",
         "appears": "newSpend"
       },
@@ -277,7 +277,7 @@
         "to": "debt",
         "carrier": "money",
         "rate": "newSpend",
-        "label": "New purchases",
+        "label": "New spending",
         "unit": "$/month"
       }
     ]
@@ -290,7 +290,7 @@
     },
     {
       "question": "What interest rate does your card charge a year?",
-      "help": "Look for the purchase rate on your statement.",
+      "help": "Look for \"Purchase rate\" on your statement.",
       "input": "apr"
     },
     {
@@ -299,8 +299,8 @@
       "input": "fixedPay"
     },
     {
-      "question": "About how much do you add to the card in new purchases each month?",
-      "help": "Add up the purchases on your last statement. Enter 0 if none.",
+      "question": "About how much new spending do you put on the card each month?",
+      "help": "Find the total of what you bought on your last statement. Enter 0 if you bought nothing.",
       "input": "newSpend"
     }
   ],
@@ -371,17 +371,17 @@
       }
     ],
     "tradeoffs": [
-      "Paying the minimum leaves more cash free each month, but the debt lasts far longer and the interest keeps adding up.",
-      "A fixed amount clears the card sooner and costs less interest, but it takes the same sum from your budget every month, even in a tight one.",
-      "Moving the balance to a card with a lower rate, or a 0% offer, can cut the interest, but there may be a transfer fee and a higher rate after the offer ends.",
-      "Stopping new spending on the card helps the debt fall, but you need another way to pay for things."
+      "If you pay the minimum, you keep more cash free each month. But the debt lasts far longer. The interest keeps adding up.",
+      "A fixed amount clears the card sooner and costs less interest. But it takes the same sum from your budget every month, even in a tight month.",
+      "You can move the balance to a card with a lower rate or a 0% offer. This can cut the interest. But there may be a transfer fee. The rate may also be higher after the offer ends.",
+      "If you stop new spending on the card, it helps the debt fall. But you need another way to pay for things."
     ],
     "leftOut": [
-      "The article says $200 a month clears $5,000 in about two and a half years with roughly $1,400 in interest. At 22% with interest added monthly, those payments take about 2.8 years and cost nearer $1,750, so this page does not use the $1,400 figure.",
-      "Interest is added once a month here; many cards work it out daily, so real figures differ a little.",
-      "Minimum payment rules differ between cards. Here it is 2% of what you owe or $25, whichever is more, as in the article. Check how yours is worked out.",
-      "Fees (late, annual, balance transfer) are not included, and the rate is held fixed; real rates can change, and a 0% offer ends after a set time.",
-      "Missed or late payments, and their effect on your credit record, are not modelled.",
+      "The article says $200 a month clears $5,000 in about two and a half years with roughly $1,400 in interest. At 22% with interest each month, those payments take about 2.8 years. They cost nearer $1,750. So this page does not use the $1,400 figure.",
+      "Here, the card adds interest once a month. Many real cards count interest each day. So real figures differ a little.",
+      "Minimum payment rules differ between cards. Here it is 2% of what you owe or $25, whichever is more, as in the article. Check the rule for your card.",
+      "The model leaves out fees (late, annual, balance transfer). It keeps the rate fixed. Real rates can change. A 0% offer ends after a set time.",
+      "The model leaves out missed or late payments. It also leaves out their effect on your credit record.",
       "The clock stops at 20 years, so a card that takes longer shows as not cleared within 20 years."
     ],
     "questionsToAsk": [

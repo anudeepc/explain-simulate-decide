@@ -4,7 +4,7 @@
   "tone": "health",
   "story": {
     "hero": "you",
-    "logline": "You feel well and roll up a sleeve; you may think the vaccine kills germs, but it trains your own cells, so what happens when the real germ arrives?"
+    "logline": "You feel well and roll up a sleeve. You may think the vaccine kills germs. But it trains your own cells. So what happens when the real germ arrives?"
   },
   "question": "How does a vaccine teach my body to fight an infection?",
   "source": {
@@ -141,15 +141,15 @@
   ],
   "decide": {
     "tradeoffs": [
-      "A vaccine can cause a sore arm or mild fever for a short time, but these are signs of your body learning, not the infection.",
-      "A vaccine has to be given before an infection to help, so you have it while you still feel well.",
+      "A vaccine can cause a sore arm or mild fever for a short time. These are signs that your body is learning, not signs of the infection.",
+      "A vaccine only helps if you get it before an infection. So you have it while you still feel well.",
       "Memory can fade, so some vaccines need boosters: longer protection can mean more visits."
     ],
     "leftOut": [
-      "How well any one vaccine protects, and for how long; the article gives no numbers, so this picture has none.",
-      "How often side effects happen, and rare side effects; the article only names mild ones.",
+      "How well any one vaccine protects, and for how long. The article gives no numbers, so this picture has none.",
+      "How often side effects happen, and rare side effects. The article only names mild ones.",
       "Differences between kinds of vaccine (a protein piece, a weakened germ, or instructions for your cells).",
-      "Your own health, age and any conditions that change how your immune system responds; check what applies to you."
+      "Your own health, age and any conditions that change how your immune system responds. Check what applies to you."
     ],
     "questionsToAsk": [
       "Which kind of vaccine is this, and what does it show my body?",

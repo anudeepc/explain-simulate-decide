@@ -4,7 +4,7 @@
   "tone": "home",
   "story": {
     "hero": "home",
-    "logline": "Your home leaks heat all winter; electricity usually costs more than gas, yet a heat pump moves about three units of heat for each one, so could switching pay you back?"
+    "logline": "Your home leaks heat all winter. Electricity usually costs more than gas. But a heat pump moves about three units of heat for each unit of electricity. Could a switch pay you back?"
   },
   "question": "Should I replace my gas furnace with a heat pump?",
   "source": {
@@ -487,13 +487,13 @@
     "tradeoffs": [
       "Lower running costs are likely where gas is expensive, but not guaranteed where electricity is.",
       "A heat pump also cools in summer, but installation can cost more than a new furnace.",
-      "Insulating first costs money too, but can mean a smaller, cheaper system."
+      "Insulation costs money too. But if you insulate first, a smaller, cheaper system can be enough."
     ],
     "leftOut": [
       "Rebates and tax credits. These change, so check what applies to you now.",
       "Lower efficiency on the coldest days, and any backup heat you might need.",
       "Duct or electrical panel upgrades your home might need.",
-      "Emissions, which depend on how your electricity is made."
+      "Emissions. These depend on the power stations that make your electricity."
     ],
     "questionsToAsk": [
       "Which cold-climate models do installers recommend for my area?",

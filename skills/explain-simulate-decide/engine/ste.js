@@ -377,8 +377,12 @@ function passives(sentence) {
   return [...found.values()];
 }
 
-/** Every STE problem in a subtitle, as plain-English instructions. Empty array = fine. */
-export function steProblems(text) {
+/**
+ * Every STE problem in a piece of text, as plain-English instructions. Empty array = fine.
+ * @param {string} text
+ * @param {{maxWords?: number}} [o] sentence limit: 20 for subtitles and steps (STE procedural), 25 for description
+ */
+export function steProblems(text, { maxWords = STE_MAX_WORDS } = {}) {
   const problems = [];
   if (typeof text !== 'string' || !text.trim()) return problems;
   const add = (m) => problems.includes(m) || problems.push(m);
@@ -394,8 +398,8 @@ export function steProblems(text) {
     const words = raw.map(clean).filter(Boolean);
 
     // Sentence length: STE caps a descriptive sentence at 25 words; subtitles keep to 20.
-    if (words.length > STE_MAX_WORDS) {
-      add(`"${s}" has ${words.length} words. Keep each sentence to ${STE_MAX_WORDS} words or fewer: split it into shorter sentences.`);
+    if (words.length > maxWords) {
+      add(`"${s}" has ${words.length} words. Keep each sentence to ${maxWords} words or fewer: split it into shorter sentences.`);
     }
 
     // One idea per sentence: two or more joins with "and"/"but"/"or" means three ideas.
@@ -429,4 +433,70 @@ export function steProblems(text) {
     }
   }
   return problems;
+}
+
+/** STE allows 25 words in a descriptive sentence (20 in a procedure: a step or an instruction). */
+export const STE_MAX_DESCRIPTIVE = 25;
+
+// Fields in a screenplay that the viewer reads. Quotes stay word for word (they are the
+// source's words), and ids, formulas, units, links, colours and credits are not prose.
+const SKIP_KEYS = new Set(['id', 'formula', 'rate', 'unit', 'url', 'image', 'credit', 'publisher', 'accessed', 'quotes', 'same', 'carrier', 'kind', 'shot', 'set', 'do', 'to', 'from', 'at', 'object', 'feel', 'camera', 'focus', 'drive', 'store', 'plays', 'on', 'appears', 'tone', 'shape', 'version', 'with', 'hero', 'source', 'checks',
+  'input', 'controls', 'prop', 'color', 'value', 'target', 'reaches', 'start', 'change', 'ceiling']);
+
+/**
+ * Every piece of viewer-facing text in a screenplay, with where it is.
+ * @returns {Array<{where: string, text: string}>}
+ */
+export function screenplayText(sp) {
+  const out = [];
+  const walk = (x, where, key) => {
+    if (SKIP_KEYS.has(key)) return;
+    if (typeof x === 'string') {
+      if (/[\p{L}]/u.test(x)) out.push({ where, text: x });
+    } else if (Array.isArray(x)) x.forEach((v, i) => walk(v, `${where}[${i}]`, key));
+    else if (x && typeof x === 'object') for (const [k, v] of Object.entries(x)) walk(v, where ? `${where}.${k}` : k, k);
+  };
+  walk(sp, '', '');
+  return out;
+}
+
+/**
+ * The prose in a Markdown file, sentence by sentence, with its line and its limit: 20 words
+ * for a list item or a numbered step (an instruction), 25 for a paragraph. Code (fenced and
+ * inline), links and HTML are left out; a table cell counts as prose.
+ * @returns {Array<{line: number, text: string, maxWords: number}>}
+ */
+export function markdownText(md) {
+  const out = [];
+  let fence = false;
+  let front = false;
+  md.split('\n').forEach((raw, i) => {
+    const line = i + 1;
+    if (i === 0 && raw.trim() === '---') return (front = true);
+    if (front) {
+      if (raw.trim() === '---') front = false;
+      else if (/^description:/.test(raw)) out.push({ line, text: prose(raw.replace(/^description:\s*/, '')), maxWords: STE_MAX_DESCRIPTIVE });
+      return;
+    }
+    if (/^\s*(```|~~~)/.test(raw)) return (fence = !fence);
+    if (fence || !raw.trim() || /^\s*\|?\s*:?-{3,}/.test(raw) || /^\s*<!--/.test(raw)) return;
+    const list = /^\s*([-*+]|\d+\.)\s+/.test(raw);
+    const cells = raw.trim().startsWith('|') ? raw.split('|').slice(1, -1) : [raw];
+    for (const c of cells) {
+      const t = prose(c.replace(/^\s*([-*+]|\d+\.)\s+/, '').replace(/^#+\s*/, ''));
+      if (/[\p{L}]/u.test(t)) out.push({ line, text: t, maxWords: list ? STE_MAX_WORDS : STE_MAX_DESCRIPTIVE });
+    }
+  });
+  return out;
+}
+
+/** Markdown to plain prose: inline code becomes a name ("X"), links keep their words, emphasis goes. */
+function prose(s) {
+  return s
+    .replace(/`[^`]*`/g, 'X')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, 'X')
+    .replace(/<[^>]+>/g, '')
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+    .trim();
 }
