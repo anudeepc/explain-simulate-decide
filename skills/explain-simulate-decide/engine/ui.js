@@ -1,7 +1,7 @@
 // The live controls: player bar, "Make it yours" questions, Simulate dock, Decide
 // panel, error panel. Built with createElement + textContent only: screenplay text
 // is never HTML. Sizes follow the player's own box (container units), not the window.
-import { formatValue } from './model.js';
+import { formatValue, formatInput } from './model.js';
 import { quoteText } from './schema.js';
 
 const CSS = `
@@ -25,7 +25,7 @@ const CSS = `
 .esd-row{margin:0 0 11px}
 .esd-row label{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:3px;gap:8px}
 .esd-row label span:last-child{font-variant-numeric:tabular-nums}
-.esd-row input[type=range]{width:100%;accent-color:#c0623f;margin:0}
+.esd-row input[type=range]{width:100%;accent-color:#c0623f;margin:0}.esd-row input[type=checkbox]{accent-color:#c0623f;width:18px;height:18px;margin:2px 0 0}
 .esd-row small{color:#8a857e;font-size:11px}
 .esd-out{border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:4px}
 .esd-out .esd-row label{font-weight:500}.esd-out .esd-row label span:last-child{font-weight:700}
@@ -97,7 +97,8 @@ export function createUI(wrap, sp, model, h) {
   const scrub = el('input', { class: 'esd-scrub', type: 'range', min: '0', max: '1000', value: '0', 'aria-label': 'Film position' });
   scrub.addEventListener('input', () => h.seekFraction(scrub.value / 1000));
   const time = el('span', { class: 'esd-time', text: '0:00' });
-  const skipBtn = el('button', { text: 'Try the model', onclick: h.skipToModel });
+  const isProcess = sp.shape === 'process';
+  const skipBtn = el('button', { text: isProcess ? 'Skip to Decide' : 'Try the model', onclick: h.skipToModel });
   const soundBtn = el('button', { class: 'esd-sound', 'aria-label': 'Sound', text: '♪ On', onclick: h.toggleSound });
   const recBtn = el('button', { class: 'esd-rec', text: '● Record MP4', onclick: h.record });
   const bar = el('div', { class: 'esd-bar' }, playBtn, scrub, time, skipBtn, soundBtn, recBtn);
@@ -119,7 +120,7 @@ export function createUI(wrap, sp, model, h) {
         field, el('span', { style: 'margin-left:8px;color:#6d6a66;font-size:13px', text: inp.unit || '' }));
     }
     const chips = q.choices.map((c) => {
-      const b = el('button', { class: 'chip', 'aria-pressed': 'false', text: c.label });
+      const b = el('button', { class: 'chip', 'aria-pressed': 'false', text: c.label + (c.source === 'assumption' ? ' *' : '') });
       b.addEventListener('click', () => {
         chips.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
         answers[n] = c.set;
@@ -143,10 +144,13 @@ export function createUI(wrap, sp, model, h) {
   const rows = sp.simulate.controls.map((id) => {
     const inp = inputsById[id];
     const step = inp.step ?? (inp.max - inp.min) / 100;
-    const s = el('input', { type: 'range', min: String(inp.min), max: String(inp.max), step: String(step), value: String(inp.default), id: `esd-${id}` });
-    s.addEventListener('input', () => h.setInput(id, Number(s.value)));
+    // a yes-or-no input is a checkbox, not a slider
+    const s = inp.toggle
+      ? el('input', { type: 'checkbox', id: `esd-${id}`, ...(inp.default >= 0.5 ? { checked: '' } : {}) })
+      : el('input', { type: 'range', min: String(inp.min), max: String(inp.max), step: String(step), value: String(inp.default), id: `esd-${id}` });
+    s.addEventListener('input', () => h.setInput(id, inp.toggle ? (s.checked ? 1 : 0) : Number(s.value)));
     sliders[id] = s;
-    valueSpans[id] = el('span', { text: formatValue(inp.default, inp.unit) });
+    valueSpans[id] = el('span', { text: formatInput(inp, inp.default) });
     return el('div', { class: 'esd-row' },
       el('label', { for: `esd-${id}` }, el('span', { text: inp.label + (inp.source === 'assumption' ? ' *' : '') }), valueSpans[id]),
       s);
@@ -173,6 +177,9 @@ export function createUI(wrap, sp, model, h) {
   const list = (title, items) => el('div', {}, el('h3', { text: title }), el('ul', {}, items.map((t) => el('li', { text: t }))));
   const quotes = sp.source?.quotes || [];
   const assumptions = [...sp.model.inputs, ...(sp.model.constants || [])].filter((x) => x.source === 'assumption');
+  const worked = [...sp.model.inputs, ...(sp.model.constants || [])].filter((x) => x.source === 'article' && x.note);
+  // what the validator held the model to (it would not play otherwise)
+  const checks = (sp.checks || []).filter((c) => c.claim);
   const credits = (sp.world?.nodes || []).filter((c) => c.credit).map((c) => `${c.label || c.id}: ${c.credit}`);
   const srcLink = /^https?:\/\//.test(sp.source?.url || '') ? el('a', { href: sp.source.url, target: '_blank', rel: 'noopener noreferrer', text: sp.source.title || sp.source.url }) : el('span', { text: sp.source?.title || '' });
   const quoteEl = (q) => {
@@ -192,13 +199,15 @@ export function createUI(wrap, sp, model, h) {
       list('What this model leaves out', sp.decide.leftOut),
       list('Questions to ask', sp.decide.questionsToAsk)),
     el('div', { class: 'esd-actions' },
-      el('button', { text: '← Back to the model', onclick: h.backToModel }),
+      isProcess ? null : el('button', { text: '← Back to the model', onclick: h.backToModel }),
       el('button', { text: '↺ Replay the film', onclick: h.replay })),
     el('details', { class: 'esd-sources' },
       el('summary', { text: 'Sources, assumptions and credits' }),
       el('p', {}, 'Source: ', srcLink, sp.source?.publisher ? ` — ${sp.source.publisher}` : ''),
       quotes.map(quoteEl),
-      assumptions.length ? el('p', { text: 'Assumptions: ' + assumptions.map((a) => `${a.label} = ${formatValue(a.default ?? a.value, a.unit)}`).join('; ') }) : null,
+      assumptions.length ? el('p', { text: 'Assumptions: ' + assumptions.map((a) => `${a.label} = ${a.default !== undefined ? formatInput(a, a.default) : formatValue(a.value, a.unit)}${a.fits !== undefined ? ' (set so the model matches the source)' : ''}${a.note ? ` (${a.note})` : ''}`).join('; ') }) : null,
+      worked.length ? el('p', { text: 'Worked out from the source: ' + worked.map((a) => `${a.label}: ${a.note}`).join('; ') }) : null,
+      checks.length ? el('div', {}, el('p', { text: 'The model was checked against the source:' }), el('ul', {}, checks.map((c) => el('li', { text: `✓ ${c.claim}` })))) : null,
       credits.length ? el('p', { text: 'Model credits: ' + credits.join('; ') }) : null));
 
   // ---- transcript for screen readers
@@ -230,8 +239,9 @@ export function createUI(wrap, sp, model, h) {
     /** @param {Record<string, number>} values inputs  @param {Record<string, string>} shown formatted readouts */
     setValues(values, shown) {
       for (const [id, s] of Object.entries(sliders)) {
-        s.value = String(values[id]);
-        valueSpans[id].textContent = formatValue(values[id], inputsById[id].unit);
+        if (inputsById[id].toggle) s.checked = values[id] >= 0.5;
+        else s.value = String(values[id]);
+        valueSpans[id].textContent = formatInput(inputsById[id], values[id]);
       }
       for (const [id, text] of Object.entries(shown)) if (outSpans[id]) outSpans[id].textContent = text;
     },

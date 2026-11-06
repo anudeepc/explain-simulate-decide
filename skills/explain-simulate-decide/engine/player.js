@@ -3,7 +3,7 @@
 // always show exactly the same frame for the same t.
 import * as THREE from './vendor/three/three.module.js';
 import { validate } from './schema.js';
-import { createModel, normalise, formatValue } from './model.js';
+import { createModel, normalise, formatValue, formatInput } from './model.js';
 import { parse, refs } from './formula.js';
 import { buildTimeline, stateAt, easeInOut, easeOut, span, lerp, TRAVEL, clamp01 } from './timing.js';
 import { layoutWorld, lanes, routeFlow, bounds, FOOT } from './layout.js';
@@ -49,8 +49,25 @@ function sweep(p, def, lo, hi) {
   return lerp(hi, def, easeInOut((p - 0.75) / 0.25));
 }
 
+/**
+ * A process story has no numbers: give it an empty model and steady flows, so the
+ * same director can stage it. Its film runs Explain, then Decide.
+ */
+function staged(sp) {
+  if (sp.shape !== 'process') return sp;
+  return {
+    ...sp,
+    model: { inputs: [], constants: [], derived: [], outputs: [] },
+    world: { ...sp.world, flows: sp.world.flows.map((f) => ({ ...f, rate: '1', unit: '' })) },
+    simulate: { controls: [], prompt: '' },
+    ask: [],
+  };
+}
+
 async function start(root, sp, options, api) {
+  sp = staged(sp);
   const opts = { cast: 'auto', voice: 'off', interactive: true, autoplay: false, music: true, ...options };
+  const isProcess = sp.shape === 'process';
   const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
   const world = sp.world;
   const clockDef = world.time || null;
@@ -142,7 +159,7 @@ async function start(root, sp, options, api) {
   const holders = {};
   await Promise.all(
     world.nodes.map(async (nd, n) => {
-      const actor = await resolveActor(nd, opts.cast, n);
+      const actor = await resolveActor(nd, opts.cast, n, { storeUnit: nd.store ? model.meta(nd.store)?.unit : null });
       const holder = new THREE.Group();
       holder.add(actor.object);
       const mats = new Map();
@@ -286,7 +303,7 @@ async function start(root, sp, options, api) {
 
   // answers shown on the painted "Make it yours" card in the recorded film
   const demoAnswers = (sp.ask || []).map((q) => {
-    if (q.input) return { question: q.question, answer: formatValue(defaults[q.input], inputsById[q.input].unit) };
+    if (q.input) return { question: q.question, answer: formatInput(inputsById[q.input], defaults[q.input]) };
     const best = q.choices.find((c) => Object.entries(c.set).every(([id, v]) => Math.abs(v - defaults[id]) < 1e-9));
     return { question: q.question, answer: best ? best.label : 'Skipped: typical values' };
   });
@@ -478,8 +495,9 @@ async function start(root, sp, options, api) {
         const at = m ? sim.reached[m.id] : null;
         actor.setReached?.(at !== null && at !== undefined ? clamp01((frame.tau - at) / (SPAN * 0.05)) : 0);
         actor.setGhost?.(frame.ghost && ghost[nd.id] !== undefined ? clamp01(ghost[nd.id] / v.top) : null);
-      } else if (nd.plays && ranges[nd.plays]) actor.setValue(normalise(scope[nd.plays], ranges[nd.plays]));
-      else actor.setValue(0.6);
+      } else if (nd.plays && actor.percent) actor.setValue(clamp01((scope[nd.plays] ?? 0) / 100));
+      else if (nd.plays && ranges[nd.plays]) actor.setValue(normalise(scope[nd.plays], ranges[nd.plays]));
+      else actor.setValue(actor.percent ? 1 : 0.6); // a crowd with no number is everyone
       const s = Math.max(0.001, appear[nd.id]);
       holders[nd.id].scale.setScalar(s);
       holders[nd.id].visible = appear[nd.id] > 0.002;
@@ -509,14 +527,14 @@ async function start(root, sp, options, api) {
 
     // ---- overlay
     ctx2.clearRect(0, 0, W, H);
-    overlay.drawActs(ctx2, W, H, frame.act, sp.question, overlay.sourceLine(sp));
+    overlay.drawActs(ctx2, W, H, frame.act, sp.question, overlay.sourceLine(sp), overlay.actsOf(sp));
     const items = [];
     for (const lb of frame.labels) {
       let text;
       if (lb.flow) {
         const f = flowById[lb.flow];
         tmp.copy(flows3d[f.id].midpoint()).setY(tmp.y + 0.5);
-        text = { title: f.label, value: formatValue(model.evaluate(rateAst[f.id], scope), f.unit || '') };
+        text = { title: f.label, value: isProcess ? '' : formatValue(model.evaluate(rateAst[f.id], scope), f.unit || '') };
       } else {
         const nd = nodeById[lb.node];
         if (appear[nd.id] < 0.5) continue;
@@ -527,7 +545,7 @@ async function start(root, sp, options, api) {
           text = { title: nd.label, value: formatValue(v.level, model.meta(nd.store).unit || '') + (v.target !== null ? ` of ${formatValue(v.target, model.meta(nd.store).unit || '')}` : '') };
         } else if (nd.plays) {
           const meta = model.meta(nd.plays);
-          text = { title: meta.label, value: formatValue(scope[nd.plays], meta.unit || ''), assumption: inputsById[nd.plays]?.source === 'assumption' };
+          text = { title: meta.label, value: inputsById[nd.plays] ? formatInput(inputsById[nd.plays], scope[nd.plays]) : formatValue(scope[nd.plays], meta.unit || ''), assumption: inputsById[nd.plays]?.source === 'assumption' };
         } else text = { title: nd.label, value: '' };
         if (lb.hint) text.title += '  ↕ drag';
       }
@@ -557,7 +575,7 @@ async function start(root, sp, options, api) {
       if (frame.sim) {
         const controls = sp.simulate.controls.map((id) => {
           const inp = inputsById[id];
-          return { id, label: inp.label, value: formatValue(frame.values[id], inp.unit), v: normalise(frame.values[id], [inp.min, inp.max]), assumption: inp.source === 'assumption' };
+          return { id, label: inp.label, value: formatInput(inp, frame.values[id]), v: normalise(frame.values[id], [inp.min, inp.max]), assumption: inp.source === 'assumption' };
         });
         overlay.drawSimPanel(ctx2, W, H, controls, frame.sim.alpha, frame.sim.active);
       }
@@ -691,10 +709,12 @@ async function start(root, sp, options, api) {
     view.zoom = 1;
   }
   function afterFilm() {
-    if ((sp.ask || []).length) enterAsk();
+    if (isProcess) enterDecide();
+    else if ((sp.ask || []).length) enterAsk();
     else enterLive();
   }
   function enterAsk() {
+    if (isProcess) return enterDecide(); // nothing to ask or run in a process story
     pause();
     c2.style.touchAction = '';
     if (mode === 'film') moveCamera();
@@ -705,6 +725,7 @@ async function start(root, sp, options, api) {
     ui.announce('Make it yours. Answer what you know.');
   }
   function enterLive() {
+    if (isProcess) return enterDecide();
     pause();
     moveCamera();
     mode = 'live';
@@ -716,6 +737,7 @@ async function start(root, sp, options, api) {
     ui.announce(sp.simulate.prompt || '');
   }
   function enterDecide() {
+    if (mode === 'film') pause();
     moveCamera();
     c2.style.touchAction = '';
     mode = 'decide';
@@ -783,7 +805,7 @@ async function start(root, sp, options, api) {
     if (drag) {
       const inp = inputsById[nodeById[drag.id].plays];
       let v = drag.v0 + ((drag.y0 - ev.clientY) / (H * 0.4)) * (inp.max - inp.min);
-      const step = inp.step || (inp.max - inp.min) / 100;
+      const step = inp.toggle ? 1 : inp.step || (inp.max - inp.min) / 100;
       v = Math.min(inp.max, Math.max(inp.min, Math.round((v - inp.min) / step) * step + inp.min));
       liveValues = { ...liveValues, [inp.id]: v };
       refreshLive();

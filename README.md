@@ -37,7 +37,9 @@ The skill thinks the topic through before it draws anything:
 
 - It asks you up to three questions that change the answer, such as where you live, your average monthly bill, and whether you'd send spare power to the grid or store it in a battery.
 - It looks up current local figures (install cost, power prices, export credits) and quotes each one word for word with its source and the date it was read.
-- It maps the topic as a system: what flows where, and what builds up over time.
+- It picks the story's **shape**: something building up, a loop that feeds itself, a fixed amount being shared, one thing turning into another, a cause and its effect, a risk out of 100 people, or a process with no numbers at all. Each shape gets a different world, so a sleep article, a credit card article and an article on how a law is passed all look right.
+- It maps the topic as a system: what flows where, what builds up over time, and what pushes on what.
+- It writes down what the article says the answer should look like, and the validator runs the model against it.
 
 It then writes a screenplay, validates it, renders the page, and checks its own work against a list (every number sourced, Decide never recommends).
 
@@ -68,12 +70,15 @@ article ──► AI writes a screenplay (JSON) ──► validator ──► fi
               cast, shots, decide notes        errors           timing, motion
 ```
 
-The screenplay describes a **system**:
+The screenplay describes a **system** with a **shape** (`build-up`, `feedback`, `budget`, `conversion`, `cause`, `chances` or `process`):
 
-- **Nodes:** things like a house, panels on its roof, the grid, and a savings jar.
-- **Flows:** energy, money, water, heat and so on, each with a rate formula.
-- **Stores:** amounts that build up over a clock, such as savings, with **milestones** like "paid back in 20.6 years".
+- **Nodes:** the characters. Each is a studio prop (a house, panels, the grid, a jar, a crowd of 100 people, a body, a building…) or just a *kind* (person, institution, land, medicine…), and the renderer picks the look.
+- **Flows:** energy, money, water, heat, time, carbon, substances, and influences (one thing pushing on another), each with a rate formula and a unit.
+- **Stores:** amounts that build up over a clock, such as savings, water in a tank or sleep debt, with **milestones** like "paid back in 20.6 years".
+- **Checks:** what the source says the answer looks like ("pays back in 6 to 12 years", "more screens, less sleep").
 - **Questions** the page asks the viewer, and **options** to compare.
+
+A `process` story (how a vaccine works, how a bill becomes law) has no numbers: it gets the film and Decide, and no invented model.
 
 The key design choice is that **the AI writes only the screenplay, never the film.** All the directing lives in code:
 
@@ -81,6 +86,7 @@ The key design choice is that **the AI writes only the screenplay, never the fil
 - **Small and free models work.** They only fill in structured content.
 - **Safety.** No AI-written code ever runs. Formulas go through a tiny arithmetic parser (no `eval`), captions are shown as plain text, and exported pages carry a strict Content-Security-Policy.
 - **Honesty is enforced.** Every number is either quoted from the article or labelled an assumption, and the validator checks this.
+- **Wrong maths is caught.** Every value has a unit, and the validator checks that every formula comes out in it, so a missing × 365, a percent not divided by 100, or kWh added to dollars is rejected. It runs the model against the source's own figures and directions, and tries every extreme of the inputs: values must stay numbers, and flows can't run backwards.
 
 ### The director's rules
 

@@ -30,6 +30,14 @@ const CARRIERS = {
   goods: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#c98b5a', glow: 0.05, geo: () => new RoundedBoxGeometry(0.28, 0.24, 0.28, 2, 0.04), gap: 0.8, speed: 0.75, lift: 0.14 },
   people: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#5b6b80', glow: 0.05, geo: () => new THREE.CapsuleGeometry(0.08, 0.2, 4, 10), gap: 0.7, speed: 0.6, lift: 0.18 },
   data: { track: [0.06, '#2a3344', 0.5, 'glass'], color: '#5fd4e6', glow: 3, geo: () => new THREE.CapsuleGeometry(0.035, 0.22, 4, 8), gap: 0.34, speed: 1.9, lift: 0, along: true },
+  // a cause: arrowheads along a fine line, "this pushes on that"; more arrows, a bigger effect
+  influence: { track: [0.028, '#6f6491', 0.55], color: '#9a86d6', glow: 1.8, geo: () => new THREE.ConeGeometry(0.1, 0.24, 18), gap: 0.55, speed: 1.0, lift: 0, along: true },
+  // hours and minutes: small glowing rings in a glass channel
+  time: { track: [0.065, '#3f5866', 0.4, 'glass'], color: '#7fc4d8', glow: 1.8, geo: () => new THREE.TorusGeometry(0.07, 0.022, 10, 24), gap: 0.4, speed: 0.9, lift: 0, along: true },
+  // carbon and other emissions: soft grey puffs drifting through the air, no pipe
+  carbon: { track: null, color: '#7b7f86', glow: 0, geo: () => new THREE.IcosahedronGeometry(0.14, 3), gap: 0.5, speed: 0.55, lift: 0.4, puff: true },
+  // medicine, food, pollutants, any stuff: capsules in a glass tube
+  substance: { track: [0.07, '#5c4a6e', 0.4, 'glass'], color: '#b58ae0', glow: 1.4, geo: () => new THREE.CapsuleGeometry(0.045, 0.1, 4, 10), gap: 0.36, speed: 0.9, lift: 0, along: true },
 };
 
 /** A soft shaft of light along a curve: brightest down its middle, gently pulsing. */
@@ -136,7 +144,7 @@ export function createFlow(scene, carrier, points) {
     group.add(shaft);
   }
   const color = new THREE.Color(look.color);
-  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: look.glow, roughness: look.metal ? 0.3 : 0.5, metalness: look.metal ? 0.7 : 0, envMapIntensity: look.metal ? 3 : 1, transparent: true });
+  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: look.glow, roughness: look.metal ? 0.3 : look.puff ? 1 : 0.5, metalness: look.metal ? 0.7 : 0, envMapIntensity: look.metal ? 3 : 1, transparent: true });
   const slots = Math.max(2, Math.ceil(length / look.gap));
   const rank = spreadOrder(slots);
   const parts = new THREE.InstancedMesh(look.geo(), mat, slots);
@@ -190,6 +198,12 @@ export function createFlow(scene, carrier, points) {
       curve.getPointAt(u, pos);
       curve.getTangentAt(u, tan);
       pos.y += look.lift;
+      let grow = 1;
+      if (look.puff) {
+        // a puff rises and swells a little as it drifts, like smoke
+        pos.y += 0.18 * Math.sin(u * length * 1.3 + i * 2.1) + u * 0.35;
+        grow = 0.7 + 0.6 * u;
+      }
       if (look.along) q.setFromUnitVectors(up, tan);
       else {
         tan.y = 0;
@@ -201,7 +215,7 @@ export function createFlow(scene, carrier, points) {
           q.multiply(spin.setFromAxisAngle(Z, -(u * length) / COIN_R));
         }
       }
-      m4.compose(pos, q, scl.setScalar(Math.max(s, 1e-4)));
+      m4.compose(pos, q, scl.setScalar(Math.max(s * grow, 1e-4)));
       parts.setMatrixAt(i, m4);
     }
     parts.instanceMatrix.needsUpdate = true;

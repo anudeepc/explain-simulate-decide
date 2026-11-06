@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "shape": "build-up",
   "question": "Should I put solar on my roof?",
   "source": {
     "title": "Homeowner's Guide to Solar; Will I Save Money with Solar Energy?",
@@ -107,7 +108,7 @@
       {
         "id": "monthlyBill",
         "label": "Your monthly power bill",
-        "unit": "$",
+        "unit": "$/month",
         "kind": "condition",
         "min": 40,
         "max": 500,
@@ -154,7 +155,7 @@
       {
         "id": "sunHours",
         "label": "Full-sun hours a day",
-        "unit": "h",
+        "unit": "h/day",
         "kind": "condition",
         "min": 3,
         "max": 6.5,
@@ -185,61 +186,68 @@
         "unit": "$/kWh",
         "value": 1150,
         "source": "assumption"
+      },
+      {
+        "id": "cycles",
+        "label": "Times the battery fills and empties a day",
+        "unit": "/day",
+        "value": 1,
+        "source": "assumption"
       }
     ],
     "derived": [
       {
         "id": "useKwh",
         "label": "Power your home uses a year",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "monthlyBill * 12 / price"
       },
       {
         "id": "yearlyKwh",
         "label": "Power the panels make a year",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "size * sunHours * 365 * efficiency"
       },
       {
         "id": "direct",
         "label": "Used as it's made",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "min(yearlyKwh * selfUse / 100, useKwh)"
       },
       {
         "id": "surplus",
         "label": "Not used right away",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "yearlyKwh - direct"
       },
       {
         "id": "shifted",
         "label": "Stored and used later",
-        "unit": "kWh",
-        "formula": "min(surplus * roundTrip, battery * 365, useKwh - direct)"
+        "unit": "kWh/yr",
+        "formula": "min(surplus * roundTrip, battery * cycles * 365, useKwh - direct)"
       },
       {
         "id": "exportedKwh",
         "label": "Sent to the grid",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "surplus - shifted / roundTrip"
       },
       {
         "id": "boughtKwh",
         "label": "Still bought from the grid",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "useKwh - direct - shifted"
       },
       {
         "id": "billSaving",
         "label": "Bill you avoid",
-        "unit": "$",
+        "unit": "$/yr",
         "formula": "(direct + shifted) * price"
       },
       {
         "id": "exportCredit",
         "label": "Export credit",
-        "unit": "$",
+        "unit": "$/yr",
         "formula": "exportedKwh * exportRate"
       },
       {
@@ -253,13 +261,13 @@
       {
         "id": "saving",
         "label": "Saved each year",
-        "unit": "$",
+        "unit": "$/yr",
         "formula": "billSaving + exportCredit"
       },
       {
         "id": "newBill",
         "label": "Your monthly bill after",
-        "unit": "$",
+        "unit": "$/month",
         "formula": "max(boughtKwh * price - exportCredit, 0) / 12"
       }
     ],
@@ -620,5 +628,47 @@
       "Can I get at least three quotes from certified installers?",
       "Which incentives apply to me right now?"
     ]
-  }
+  },
+  "checks": [
+    {
+      "claim": "Systems average about $2.60 per watt, so a 7 kW system costs about $18,200 before incentives",
+      "value": "cost",
+      "between": [
+        16000,
+        20000
+      ],
+      "quote": 9
+    },
+    {
+      "claim": "A typical home system pays for itself within its 25-year life",
+      "value": "paidBack",
+      "between": [
+        5,
+        25
+      ],
+      "reason": "Home solar usually pays back in roughly 6 to 20 years; a result outside 5 to 25 years at typical values means the model is wrong."
+    },
+    {
+      "claim": "Every unit the panels make is used, stored or sent to the grid",
+      "same": [
+        "yearlyKwh",
+        "direct + shifted / roundTrip + exportedKwh"
+      ]
+    },
+    {
+      "claim": "A bigger system saves more each year",
+      "value": "saving",
+      "rises": "size"
+    },
+    {
+      "claim": "More sun means a shorter payback",
+      "value": "paidBack",
+      "falls": "sunHours"
+    },
+    {
+      "claim": "Savings also depend on the electricity rates set by your utility",
+      "value": "saving",
+      "rises": "price"
+    }
+  ]
 }

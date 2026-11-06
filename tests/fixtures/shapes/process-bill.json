@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "shape": "process",
+  "question": "How does a bill become a law?",
+  "source": {
+    "title": "Test fixture written for this repo",
+    "publisher": "Illustrative, no numbers",
+    "quotes": ["A bill must pass both houses in the same form before it goes to the head of state."]
+  },
+  "world": {
+    "nodes": [
+      { "id": "idea", "kind": "document", "label": "A bill" },
+      { "id": "lower", "kind": "institution", "label": "Lower house" },
+      { "id": "upper", "kind": "institution", "label": "Upper house" },
+      { "id": "head", "kind": "building", "label": "Head of state" },
+      { "id": "people", "kind": "crowd", "label": "Everyone" }
+    ],
+    "flows": [
+      { "id": "introduced", "from": "idea", "to": "lower", "carrier": "goods", "label": "Introduced and debated" },
+      { "id": "passed", "from": "lower", "to": "upper", "carrier": "goods", "label": "Passed to the other house" },
+      { "id": "agreed", "from": "upper", "to": "head", "carrier": "goods", "label": "Agreed in the same form" },
+      { "id": "law", "from": "head", "to": "people", "carrier": "influence", "label": "Signed into law" }
+    ]
+  },
+  "explain": [
+    { "shot": "establish", "caption": "A new law starts as a written bill." },
+    { "shot": "follow", "focus": "introduced", "caption": "Someone introduces it, and the lower house debates it." },
+    { "shot": "follow", "focus": "passed", "caption": "If most members vote yes, it moves to the upper house." },
+    { "shot": "turn", "focus": "agreed", "caption": "Both houses must agree on exactly the same words." },
+    { "shot": "follow", "focus": "law", "caption": "Once signed, it applies to everyone." },
+    { "shot": "handoff", "caption": "Now weigh what this means for you." }
+  ],
+  "decide": {
+    "tradeoffs": ["Two houses slow laws down, which also gives more time to spot mistakes."],
+    "leftOut": ["Committees, amendments and court challenges are not shown."],
+    "questionsToAsk": ["Which house is debating the bill I care about right now?"]
+  }
+}

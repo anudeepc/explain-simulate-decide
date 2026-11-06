@@ -1,0 +1,482 @@
+{
+  "version": 2,
+  "shape": "chances",
+  "question": "Should I keep doing the bowel screening test every two years?",
+  "source": {
+    "title": "Bowel cancer screening: what the test can and can't tell you",
+    "publisher": "Test fixture written for this repo (numbers are illustrative)",
+    "quotes": [
+      "It is offered every two years to people aged 50 to 74.",
+      "Out of 1,000 people aged 50 to 74, about 30 will develop bowel cancer over the next 25 years if none of them is screened.",
+      "Over 25 years, screening every two years finds roughly 60% of the cancers that would develop, early enough to treat more easily.",
+      "Each time someone does the test, about 5 in 100 get a positive result.",
+      "Over many rounds of screening, about a third of people who keep screening will get at least one positive result.",
+      "In fact, fewer than 1 in 20 positive results turn out to be cancer.",
+      "Doing the test regularly matters more than doing it once."
+    ]
+  },
+  "model": {
+    "inputs": [
+      {
+        "id": "rounds",
+        "label": "Home tests you do from 50 to 74",
+        "unit": "tests",
+        "kind": "lever",
+        "min": 0,
+        "max": 13,
+        "step": 1,
+        "default": 13,
+        "source": "assumption"
+      },
+      {
+        "id": "followUp",
+        "label": "Positive results you follow up with a colonoscopy",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "default": 100,
+        "source": "assumption"
+      },
+      {
+        "id": "risk",
+        "label": "Chance of bowel cancer in 25 years without screening",
+        "unit": "%",
+        "kind": "condition",
+        "min": 1,
+        "max": 10,
+        "step": 0.5,
+        "default": 3,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "positiveRate",
+        "label": "Tests that come back positive",
+        "unit": "%/test",
+        "kind": "condition",
+        "min": 2,
+        "max": 10,
+        "step": 0.5,
+        "default": 5,
+        "source": "article",
+        "quote": 3
+      },
+      {
+        "id": "detect",
+        "label": "Cancers found early if you do every test",
+        "unit": "%",
+        "kind": "condition",
+        "min": 30,
+        "max": 80,
+        "step": 5,
+        "default": 60,
+        "source": "article",
+        "quote": 2
+      }
+    ],
+    "constants": [
+      {
+        "id": "testsOffered",
+        "label": "Tests offered from 50 to 74, one every two years",
+        "unit": "tests",
+        "value": 13,
+        "source": "assumption"
+      },
+      {
+        "id": "firstShare",
+        "label": "Positive results that are a person's first one",
+        "unit": "%",
+        "value": 50,
+        "source": "assumption"
+      }
+    ],
+    "derived": [
+      {
+        "id": "totalPositives",
+        "label": "Positive results per 100 people",
+        "unit": "%",
+        "formula": "rounds * positiveRate"
+      },
+      {
+        "id": "everPositive",
+        "label": "People with at least one positive result",
+        "unit": "%",
+        "formula": "min(100, totalPositives * firstShare / 100)"
+      },
+      {
+        "id": "cancerShown",
+        "label": "People whose cancer shows up on a test",
+        "unit": "%",
+        "formula": "risk * detect / 100 * rounds / testsOffered"
+      },
+      {
+        "id": "colonoscopies",
+        "label": "People who have a colonoscopy",
+        "unit": "%",
+        "formula": "everPositive * followUp / 100"
+      },
+      {
+        "id": "foundShare",
+        "label": "Share of cancers found early",
+        "unit": "%",
+        "formula": "detect * rounds / testsOffered * followUp / 100"
+      },
+      {
+        "id": "cancerPerPositive",
+        "label": "Positive results that are cancer",
+        "unit": "%",
+        "formula": "cancerShown / max(totalPositives, 1) * 100"
+      },
+      {
+        "id": "missed",
+        "label": "Cancer not found early, out of 100",
+        "unit": "%",
+        "formula": "risk - caughtEarly"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "caughtEarly",
+        "label": "Cancer found early, out of 100",
+        "unit": "%",
+        "formula": "cancerShown * followUp / 100"
+      },
+      {
+        "id": "falseAlarm",
+        "label": "Colonoscopy that finds no cancer, out of 100",
+        "unit": "%",
+        "formula": "max(0, everPositive - cancerShown) * followUp / 100"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "claim": "Screening every two years finds roughly 60% of the cancers that would develop",
+      "value": "foundShare",
+      "between": [
+        55,
+        65
+      ],
+      "quote": 2
+    },
+    {
+      "claim": "About a third of people who keep screening get at least one positive result",
+      "value": "everPositive",
+      "between": [
+        30,
+        37
+      ],
+      "quote": 4
+    },
+    {
+      "claim": "Fewer than 1 in 20 positive results turn out to be cancer",
+      "value": "cancerPerPositive",
+      "between": [
+        0,
+        5
+      ],
+      "quote": 5
+    },
+    {
+      "claim": "Without screening, about 30 in 1,000 get bowel cancer that is not found early",
+      "value": "missed",
+      "between": [
+        2.9,
+        3.1
+      ],
+      "when": {
+        "rounds": 0
+      },
+      "quote": 1
+    },
+    {
+      "claim": "Doing more tests finds more cancers early",
+      "value": "caughtEarly",
+      "rises": "rounds"
+    },
+    {
+      "claim": "Doing more tests also means more colonoscopies that find nothing",
+      "value": "falseAlarm",
+      "rises": "rounds"
+    },
+    {
+      "claim": "Missing tests lets more cancers grow without being found",
+      "value": "missed",
+      "falls": "rounds"
+    },
+    {
+      "claim": "Following up a positive result finds more cancers early",
+      "value": "caughtEarly",
+      "rises": "followUp"
+    },
+    {
+      "claim": "Everyone who has a colonoscopy either has cancer found or no cancer found",
+      "same": [
+        "colonoscopies",
+        "caughtEarly + falseAlarm"
+      ]
+    }
+  ],
+  "world": {
+    "nodes": [
+      {
+        "id": "people",
+        "prop": "crowd",
+        "label": "100 people aged 50 to 74",
+        "plays": "risk"
+      },
+      {
+        "id": "kit",
+        "prop": "calendar",
+        "label": "Home test every two years",
+        "plays": "rounds"
+      },
+      {
+        "id": "clinic",
+        "kind": "building",
+        "label": "Colonoscopy",
+        "plays": "colonoscopies"
+      },
+      {
+        "id": "foundCrowd",
+        "prop": "crowd",
+        "label": "Cancer found early",
+        "plays": "caughtEarly"
+      },
+      {
+        "id": "clearCrowd",
+        "prop": "crowd",
+        "label": "Colonoscopy finds no cancer",
+        "plays": "falseAlarm"
+      },
+      {
+        "id": "missedCrowd",
+        "prop": "crowd",
+        "label": "Cancer not found early",
+        "plays": "missed"
+      }
+    ],
+    "flows": [
+      {
+        "id": "fSamples",
+        "from": "people",
+        "to": "kit",
+        "carrier": "goods",
+        "rate": "rounds",
+        "label": "Samples posted in",
+        "unit": "tests"
+      },
+      {
+        "id": "fPositive",
+        "from": "kit",
+        "to": "clinic",
+        "carrier": "people",
+        "rate": "colonoscopies",
+        "label": "Positive result: colonoscopy",
+        "unit": "%"
+      },
+      {
+        "id": "fFound",
+        "from": "clinic",
+        "to": "foundCrowd",
+        "carrier": "people",
+        "rate": "caughtEarly",
+        "label": "Cancer found early",
+        "unit": "%"
+      },
+      {
+        "id": "fClear",
+        "from": "clinic",
+        "to": "clearCrowd",
+        "carrier": "people",
+        "rate": "falseAlarm",
+        "label": "No cancer found",
+        "unit": "%"
+      },
+      {
+        "id": "fMissed",
+        "from": "people",
+        "to": "missedCrowd",
+        "carrier": "people",
+        "rate": "missed",
+        "label": "Cancer grows unseen",
+        "unit": "%"
+      }
+    ]
+  },
+  "ask": [
+    {
+      "question": "How many of the home tests will you do between 50 and 74?",
+      "help": "One test is posted to you every two years, so 13 in all.",
+      "choices": [
+        {
+          "label": "Every one I'm sent",
+          "set": {
+            "rounds": 13
+          },
+          "quote": 0
+        },
+        {
+          "label": "About half",
+          "set": {
+            "rounds": 6
+          }
+        },
+        {
+          "label": "Just one",
+          "set": {
+            "rounds": 1
+          }
+        },
+        {
+          "label": "None",
+          "set": {
+            "rounds": 0
+          }
+        },
+        {
+          "label": "Not sure yet",
+          "set": {
+            "rounds": 13
+          }
+        }
+      ]
+    },
+    {
+      "question": "If a test came back positive, would you have the colonoscopy?",
+      "help": "A colonoscopy is a camera check of the bowel, done in hospital.",
+      "choices": [
+        {
+          "label": "Yes",
+          "set": {
+            "followUp": 100
+          }
+        },
+        {
+          "label": "Probably",
+          "set": {
+            "followUp": 75
+          }
+        },
+        {
+          "label": "Probably not",
+          "set": {
+            "followUp": 25
+          }
+        },
+        {
+          "label": "Not sure",
+          "set": {
+            "followUp": 100
+          }
+        }
+      ]
+    }
+  ],
+  "explain": [
+    {
+      "shot": "establish",
+      "caption": "Out of 100 people your age, who gets bowel cancer?"
+    },
+    {
+      "shot": "introduce",
+      "focus": "people",
+      "caption": "A few of them will get bowel cancer over 25 years."
+    },
+    {
+      "shot": "follow",
+      "focus": "fSamples",
+      "caption": "Every two years, each person posts a small sample."
+    },
+    {
+      "shot": "focus",
+      "focus": "kit",
+      "caption": "A positive result means the test found traces of blood."
+    },
+    {
+      "shot": "follow",
+      "focus": "fPositive",
+      "caption": "A positive result leads to a colonoscopy, a camera check."
+    },
+    {
+      "shot": "follow",
+      "focus": "fFound",
+      "caption": "Some colonoscopies find cancer early, when it is easier to treat."
+    },
+    {
+      "shot": "turn",
+      "focus": "fClear",
+      "caption": "But most positive results turn out not to be cancer."
+    },
+    {
+      "shot": "cause",
+      "focus": "fFound",
+      "drive": "rounds",
+      "caption": "Skip tests, and fewer cancers are found early."
+    },
+    {
+      "shot": "follow",
+      "focus": "fMissed",
+      "caption": "So cancers that aren't found keep growing unseen."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Answer two quick questions."
+    }
+  ],
+  "simulate": {
+    "controls": [
+      "rounds",
+      "followUp",
+      "risk",
+      "positiveRate",
+      "detect"
+    ],
+    "prompt": "Try fewer tests, or skipping a colonoscopy, and watch the crowds."
+  },
+  "decide": {
+    "compare": [
+      {
+        "label": "No tests",
+        "set": {
+          "rounds": 0
+        }
+      },
+      {
+        "label": "One test only",
+        "set": {
+          "rounds": 1
+        }
+      },
+      {
+        "label": "Every test offered",
+        "set": {
+          "rounds": 13
+        }
+      }
+    ],
+    "tradeoffs": [
+      "More tests find more cancers early, but also mean more positive results that turn out to be nothing.",
+      "A colonoscopy can find cancer early, but it is uncomfortable and carries a small risk.",
+      "The home test is simple and private, but a negative result does not rule cancer out.",
+      "Doing every test takes a few minutes every two years, while skipping tests leaves gaps where a cancer can grow unseen."
+    ],
+    "leftOut": [
+      "The numbers in this article are illustrative, so check the figures for your own country's program.",
+      "Your own risk can be higher or lower than average, for example with a family history of bowel cancer.",
+      "The model assumes each test you do finds the same share of cancers; in real life the timing of tests matters.",
+      "How often people get a second positive result is an assumption, chosen so about a third get at least one.",
+      "It leaves out the small risks of colonoscopy itself, and cancers that appear between tests.",
+      "Symptoms matter whatever your last test said: the model does not cover them."
+    ],
+    "questionsToAsk": [
+      "Is my risk of bowel cancer higher or lower than average?",
+      "What happens after a positive result, and how soon would I have a colonoscopy?",
+      "What are the risks of a colonoscopy for someone like me?",
+      "If I have missed some tests, can I start again now?",
+      "Which symptoms should make me see you, whatever my last test said?"
+    ]
+  }
+}

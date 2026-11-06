@@ -1,0 +1,523 @@
+{
+  "version": 2,
+  "shape": "budget",
+  "question": "What happens to my free time if I work from home?",
+  "source": {
+    "title": "Working from home: where do the hours go?",
+    "publisher": "Test fixture written for this repo (illustrative numbers)",
+    "quotes": [
+      "There are 24 hours in every day, and how we split them shapes our health and happiness.",
+      "A typical full-time office worker sleeps about 7 hours, works about 8, and spends close to an hour a day travelling to and from work.",
+      "Meals, chores and getting ready take another 3 hours or so.",
+      "What is left is free time: on a typical workday, around 5 hours.",
+      "On average people who work from home spend about a third of their saved travel time working longer, and about a third on chores and family care.",
+      "Even 20 extra minutes of free time a day is over an hour and a half across a working week.",
+      "People with long commutes gain the most."
+    ]
+  },
+  "model": {
+    "inputs": [
+      {
+        "id": "wfhDays",
+        "label": "Days a week you work from home",
+        "unit": "day/week",
+        "kind": "lever",
+        "min": 0,
+        "max": 5,
+        "step": 1,
+        "default": 2,
+        "source": "assumption"
+      },
+      {
+        "id": "workShare",
+        "label": "Saved travel time spent working",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 60,
+        "step": 1,
+        "default": 33,
+        "source": "article",
+        "quote": 4
+      },
+      {
+        "id": "sleep",
+        "label": "Sleep",
+        "unit": "h/day",
+        "kind": "lever",
+        "min": 5,
+        "max": 9,
+        "step": 0.25,
+        "default": 7,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "commute",
+        "label": "Travel to work and back",
+        "unit": "h/day",
+        "kind": "condition",
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "default": 1,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "baseWork",
+        "label": "Work hours",
+        "unit": "h/day",
+        "kind": "condition",
+        "min": 6,
+        "max": 9,
+        "step": 0.25,
+        "default": 8,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "baseChores",
+        "label": "Meals, chores and getting ready",
+        "unit": "h/day",
+        "kind": "condition",
+        "min": 2,
+        "max": 4,
+        "step": 0.25,
+        "default": 3,
+        "source": "article",
+        "quote": 2
+      },
+      {
+        "id": "choreShare",
+        "label": "Saved travel time spent on chores and family",
+        "unit": "%",
+        "kind": "condition",
+        "min": 0,
+        "max": 40,
+        "step": 1,
+        "default": 33,
+        "source": "article",
+        "quote": 4
+      }
+    ],
+    "constants": [
+      {
+        "id": "dayHours",
+        "label": "Hours in a day",
+        "unit": "h/day",
+        "value": 24,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "workdays",
+        "label": "Workdays in a week",
+        "unit": "day/week",
+        "value": 5,
+        "source": "assumption"
+      }
+    ],
+    "derived": [
+      {
+        "id": "saved",
+        "label": "Travel time saved, average workday",
+        "unit": "h/day",
+        "formula": "commute * wfhDays / workdays"
+      },
+      {
+        "id": "travel",
+        "label": "Travel time, average workday",
+        "unit": "h/day",
+        "formula": "commute - saved"
+      },
+      {
+        "id": "toWork",
+        "label": "Saved time spent working",
+        "unit": "h/day",
+        "formula": "saved * workShare / 100"
+      },
+      {
+        "id": "toChores",
+        "label": "Saved time spent on chores",
+        "unit": "h/day",
+        "formula": "saved * choreShare / 100"
+      },
+      {
+        "id": "toFree",
+        "label": "Saved time kept free",
+        "unit": "h/day",
+        "formula": "max(0, saved * (100 - workShare - choreShare) / 100)"
+      },
+      {
+        "id": "freeBase",
+        "label": "Free time on an office day",
+        "unit": "h/day",
+        "formula": "max(0, dayHours - sleep - baseWork - baseChores - commute)"
+      },
+      {
+        "id": "work",
+        "label": "Work, average workday",
+        "unit": "h/day",
+        "formula": "baseWork + toWork"
+      },
+      {
+        "id": "chores",
+        "label": "Chores, average workday",
+        "unit": "h/day",
+        "formula": "baseChores + toChores"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "free",
+        "label": "Free time on an average workday",
+        "unit": "h/day",
+        "formula": "freeBase + toFree"
+      },
+      {
+        "id": "weeklyGain",
+        "label": "Extra free time a week",
+        "unit": "h/week",
+        "formula": "toFree * workdays"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "claim": "On a typical office workday, around 5 hours are left as free time",
+      "value": "free",
+      "between": [
+        4.5,
+        5.5
+      ],
+      "when": {
+        "wfhDays": 0
+      },
+      "quote": 3
+    },
+    {
+      "claim": "About 20 extra minutes a day is over an hour and a half across a working week",
+      "value": "weeklyGain",
+      "between": [
+        1.5,
+        2
+      ],
+      "when": {
+        "wfhDays": 5
+      },
+      "quote": 5
+    },
+    {
+      "claim": "More days at home means more free time each week",
+      "value": "weeklyGain",
+      "rises": "wfhDays"
+    },
+    {
+      "claim": "People with long commutes gain the most",
+      "value": "weeklyGain",
+      "rises": "commute"
+    },
+    {
+      "claim": "The more saved time leaks into work, the less free time is left",
+      "value": "free",
+      "falls": "workShare"
+    },
+    {
+      "claim": "The parts of the day add up to 24 hours",
+      "same": [
+        "sleep + work + chores + travel + free",
+        "dayHours"
+      ]
+    },
+    {
+      "claim": "Every saved travel hour goes to work, chores or free time",
+      "same": [
+        "commute",
+        "travel + toWork + toChores + toFree"
+      ]
+    }
+  ],
+  "world": {
+    "nodes": [
+      {
+        "id": "day",
+        "prop": "clock",
+        "label": "Your 24-hour day"
+      },
+      {
+        "id": "bed",
+        "prop": "body",
+        "label": "Sleep",
+        "plays": "sleep"
+      },
+      {
+        "id": "office",
+        "prop": "building",
+        "label": "Work",
+        "plays": "work"
+      },
+      {
+        "id": "home",
+        "prop": "house",
+        "label": "Meals, chores, getting ready",
+        "plays": "chores"
+      },
+      {
+        "id": "car",
+        "prop": "car",
+        "label": "Travel to work",
+        "plays": "travel"
+      },
+      {
+        "id": "you",
+        "prop": "person-figure",
+        "label": "Free time",
+        "plays": "free"
+      }
+    ],
+    "flows": [
+      {
+        "id": "toSleep",
+        "from": "day",
+        "to": "bed",
+        "carrier": "time",
+        "rate": "sleep",
+        "label": "Sleep",
+        "unit": "h/day"
+      },
+      {
+        "id": "toWorkBase",
+        "from": "day",
+        "to": "office",
+        "carrier": "time",
+        "rate": "baseWork",
+        "label": "Work hours",
+        "unit": "h/day"
+      },
+      {
+        "id": "toChoresBase",
+        "from": "day",
+        "to": "home",
+        "carrier": "time",
+        "rate": "baseChores",
+        "label": "Meals and chores",
+        "unit": "h/day"
+      },
+      {
+        "id": "toTravel",
+        "from": "day",
+        "to": "car",
+        "carrier": "time",
+        "rate": "commute",
+        "label": "Time for travel",
+        "unit": "h/day"
+      },
+      {
+        "id": "toFreeBase",
+        "from": "day",
+        "to": "you",
+        "carrier": "time",
+        "rate": "freeBase",
+        "label": "Time left over",
+        "unit": "h/day"
+      },
+      {
+        "id": "leakWork",
+        "from": "car",
+        "to": "office",
+        "carrier": "time",
+        "rate": "toWork",
+        "label": "Saved travel time spent working",
+        "unit": "h/day"
+      },
+      {
+        "id": "leakChores",
+        "from": "car",
+        "to": "home",
+        "carrier": "time",
+        "rate": "toChores",
+        "label": "Saved travel time spent on chores",
+        "unit": "h/day"
+      },
+      {
+        "id": "leakFree",
+        "from": "car",
+        "to": "you",
+        "carrier": "time",
+        "rate": "toFree",
+        "label": "Saved travel time kept free",
+        "unit": "h/day"
+      }
+    ]
+  },
+  "ask": [
+    {
+      "question": "How many days a week do you work from home?",
+      "help": "Think of a usual week. Put 0 if you never do.",
+      "input": "wfhDays"
+    },
+    {
+      "question": "How long is your trip to work, there and back?",
+      "choices": [
+        {
+          "label": "Under half an hour",
+          "set": {
+            "commute": 0.4
+          },
+          "source": "assumption"
+        },
+        {
+          "label": "About an hour, or not sure",
+          "set": {
+            "commute": 1
+          }
+        },
+        {
+          "label": "About two hours",
+          "set": {
+            "commute": 2
+          },
+          "source": "assumption"
+        }
+      ]
+    },
+    {
+      "question": "On days at home, when does your work stop?",
+      "choices": [
+        {
+          "label": "At a fixed time",
+          "set": {
+            "workShare": 10
+          }
+        },
+        {
+          "label": "When the work is done",
+          "set": {
+            "workShare": 50
+          }
+        },
+        {
+          "label": "Not sure",
+          "set": {
+            "workShare": 33
+          }
+        }
+      ]
+    },
+    {
+      "question": "How many hours do you usually sleep?",
+      "help": "A sleep app, or a rough guess from last week.",
+      "input": "sleep"
+    }
+  ],
+  "explain": [
+    {
+      "shot": "establish",
+      "caption": "Every day has 24 hours. Where do yours go?"
+    },
+    {
+      "shot": "follow",
+      "focus": "toSleep",
+      "caption": "Sleep takes the biggest share of your day."
+    },
+    {
+      "shot": "follow",
+      "focus": "toWorkBase",
+      "caption": "Work takes the next big share."
+    },
+    {
+      "shot": "follow",
+      "focus": "toChoresBase",
+      "caption": "Meals, chores and getting ready fill a few more hours."
+    },
+    {
+      "shot": "follow",
+      "focus": "toTravel",
+      "caption": "Getting to work and back takes time too."
+    },
+    {
+      "shot": "follow",
+      "focus": "toFreeBase",
+      "caption": "What is left over is your free time."
+    },
+    {
+      "shot": "cause",
+      "focus": "leakFree",
+      "drive": "wfhDays",
+      "caption": "Each day at home saves your travel time for something else."
+    },
+    {
+      "shot": "turn",
+      "focus": "leakWork",
+      "caption": "But much of that saved time slips into longer work."
+    },
+    {
+      "shot": "follow",
+      "focus": "leakChores",
+      "caption": "More of it goes on chores and family care."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "drive": "workShare",
+      "caption": "So a fixed finish time keeps more hours free."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Answer a few questions."
+    }
+  ],
+  "simulate": {
+    "controls": [
+      "wfhDays",
+      "workShare",
+      "commute",
+      "sleep",
+      "choreShare"
+    ],
+    "prompt": "Try your own week, trip and finish time."
+  },
+  "decide": {
+    "compare": [
+      {
+        "label": "Office every day",
+        "set": {
+          "wfhDays": 0
+        }
+      },
+      {
+        "label": "Home every day",
+        "set": {
+          "wfhDays": 5
+        }
+      },
+      {
+        "label": "Home every day, no extra work",
+        "set": {
+          "wfhDays": 5,
+          "workShare": 0
+        }
+      }
+    ],
+    "tradeoffs": [
+      "Working from home saves travel time, but much of it can slip into longer workdays.",
+      "More time at home helps with chores and family care, but that time is not free time.",
+      "People with long trips gain the most hours, and people with short trips gain little.",
+      "People who live alone may gain hours but feel more isolated.",
+      "A fixed finish time protects free time, but some jobs make it hard to stop on time."
+    ],
+    "leftOut": [
+      "The shares of saved time going to work and chores are survey averages; yours may be very different.",
+      "The model puts all the rest into free time, though some of it becomes sleep.",
+      "It counts workdays only, and assumes a five-day week; check what applies to you.",
+      "Feelings such as isolation, or finding it hard to stop working, are not counted.",
+      "Costs such as heating at home or travel fares are left out."
+    ],
+    "questionsToAsk": [
+      "Can I agree a fixed finish time with my employer on days at home?",
+      "Which days at home would save me the longest trips?",
+      "Is there a spot at home where work can stay when the day ends?"
+    ]
+  }
+}

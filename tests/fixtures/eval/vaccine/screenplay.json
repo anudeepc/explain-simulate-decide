@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "shape": "process",
+  "question": "How does a vaccine teach my body to fight an infection?",
+  "source": {
+    "title": "How a vaccine teaches your body to fight an infection",
+    "publisher": "Test fixture written for this repo",
+    "quotes": [
+      "A vaccine trains your immune system to recognise a germ before you ever meet the real thing.",
+      "First, the vaccine shows the body a harmless piece or copy of the germ: a protein from its surface, a weakened version, or instructions that let your own cells make the protein for a short time.",
+      "Specialist cells called B cells start making antibodies, which stick to the protein and mark it for destruction.",
+      "Other cells, called T cells, learn to find and destroy infected cells.",
+      "After the response settles down, some B and T cells stay on as memory cells, sometimes for years.",
+      "The body makes antibodies within days instead of weeks, often before you feel ill.",
+      "Many people think a vaccine works like a medicine that kills the germ. It doesn't: it works by training your own immune system, which is why it has to be given before an infection, and why some vaccines need boosters as memory fades.",
+      "Vaccines can cause short-lived side effects such as a sore arm or a mild fever. These are signs of the immune system learning, not of the infection itself."
+    ]
+  },
+  "world": {
+    "nodes": [
+      { "id": "vaccine", "kind": "medicine", "label": "Vaccine" },
+      { "id": "body", "prop": "body", "label": "Your immune system" },
+      { "id": "bcells", "label": "B cells: make antibodies",
+        "recipe": [
+          { "shape": "sphere", "size": [0.9, 0.9, 0.9], "color": "#6fa8dc" },
+          { "shape": "sphere", "size": [0.35, 0.35, 0.35], "color": "#3d5f8a", "at": [0, 0, 0.35] }
+        ] },
+      { "id": "tcells", "label": "T cells: find infected cells",
+        "recipe": [
+          { "shape": "sphere", "size": [0.9, 0.9, 0.9], "color": "#93c47d" },
+          { "shape": "sphere", "size": [0.35, 0.35, 0.35], "color": "#4f7a3f", "at": [0, 0, 0.35] }
+        ] },
+      { "id": "memory", "label": "Memory cells",
+        "recipe": [
+          { "shape": "sphere", "size": [0.6, 0.6, 0.6], "color": "#b4a7d6", "at": [-0.35, 0, 0] },
+          { "shape": "sphere", "size": [0.6, 0.6, 0.6], "color": "#8e7cc3", "at": [0.35, 0, 0] },
+          { "shape": "sphere", "size": [0.6, 0.6, 0.6], "color": "#b4a7d6", "at": [0, 0.5, 0] }
+        ] },
+      { "id": "germ", "label": "The real germ, later",
+        "recipe": [
+          { "shape": "sphere", "size": [0.8, 0.8, 0.8], "color": "#e06666" },
+          { "shape": "cone", "size": [0.18, 0.35, 0.18], "color": "#990000", "at": [0, 0.5, 0] },
+          { "shape": "cone", "size": [0.18, 0.35, 0.18], "color": "#990000", "at": [0, -0.5, 0], "rotate": [180, 0, 0] },
+          { "shape": "cone", "size": [0.18, 0.35, 0.18], "color": "#990000", "at": [0.5, 0, 0], "rotate": [0, 0, -90] },
+          { "shape": "cone", "size": [0.18, 0.35, 0.18], "color": "#990000", "at": [-0.5, 0, 0], "rotate": [0, 0, 90] }
+        ] }
+    ],
+    "flows": [
+      { "id": "shown", "from": "vaccine", "to": "body", "carrier": "substance", "label": "A harmless piece of the germ" },
+      { "id": "alarmB", "from": "body", "to": "bcells", "carrier": "data", "label": "Alarm raised" },
+      { "id": "alarmT", "from": "body", "to": "tcells", "carrier": "data", "label": "Alarm raised" },
+      { "id": "keepB", "from": "bcells", "to": "memory", "carrier": "data", "label": "Some stay on as memory" },
+      { "id": "keepT", "from": "tcells", "to": "memory", "carrier": "data", "label": "Some stay on as memory" },
+      { "id": "arrives", "from": "germ", "to": "memory", "carrier": "substance", "label": "Real germ arrives" },
+      { "id": "stopped", "from": "memory", "to": "germ", "carrier": "influence", "label": "Fast antibodies stop it" }
+    ]
+  },
+  "explain": [
+    { "shot": "establish", "caption": "How does a vaccine teach your body to fight a germ?" },
+    { "shot": "follow", "focus": "shown", "caption": "First, the vaccine shows your body a harmless piece of the germ." },
+    { "shot": "focus", "focus": "body", "caption": "Your immune cells spot this strange piece and raise the alarm." },
+    { "shot": "follow", "focus": "alarmB", "caption": "B cells make antibodies, which stick to the piece and mark it." },
+    { "shot": "follow", "focus": "alarmT", "caption": "T cells learn to find and destroy infected cells." },
+    { "shot": "follow", "focus": "keepB", "caption": "Then some B and T cells stay on as memory cells." },
+    { "shot": "follow", "focus": "arrives", "caption": "Later, the real germ arrives, and memory cells know it at once." },
+    { "shot": "turn", "focus": "stopped", "caption": "But the vaccine kills nothing. Your own trained cells stop the germ." },
+    { "shot": "handoff", "caption": "So it works only if given before you meet the germ." }
+  ],
+  "decide": {
+    "tradeoffs": [
+      "A vaccine can cause a sore arm or mild fever for a short time, but these are signs of your body learning, not the infection.",
+      "A vaccine has to be given before an infection to help, so you take it while you still feel well.",
+      "Memory can fade, so some vaccines need boosters: more protection means more visits."
+    ],
+    "leftOut": [
+      "How well any one vaccine protects, and for how long; this picture has no numbers.",
+      "How often side effects happen, and rare side effects; the article only names mild ones.",
+      "Differences between kinds of vaccine (a protein piece, a weakened germ, or instructions for your cells).",
+      "Your own health, age and any conditions that change how your immune system responds; check what applies to you."
+    ],
+    "questionsToAsk": [
+      "Which kind of vaccine is this, and what does it show my body?",
+      "How long does protection usually last, and will I need a booster?",
+      "Which side effects are common, and which ones mean I should call you?",
+      "Is there anything about my health that changes whether or when I should have it?"
+    ]
+  }
+}

@@ -1,10 +1,10 @@
 {
   "version": 2,
+  "shape": "build-up",
   "question": "Should I replace my gas furnace with a heat pump?",
   "source": {
     "title": "Thinking about a heat pump? (synthetic test article)",
     "publisher": "Test fixture written for this repo, illustrative numbers",
-    "url": "",
     "quotes": [
       "a typical heat pump delivers about three units of heat for every unit of electricity it uses.",
       "A good gas furnace turns about 90 percent of its fuel into heat.",
@@ -29,7 +29,7 @@
       {
         "id": "cop",
         "label": "Heat pump efficiency",
-        "unit": "× heat per unit",
+        "unit": "×",
         "kind": "lever",
         "min": 2,
         "max": 4.5,
@@ -41,7 +41,7 @@
       {
         "id": "heatNeed",
         "label": "Heat your home needs a year",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "kind": "condition",
         "min": 6000,
         "max": 30000,
@@ -93,25 +93,25 @@
       {
         "id": "heat",
         "label": "Heat needed after insulating",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "heatNeed * (100 - insulation) / 100"
       },
       {
         "id": "gasCost",
         "label": "Yearly cost with gas",
-        "unit": "$",
+        "unit": "$/yr",
         "formula": "heat / furnaceEff * gasPrice"
       },
       {
         "id": "hpCost",
         "label": "Yearly cost with a heat pump",
-        "unit": "$",
+        "unit": "$/yr",
         "formula": "heat / cop * elecPrice"
       },
       {
         "id": "hpKwh",
         "label": "Electricity the heat pump uses",
-        "unit": "kWh",
+        "unit": "kWh/yr",
         "formula": "heat / cop"
       }
     ],
@@ -119,7 +119,7 @@
       {
         "id": "saving",
         "label": "Saved each year",
-        "unit": "$",
+        "unit": "$/yr",
         "formula": "gasCost - hpCost"
       }
     ],
@@ -281,7 +281,8 @@
           "label": "Mild",
           "set": {
             "heatNeed": 8000
-          }
+          },
+          "source": "assumption"
         },
         {
           "label": "Average",
@@ -293,7 +294,8 @@
           "label": "Cold",
           "set": {
             "heatNeed": 25000
-          }
+          },
+          "source": "assumption"
         }
       ]
     },
@@ -310,7 +312,8 @@
           "label": "Cheaper than most",
           "set": {
             "gasPrice": 0.04
-          }
+          },
+          "source": "assumption"
         },
         {
           "label": "About average",
@@ -322,7 +325,8 @@
           "label": "Pricier than most",
           "set": {
             "gasPrice": 0.09
-          }
+          },
+          "source": "assumption"
         }
       ]
     },
@@ -440,5 +444,40 @@
       "What rebates are available where I live?",
       "What would insulating first change about the system size?"
     ]
-  }
+  },
+  "checks": [
+    {
+      "claim": "A typical heat pump delivers about three units of heat for every unit of electricity",
+      "value": "hpKwh",
+      "between": [
+        4500,
+        5500
+      ],
+      "quote": 0
+    },
+    {
+      "claim": "At typical prices, running a heat pump costs within a few hundred dollars a year of running a gas furnace",
+      "value": "saving",
+      "between": [
+        -600,
+        900
+      ],
+      "reason": "Illustrative fixture: with these prices the two running costs should be close, not thousands apart."
+    },
+    {
+      "claim": "Running cost depends on both prices: dearer gas makes the switch save more",
+      "value": "saving",
+      "rises": "gasPrice"
+    },
+    {
+      "claim": "Dearer electricity makes the switch save less",
+      "value": "saving",
+      "falls": "elecPrice"
+    },
+    {
+      "claim": "Insulating first shrinks the heat you need",
+      "value": "heat",
+      "falls": "insulation"
+    }
+  ]
 }

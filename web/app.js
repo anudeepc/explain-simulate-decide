@@ -144,10 +144,12 @@ function sectionWatcher() {
 }
 const SECTIONS = {
   version: [0, 'Starting the screenplay'],
+  shape: [0.01, 'Choosing the story’s shape'],
   question: [0.02, 'Framing the decision'],
   source: [0.05, 'Quoting the article’s numbers'],
   model: [0.18, 'Writing the model: inputs, formulas and what builds up over time'],
   world: [0.45, 'Building the world: the things and the flows between them'],
+  checks: [0.56, 'Writing checks against what the source says'],
   ask: [0.6, 'Writing the questions the page will ask you'],
   explain: [0.7, 'Writing the shots for the film'],
   simulate: [0.84, 'Choosing the controls you can move'],

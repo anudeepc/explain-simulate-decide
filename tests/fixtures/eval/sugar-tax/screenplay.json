@@ -1,0 +1,443 @@
+{
+  "version": 2,
+  "shape": "cause",
+  "question": "What would change for me if sugary drinks were taxed?",
+  "source": {
+    "title": "What a sugar tax on soft drinks changes",
+    "publisher": "Test fixture (illustrative numbers)",
+    "quotes": [
+      "A typical design adds 20% to the shelf price of drinks with a lot of added sugar.",
+      "Shops pass most of the tax on to customers: studies find prices rise by about 80% of the tax.",
+      "For every 10% rise in price, people buy about 12% less of the taxed drinks, according to a large review of studies.",
+      "In one country, the sugar in soft drinks sold fell by about 30% within three years, mostly because recipes changed, not because people bought fewer drinks.",
+      "Faced with the tax, many reformulate their drinks to fall below the sugar threshold.",
+      "In practice, the biggest effect often comes from companies changing recipes before the tax even starts.",
+      "It takes a larger share of income from poorer households, who drink more soft drinks.",
+      "The money raised goes to the government."
+    ]
+  },
+  "model": {
+    "inputs": [
+      {
+        "id": "tax",
+        "label": "Tax on the shelf price",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 40,
+        "step": 1,
+        "default": 20,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "reformShare",
+        "label": "Drinks makers change to below the line",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 90,
+        "step": 5,
+        "default": 50,
+        "source": "assumption"
+      },
+      {
+        "id": "drinksPerWeek",
+        "label": "Sugary drinks you buy a week",
+        "unit": "drinks/week",
+        "kind": "lever",
+        "min": 0,
+        "max": 21,
+        "step": 1,
+        "default": 5,
+        "source": "assumption"
+      },
+      {
+        "id": "passThrough",
+        "label": "Share of the tax shops add to prices",
+        "unit": "%",
+        "kind": "condition",
+        "min": 50,
+        "max": 100,
+        "step": 5,
+        "default": 80,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "pricePerDrink",
+        "label": "Price of one drink before the tax",
+        "unit": "$/drink",
+        "kind": "condition",
+        "min": 0.5,
+        "max": 4,
+        "step": 0.1,
+        "default": 1.5,
+        "source": "assumption"
+      }
+    ],
+    "constants": [
+      {
+        "id": "elasticity",
+        "label": "Drop in buying for each 1% price rise",
+        "unit": "",
+        "value": 1.2,
+        "source": "article",
+        "quote": 2
+      },
+      {
+        "id": "sugarCut",
+        "label": "Sugar cut in a changed recipe",
+        "unit": "%",
+        "value": 40,
+        "source": "assumption"
+      }
+    ],
+    "derived": [
+      {
+        "id": "priceRise",
+        "label": "Rise in shelf price",
+        "unit": "%",
+        "formula": "tax * passThrough / 100"
+      },
+      {
+        "id": "buyDrop",
+        "label": "Drop in taxed drinks bought",
+        "unit": "%",
+        "formula": "min(100, priceRise * elasticity)"
+      },
+      {
+        "id": "taxedShare",
+        "label": "Drinks still above the line",
+        "unit": "%",
+        "formula": "100 - reformShare"
+      },
+      {
+        "id": "buyCut",
+        "label": "Sugar cut by buying less",
+        "unit": "%",
+        "formula": "taxedShare * buyDrop / 100"
+      },
+      {
+        "id": "recipeCut",
+        "label": "Sugar cut by new recipes",
+        "unit": "%",
+        "formula": "reformShare * sugarCut / 100"
+      },
+      {
+        "id": "recipeLead",
+        "label": "How much more recipes cut than buying less",
+        "unit": "%",
+        "formula": "recipeCut - buyCut"
+      },
+      {
+        "id": "drinksBought",
+        "label": "Taxed drinks you still buy",
+        "unit": "drinks/week",
+        "formula": "drinksPerWeek * taxedShare / 100 * (100 - buyDrop) / 100"
+      },
+      {
+        "id": "taxRaised",
+        "label": "Tax collected on your drinks",
+        "unit": "$/yr",
+        "formula": "drinksBought * 52 * pricePerDrink * tax / 100"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "sugarFall",
+        "label": "Fall in sugar from soft drinks",
+        "unit": "%",
+        "formula": "buyCut + recipeCut"
+      },
+      {
+        "id": "extraCost",
+        "label": "Extra you pay a year",
+        "unit": "$/yr",
+        "formula": "drinksBought * 52 * pricePerDrink * priceRise / 100"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "claim": "Sugar in soft drinks sold fell by about 30%",
+      "value": "sugarFall",
+      "between": [
+        25,
+        35
+      ],
+      "quote": 3
+    },
+    {
+      "claim": "Prices rise by about 80% of the tax",
+      "value": "priceRise",
+      "between": [
+        15,
+        17
+      ],
+      "quote": 1
+    },
+    {
+      "claim": "Mostly because recipes changed, not because people bought fewer drinks",
+      "value": "recipeLead",
+      "between": [
+        0,
+        100
+      ],
+      "quote": 3
+    },
+    {
+      "claim": "A higher price means people buy fewer taxed drinks",
+      "value": "drinksBought",
+      "falls": "tax"
+    },
+    {
+      "claim": "A bigger tax cuts more sugar",
+      "value": "sugarFall",
+      "rises": "tax"
+    },
+    {
+      "claim": "More recipes changed means more sugar cut",
+      "value": "sugarFall",
+      "rises": "reformShare"
+    },
+    {
+      "claim": "Drinks that dodge the tax cost you nothing extra",
+      "value": "extraCost",
+      "falls": "reformShare"
+    }
+  ],
+  "world": {
+    "nodes": [
+      {
+        "id": "law",
+        "prop": "document",
+        "label": "The sugar tax",
+        "plays": "tax"
+      },
+      {
+        "id": "makers",
+        "prop": "factory",
+        "label": "Drink makers",
+        "plays": "reformShare"
+      },
+      {
+        "id": "shop",
+        "prop": "shopping-bag",
+        "label": "Shop shelf",
+        "plays": "priceRise"
+      },
+      {
+        "id": "you",
+        "kind": "body",
+        "label": "You",
+        "plays": "sugarFall"
+      },
+      {
+        "id": "gov",
+        "kind": "institution",
+        "label": "Government",
+        "plays": "taxRaised"
+      }
+    ],
+    "flows": [
+      {
+        "id": "pricePush",
+        "from": "law",
+        "to": "shop",
+        "carrier": "influence",
+        "rate": "priceRise",
+        "label": "Raises shelf prices",
+        "unit": "%"
+      },
+      {
+        "id": "drinks",
+        "from": "shop",
+        "to": "you",
+        "carrier": "goods",
+        "rate": "drinksBought",
+        "label": "Taxed drinks you buy",
+        "unit": "drinks/week"
+      },
+      {
+        "id": "extra",
+        "from": "you",
+        "to": "shop",
+        "carrier": "money",
+        "rate": "extraCost",
+        "label": "Extra you pay",
+        "unit": "$/yr"
+      },
+      {
+        "id": "taxPaid",
+        "from": "shop",
+        "to": "gov",
+        "carrier": "money",
+        "rate": "taxRaised",
+        "label": "Tax passed on",
+        "unit": "$/yr"
+      },
+      {
+        "id": "buyLess",
+        "from": "shop",
+        "to": "you",
+        "carrier": "influence",
+        "rate": "buyCut",
+        "label": "Less sugar: fewer bought",
+        "unit": "%"
+      },
+      {
+        "id": "recipes",
+        "from": "makers",
+        "to": "you",
+        "carrier": "influence",
+        "rate": "recipeCut",
+        "label": "Less sugar: new recipes",
+        "unit": "%"
+      }
+    ]
+  },
+  "ask": [
+    {
+      "question": "About how many sugary soft drinks do you buy a week?",
+      "help": "Count regular cans and bottles, not diet ones. Zero is fine.",
+      "input": "drinksPerWeek"
+    },
+    {
+      "question": "What does one of those drinks usually cost?",
+      "help": "Check a recent receipt or the shelf price.",
+      "input": "pricePerDrink"
+    },
+    {
+      "question": "How big a tax do you want to look at?",
+      "help": "The tax is a share added to the shelf price.",
+      "choices": [
+        {
+          "label": "A small one",
+          "set": {
+            "tax": 10
+          }
+        },
+        {
+          "label": "Not sure (the typical design)",
+          "set": {
+            "tax": 20
+          },
+          "quote": 0
+        },
+        {
+          "label": "A large one",
+          "set": {
+            "tax": 30
+          }
+        }
+      ]
+    }
+  ],
+  "explain": [
+    {
+      "shot": "establish",
+      "caption": "What changes when sugary drinks carry a tax?"
+    },
+    {
+      "shot": "introduce",
+      "focus": "law",
+      "caption": "The tax hits drinks with sugar above a set line."
+    },
+    {
+      "shot": "cause",
+      "focus": "pricePush",
+      "drive": "tax",
+      "caption": "Shops pass most of the tax on in the shelf price."
+    },
+    {
+      "shot": "follow",
+      "focus": "drinks",
+      "caption": "When prices rise, people buy fewer of the taxed drinks."
+    },
+    {
+      "shot": "follow",
+      "focus": "extra",
+      "caption": "Drinks you still buy cost you a little more."
+    },
+    {
+      "shot": "follow",
+      "focus": "taxPaid",
+      "caption": "The tax collected goes to the government."
+    },
+    {
+      "shot": "introduce",
+      "focus": "makers",
+      "caption": "Drink makers can cut sugar to get under the line."
+    },
+    {
+      "shot": "turn",
+      "focus": "recipes",
+      "caption": "But new recipes cut more sugar than buying less does."
+    },
+    {
+      "shot": "cause",
+      "focus": "recipes",
+      "drive": "reformShare",
+      "caption": "So the more recipes change, the less sugar people drink."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Answer a few questions."
+    }
+  ],
+  "simulate": {
+    "controls": [
+      "tax",
+      "reformShare",
+      "drinksPerWeek",
+      "passThrough",
+      "pricePerDrink"
+    ],
+    "prompt": "Try a bigger or smaller tax, and your own drinks."
+  },
+  "decide": {
+    "compare": [
+      {
+        "label": "No tax",
+        "set": {
+          "tax": 0,
+          "reformShare": 0
+        }
+      },
+      {
+        "label": "Tax, recipes unchanged",
+        "set": {
+          "tax": 20,
+          "reformShare": 0
+        }
+      },
+      {
+        "label": "Tax, makers change recipes",
+        "set": {
+          "tax": 20,
+          "reformShare": 50
+        }
+      }
+    ],
+    "tradeoffs": [
+      "A tax cuts sugar mostly through new recipes, but drinks just under the line still contain sugar.",
+      "The money raised can fund school sport or healthy meals, but it comes most from people who drink the most.",
+      "It takes a larger share of income from poorer households, even though they may gain the most health benefit.",
+      "A bigger tax cuts more sugar, but costs regular buyers more at the till."
+    ],
+    "leftOut": [
+      "How many recipes change is set by hand here; the model does not work it out from the size of the tax.",
+      "People can switch to untaxed sugary foods, which this model does not count.",
+      "The sugar cut in a changed recipe is an assumption; real cuts vary by drink and by where the line is set.",
+      "The buying response comes from a review of many studies; one country or one person can differ.",
+      "Health effects, such as weight or tooth decay, are not modelled. Tax rules and lines differ by country, so check what applies to you."
+    ],
+    "questionsToAsk": [
+      "Where exactly is the sugar line, and which drinks fall under it?",
+      "Will the money raised go to anything specific, such as school sport or healthy meals?",
+      "What has happened to sugar intake in places that already have this tax?",
+      "How will the tax affect households on low incomes?"
+    ]
+  }
+}

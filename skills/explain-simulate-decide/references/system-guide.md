@@ -1,24 +1,27 @@
 # System guide: turning a topic into a living world
 
-Most decisions are about **something flowing** and **something building up**. Power flows from the roof and money builds up in savings. Interest flows out and a loan balance runs down. Heat leaks out and a bill grows. Map those flows and stores, and the film nearly writes itself.
+Most stories are about **something flowing** and **something building up**, or about one thing **pushing on** another. Power flows from the roof and money builds up in savings. Interest flows in and a debt grows. Sleep is lost to screens and sleep debt piles up. Map those flows, stores and causes, and the film nearly writes itself.
+
+Choose the story's shape first (`story-shapes.md`): it decides which of the steps below matter most. A `cause` story is mostly influences, a `chances` story is mostly crowds, and a `process` story has flows with no rates.
 
 ## 1. List the things (nodes)
 
 Write down every *thing* the story mentions that holds, makes, changes or receives something.
 
-| Role | Question | Solar example | Mortgage example |
-|---|---|---|---|
-| Source | Where does it come from? | Sun | Your pay |
-| Converter | What turns one thing into another? | Panels (on the house) | — |
-| Store | What builds up or runs down over time? | Savings jar | Loan balance |
-| Sink | Where does it end up? | Your home, the grid | The bank |
+| Role | Question | Solar | Credit card | Sleep and screens |
+|---|---|---|---|---|
+| Source | Where does it come from? | Sun | Your pay | Your evening |
+| Converter | What turns one thing into another? | Panels (on the house) | — | — |
+| Store | What builds up or runs down over time? | Savings jar | Card balance | Sleep debt (tank) |
+| End point | Where does it end up? | Your home, the grid | The bank | Your body |
+| Cause | What pushes on something else? | — | The interest rate | Screen time |
 
 Rules:
 - **Use 4–8 nodes.** Fewer feels empty and more feels like a factory.
 - **Put the person's own things at the centre** (home, car, wallet). Put external parties (the grid, the bank, the market) to the side.
 - **Mount parts on their host with `on`.** Panels go on a roof, a battery could go on a wall.
 - **Things above the set go in the `sky`:** the sun, the weather.
-- **Pick props a viewer would recognise with the sound off.** See `prop-catalog.md`.
+- **Pick props a viewer would recognise with the sound off.** See `prop-catalog.md`, or give a `kind` (`person`, `body`, `building`, `institution`, `land`…) and let the renderer choose.
 
 ## 2. Draw the arrows (flows)
 
@@ -34,7 +37,8 @@ For each pair of nodes, ask what moves between them and how much per time unit.
 | Export credit | grid → jar | money | `exportCredit` | $/yr |
 
 Rules:
-- **Every flow needs a rate formula from the model.** If you can't write one, leave the flow out.
+- **Every flow needs a rate formula from the model, with a unit.** If you can't write one, leave the flow out (unless the story is a `process`).
+- **A cause is a flow too:** carrier `influence`, from the cause to what it changes, with the size of the effect as its rate (never negative; the label says which way it pushes).
 - **Keep units consistent within a carrier.** The renderer draws flows that share a carrier and unit on the same scale. A $276 credit stream next to a $607 savings stream looks half as busy, and that comparison is often the whole insight.
 - **Show the flows people forget**, such as power still bought at night, interest, or heat lost through walls. They're usually where the misconception hides.
 - **Use 4–10 flows.**

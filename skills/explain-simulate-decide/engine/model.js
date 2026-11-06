@@ -1,7 +1,7 @@
 // The screenplay's model: inputs → derived values → outputs, plus stores that
 // fill and drain over a simulated clock. Pure functions only, so the same maths
 // runs in Node tests and in the browser.
-import { parse, evaluate, orderFormulas } from './formula.js';
+import { parse, evaluate, orderFormulas, refs } from './formula.js';
 
 export const STEPS = 240; // clock steps across the span: smooth to draw, cheap to rerun every frame
 
@@ -14,11 +14,23 @@ export function createModel(model, time = {}) {
   const constants = model.constants || [];
   const derived = model.derived || [];
   const outputs = model.outputs || [];
-  const stores = (model.stores || []).map((s) => ({ ...s, startAst: parse(String(s.start)), changeAst: parse(s.change) }));
+  const stores = (model.stores || []).map((s) => ({
+    ...s,
+    startAst: parse(String(s.start)),
+    changeAst: parse(s.change),
+    ceilingAst: s.ceiling !== undefined ? parse(String(s.ceiling)) : null,
+  }));
   const milestones = (model.milestones || []).map((m) => ({ ...m, reachesAst: parse(String(m.reaches)) }));
   const span = time.span || 1;
   const inputIds = [...inputs.map((i) => i.id), ...constants.map((c) => c.id)];
-  const steps = orderFormulas([...derived, ...outputs], inputIds);
+  const storeIds = new Set(stores.map((s) => s.id));
+  // derived values that read a store (directly or through another) change over time:
+  // they are worked out again at every step of the clock
+  const ordered = orderFormulas([...derived, ...outputs], [...inputIds, ...storeIds]);
+  const moving = new Set();
+  for (const { id, ast } of ordered) if (refs(ast).some((r) => storeIds.has(r) || moving.has(r))) moving.add(id);
+  const steps = ordered.filter((x) => !moving.has(x.id));
+  const timeSteps = ordered.filter((x) => moving.has(x.id));
 
   const metaById = new Map();
   for (const i of inputs) metaById.set(i.id, { id: i.id, label: i.label, unit: i.unit, kind: i.kind || 'lever' });
@@ -30,12 +42,29 @@ export function createModel(model, time = {}) {
 
   const defaults = () => Object.fromEntries(inputs.map((i) => [i.id, i.default]));
 
-  /** Static values: inputs, constants, derived, outputs. */
+  /** Static values: inputs, constants, derived, outputs (values that move with the clock: at its start). */
   const run = (values) => {
     const scope = { ...defaults(), ...values };
     for (const c of constants) scope[c.id] = c.value;
     for (const { id, ast } of steps) scope[id] = evaluate(ast, scope);
+    if (timeSteps.length) {
+      const at = { ...scope };
+      for (const s of stores) at[s.id] = safeAt(s.startAst, scope);
+      for (const { id, ast } of timeSteps) scope[id] = at[id] = safeAt(ast, at);
+    }
     for (const k of Object.keys(scope)) if (!Number.isFinite(scope[k])) scope[k] = null;
+    return scope;
+  };
+  const safeAt = (ast, scope) => {
+    try {
+      return evaluate(ast, scope);
+    } catch {
+      return NaN;
+    }
+  };
+  /** Values that move with the clock, for a scope that holds store levels. */
+  const moveWith = (scope) => {
+    for (const { id, ast } of timeSteps) scope[id] = safe(ast, scope);
     return scope;
   };
 
@@ -58,17 +87,26 @@ export function createModel(model, time = {}) {
     const dt = span / STEPS;
     const scope = { ...base };
     const series = {};
+    // where each step would have landed before a floor or ceiling stopped it: milestones
+    // interpolate with these, so "runs dry on day 10" is day 10, not the end of that step
+    const raw = {};
+    const ceilings = stores.map((s) => (s.ceilingAst ? safe(s.ceilingAst, base) : Infinity));
     for (const s of stores) {
       scope[s.id] = safe(s.startAst, base);
       series[s.id] = new Float64Array(STEPS + 1);
+      raw[s.id] = new Float64Array(STEPS + 1);
+      raw[s.id][0] = scope[s.id];
     }
     for (let k = 0; k <= STEPS; k++) {
       for (const s of stores) series[s.id][k] = scope[s.id];
       if (k === STEPS) break;
+      moveWith(scope);
       const change = stores.map((s) => safe(s.changeAst, scope));
       stores.forEach((s, n) => {
         let v = scope[s.id] + change[n] * dt;
+        raw[s.id][k + 1] = v;
         if (typeof s.floor === 'number') v = Math.max(s.floor, v);
+        v = Math.min(ceilings[n], v);
         scope[s.id] = v;
       });
     }
@@ -77,6 +115,7 @@ export function createModel(model, time = {}) {
     for (const m of milestones) {
       const target = safe(m.reachesAst, base);
       const line = series[m.store];
+      const landed = raw[m.store];
       targets[m.id] = target;
       reached[m.id] = null;
       if (!line) continue;
@@ -86,8 +125,8 @@ export function createModel(model, time = {}) {
         continue;
       }
       for (let k = 1; k <= STEPS; k++) {
-        if (Math.sign(line[k] - target) !== side) {
-          const f = (target - line[k - 1]) / (line[k] - line[k - 1]);
+        if (Math.sign(landed[k] - target) !== side) {
+          const f = (target - line[k - 1]) / (landed[k] - line[k - 1]);
           reached[m.id] = (k - 1 + f) * dt;
           break;
         }
@@ -96,13 +135,16 @@ export function createModel(model, time = {}) {
     return { base, series, reached, targets, span, dt };
   };
 
-  /** Store levels at clock time tau (linear between steps). */
+  /** Store levels at clock time tau (linear between steps), and the values that move with them. */
   const levelsAt = (sim, tau) => {
     const x = Math.min(Math.max(tau / sim.dt, 0), STEPS);
     const k = Math.min(STEPS - 1, Math.floor(x));
     const f = x - k;
     const out = {};
     for (const [id, line] of Object.entries(sim.series)) out[id] = line[k] + (line[k + 1] - line[k]) * f;
+    if (!timeSteps.length) return out;
+    const scope = moveWith({ ...sim.base, ...out });
+    for (const { id } of timeSteps) out[id] = scope[id];
     return out;
   };
 
@@ -149,6 +191,8 @@ export function createModel(model, time = {}) {
     ranges,
     span,
     stores: stores.map((s) => s.id),
+    /** Derived values that read a store, so they change with the clock. */
+    moving: [...moving],
     milestones: milestones.map((m) => m.id),
     meta: (id) => metaById.get(id),
     evaluate: safe,
@@ -175,4 +219,10 @@ export function formatValue(value, unit = '') {
   const num = value.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
   if (unit === '%') return `${num}%`;
   return unit ? `${num} ${unit}` : num;
+}
+
+/** An input's value as a viewer reads it: "Yes"/"No" for a toggle, else number and unit. */
+export function formatInput(inp, value) {
+  if (inp?.toggle) return value >= 0.5 ? 'Yes' : 'No';
+  return formatValue(value, inp?.unit || '');
 }

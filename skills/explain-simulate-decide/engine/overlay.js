@@ -68,9 +68,12 @@ export function drawCaption(ctx, W, H, text, alpha) {
 }
 
 /** The source line under the act chips. */
-export const sourceLine = (sp) => `Source: ${sp.source?.publisher || sp.source?.title || ''}   ·   * = assumption, change it to fit your situation`;
+const hasAssumptions = (sp) => [...(sp.model?.inputs || []), ...(sp.model?.constants || [])].some((x) => x.source === 'assumption');
+export const sourceLine = (sp) => `Source: ${sp.source?.publisher || sp.source?.title || ''}${hasAssumptions(sp) ? '   ·   * = assumption, change it to fit your situation' : ''}`;
+/** The acts this film has: a process story has nothing to run, so no Simulate. */
+export const actsOf = (sp) => (sp.shape === 'process' ? ['Explain', 'Decide'] : ['Explain', 'Simulate', 'Decide']);
 
-export function drawActs(ctx, W, H, act, question, source = '') {
+export function drawActs(ctx, W, H, act, question, source = '', acts = ['Explain', 'Simulate', 'Decide']) {
   const fs = Math.round(H * 0.018);
   ctx.save();
   let x = W * 0.03;
@@ -78,14 +81,14 @@ export function drawActs(ctx, W, H, act, question, source = '') {
   // a soft plate behind the header keeps it readable over bright props (the sun)
   ctx.font = `600 ${fs}px ${FONT}`;
   let chips = 0;
-  for (const [i, name] of ['Explain', 'Simulate', 'Decide'].entries()) chips += ctx.measureText(`${i + 1}  ${name}`).width + fs * 2.1;
+  for (const [i, name] of acts.entries()) chips += ctx.measureText(`${i + 1}  ${name}`).width + fs * 2.1;
   ctx.font = `500 ${fs * 1.05}px ${FONT}`;
   const top = chips + (question ? fs * 0.8 + ctx.measureText(question).width : 0);
   ctx.font = `500 ${Math.round(H * 0.0135)}px ${FONT}`;
   const plateW = Math.min(W * 0.94 - x, Math.max(top, ctx.measureText(source).width) + fs * 1.6);
   card(ctx, x - fs * 0.6, y - fs * 0.6, plateW, fs * (source ? 4.6 : 3.2), fs * 0.9, 0.72);
   ctx.font = `600 ${fs}px ${FONT}`;
-  ['Explain', 'Simulate', 'Decide'].forEach((name, i) => {
+  acts.forEach((name, i) => {
     const on = name.toLowerCase() === act;
     const label = `${i + 1}  ${name}`;
     const w = ctx.measureText(label).width + fs * 1.6;

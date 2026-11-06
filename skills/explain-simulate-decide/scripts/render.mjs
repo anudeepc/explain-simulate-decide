@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Usage: node render.mjs screenplay.json [-o out.html] [--cast auto|studio|open|custom] [--voice off|browser]
 // Validates the screenplay, then writes one offline HTML file (engine + three.js inlined).
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, basename } from 'node:path';
 import { validate } from '../engine/schema.js';
@@ -47,5 +47,6 @@ const engineDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'engine');
 const bundle = await inline('player.js', (p) => readFileSync(join(engineDir, p), 'utf8'));
 const html = toHtml(sp, bundle, { options: { cast, voice } });
 const target = out || join(dirname(file), basename(file).replace(/\.json$/, '') + '.html');
+mkdirSync(dirname(target), { recursive: true }); // the output folder may not exist yet
 writeFileSync(target, html);
 console.log(`Wrote ${target} (${(html.length / 1e6).toFixed(1)} MB). Open it in a browser; use "Record MP4" for video.`);

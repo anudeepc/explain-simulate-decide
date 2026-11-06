@@ -12,7 +12,11 @@ Studio props share one matte "clay" look and stand on the diorama as nodes. A pr
 | `power-pole` | meter needle | the electricity grid, the utility |
 | `shopping-bag` | items rising out of the bag | shops, spending, consumption |
 | `car` | charge or fuel bar, headlights | travel, transport |
-| `person-figure` | bar beside the figure | people, health, workload |
+| `person-figure` | bar beside the figure | one person, workload |
+| `crowd` | 100 small people; plays a value in `"%"` and lights that many | populations, risks, "out of 100 people like you" |
+| `body` | standing figure with a glowing heart | health, symptoms, fitness, a dose |
+| `building` | office block whose windows light up | schools, hospitals, offices, councils, companies |
+| `hill` | grassy hill with trees and a field | land, farms, forests, a region |
 
 ## Sources (often with `"sky": true`)
 
@@ -25,7 +29,8 @@ Studio props share one matte "clay" look and stand on the diorama as nodes. A pr
 
 | Prop | Shows | Good for |
 |---|---|---|
-| `jar` | coins filling a glass jar, a target line, a flag when reached, a ghost ring of the last try | savings, balances, money building up or running down |
+| `jar` | coins filling a glass jar, a target line, a flag when reached, a ghost ring of the last try | **money only**: savings, balances |
+| `tank` | a glass tank filling with liquid, with the same target line, flag and ghost ring | anything else that builds up: water, sleep debt, carbon, stock |
 | `battery` | fill level | stored energy |
 | `piggy-bank` | glow and size | small savings goals |
 | `coin-stack` | number of coins | amounts of money |
@@ -48,6 +53,10 @@ Studio props share one matte "clay" look and stand on the diorama as nodes. A pr
 | `tree` | canopy size | environment, growth |
 | `arrow-flow`, `bar-stack` | arrow or bars | generic amounts (prefer a flow) |
 | `stand-in` | labelled block | anything else; shows the node's `label` |
+
+## No prop fits?
+
+Give the node a `kind` instead of a `prop` (see `story-shapes.md`), and the renderer picks a fitting look. A store node can leave out both: money gets a jar, energy a battery, and anything else a tank.
 
 ## Tips
 

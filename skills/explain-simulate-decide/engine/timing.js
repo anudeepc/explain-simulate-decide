@@ -43,8 +43,11 @@ export function buildTimeline(sp, opts = {}) {
     t += d;
   });
   const explainEnd = t;
-  segments.push({ act: 'simulate', index: segments.length, shot: 'simulate', start: t, end: t + SIM_DEMO });
-  t += SIM_DEMO;
+  // a process story has no numbers to run: the film goes straight from Explain to Decide
+  if (sp.shape !== 'process') {
+    segments.push({ act: 'simulate', index: segments.length, shot: 'simulate', start: t, end: t + SIM_DEMO });
+    t += SIM_DEMO;
+  }
   segments.push({ act: 'decide', index: segments.length, shot: 'decide', start: t, end: t + DECIDE });
   t += DECIDE;
   segments.forEach((s, i) => (s.index = i));

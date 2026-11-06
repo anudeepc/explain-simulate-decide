@@ -30,6 +30,11 @@ import barStack from './bar-stack.js';
 import jar from './jar.js';
 import powerPole from './power-pole.js';
 import bank from './bank.js';
+import crowd from './crowd.js';
+import tank from './tank.js';
+import building from './building.js';
+import body from './body.js';
+import hill from './hill.js';
 
 export const STUDIO = {
   sun,
@@ -60,4 +65,9 @@ export const STUDIO = {
   jar,
   'power-pole': powerPole,
   bank,
+  crowd,
+  tank,
+  building,
+  body,
+  hill,
 };

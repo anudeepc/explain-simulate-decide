@@ -59,12 +59,19 @@ This is the thing most people get wrong, and the article's real insight. Look fo
 
 The turning point becomes the single `turn` shot. Make it **visible in the world**: two money streams side by side (bill avoided vs export credit), a stream people forget (power bought at night), or a jar that never reaches its line. Add `drive` only if the surprise needs a sweep to show.
 
+## 5b. Checkable claims
+
+Collect every sentence where the article says what a result looks like: a figure ("most systems pay back in 6 to 12 years"), a size of effect ("each hour of screens before bed costs about 20 minutes of sleep"), or a direction ("the more you pay each month, the sooner you're clear"). They become `checks`, and the validator tests your model against them. Quote figures exactly. With no figure in the article, write a sensible range with a `reason`.
+
 ## 6. The limits
 
 What does your small model leave out that could change the answer? Examples: incentives that change often, maintenance, the person's health or tax situation, behaviour changes, rare events. These go in `decide.leftOut`. Be honest. This list is what makes the page trustworthy.
 
 ## From notes to model
 
+First choose the shape (`story-shapes.md`). If the article has no numbers a reader could change, the shape is `process`: skip the model and checks entirely.
+
+- **Give every value a unit** (`"$/yr"`, `"h/night"`, `"%"`, `"people"`). The validator checks every formula against them.
 - **Use the article's numbers first.** Quote them exactly in `source.quotes` and point to them with `"quote": <index>`.
 - **Fill the gaps with assumptions,** labelled `"source": "assumption"`. Pick ordinary middle values and sensible ranges. The viewer sees an asterisk and can change them.
 - **Put meaningful numbers in `constants`** with a label and source. Only plain unit conversions (100, 365, 12, 24, 60, 1000…) may appear directly inside formulas.

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { validate } from '../skills/explain-simulate-decide/engine/schema.js';
 import { PROPS } from '../skills/explain-simulate-decide/engine/cast/names.js';
 
@@ -20,6 +20,119 @@ function expectError(mutate, pattern) {
 test('the examples are valid', () => {
   assert.deepEqual(validate(solar()), []);
   assert.deepEqual(validate(load('../examples/heat-pump/screenplay.json')), []);
+});
+
+test('the shape fixtures are valid', () => {
+  for (const f of ['process-bill', 'chances-screening']) assert.deepEqual(validate(load(`fixtures/shapes/${f}.json`)), [], f);
+});
+
+test('every screenplay in the cross-topic test set is valid', () => {
+  // written by the skill from tests/fixtures/articles, one per field; see tests/fixtures/eval/README.md
+  const dir = new URL('fixtures/eval/', import.meta.url);
+  const names = existsSync(dir) ? readdirSync(dir).filter((n) => existsSync(new URL(`${n}/screenplay.json`, dir))) : [];
+  assert.ok(names.length >= 8, 'the test set is present');
+  for (const n of names) assert.deepEqual(validate(load(`fixtures/eval/${n}/screenplay.json`)), [], n);
+});
+
+test('needs a story shape, and units on every value', () => {
+  expectError((s) => delete s.shape, /shape is required/);
+  expectError((s) => (s.shape = 'story'), /shape is required/);
+  expectError((s) => delete s.model.derived[0].unit, /unit is required/);
+  expectError((s) => delete flow(s, 'avoided').unit, /unit is required/);
+});
+
+test('formulas must match their units', () => {
+  const d = (s, id) => s.model.derived.find((x) => x.id === id);
+  expectError((s) => (d(s, 'yearlyKwh').formula = 'size * sunHours * efficiency'), /"yearlyKwh".*365 times too small/);
+  expectError((s) => (d(s, 'billSaving').formula = 'direct + shifted * price'), /adds energy per time and \$ per time/);
+  expectError((s) => (flow(s, 'avoided').unit = 'kWh/yr'), /rate of flow "avoided"/);
+  expectError((s) => (s.model.stores[0].change = 'cost'), /change of store "savings"/);
+});
+
+test('the model is run against the source', () => {
+  const d = (s, id) => s.model.derived.find((x) => x.id === id);
+  expectError((s) => (s.checks = []), /checks: list what the source says/);
+  expectError((s) => (s.checks = s.checks.filter((c) => !c.between)), /at least one "between"/);
+  expectError((s) => (s.checks = s.checks.filter((c) => !c.rises && !c.falls)), /at least one "rises" or "falls"/);
+  expectError((s) => delete s.checks[1].reason, /needs "quote".*or "reason"/);
+  expectError((s) => (s.checks[0].between = [1, 2]), /checks\[0\].*expected 1 to 2/);
+  expectError((s) => {
+    delete s.checks[3].rises;
+    s.checks[3].falls = 'size';
+  }, /checks\[3\].*should fall/);
+  expectError((s) => (d(s, 'exportedKwh').formula = 'surplus'), /counted twice or left out/);
+});
+
+test('every extreme of the inputs is tried', () => {
+  const d = (s, id) => s.model.derived.find((x) => x.id === id);
+  expectError((s) => (d(s, 'boughtKwh').formula = 'useKwh - yearlyKwh'), /Flow "import" runs backwards/);
+  expectError((s) => (s.model.outputs[1].formula = 'max(boughtKwh * price - exportCredit, 0) / 12 * battery / battery'), /"newBill" gives no number/);
+});
+
+test('the world must fit the shape', () => {
+  expectError((s) => (s.shape = 'feedback'), /a store's change must read a store/);
+  expectError((s) => (s.shape = 'cause'), /carrier "influence"/);
+  expectError((s) => (s.shape = 'chances'), /crowd of 100/);
+  expectError((s) => (s.explain = s.explain.filter((x) => x.shot !== 'timelapse')), /add a "timelapse" shot/);
+  const hp = load('../examples/heat-pump/screenplay.json');
+  hp.shape = 'budget';
+  assert.ok(validate(hp).some((e) => /split a fixed amount/.test(e)), validate(hp).join('\n'));
+});
+
+test('characters can be given by kind; coins only for money', () => {
+  const sp = solar();
+  delete node(sp, 'grid').prop;
+  node(sp, 'grid').kind = 'institution';
+  assert.deepEqual(validate(sp), []);
+  expectError((s) => delete node(s, 'grid').prop, /needs a "prop", a "kind"/);
+  expectError((s) => {
+    delete node(s, 'grid').prop;
+    node(s, 'grid').kind = 'castle';
+  }, /kind "castle"/);
+  const hp = load('../examples/heat-pump/screenplay.json');
+  hp.model.constants.push({ id: 'tankSize', label: 'Heat to store', unit: 'kWh', value: 50000, source: 'assumption' });
+  hp.model.stores[0].unit = 'kWh';
+  hp.model.stores[0].change = 'heat';
+  hp.model.milestones[0].reaches = 'tankSize';
+  node(hp, 'jar').target = 'tankSize';
+  assert.ok(validate(hp).some((e) => /a jar of coins only suits money/.test(e)), validate(hp).join('\n'));
+});
+
+test('honest labels for tuned and worked-out numbers', () => {
+  // an assumption tuned to match a check makes that check circular
+  expectError((s) => {
+    s.model.inputs.find((i) => i.id === 'costPerKw').fits = 0;
+  }, /source must be "assumption"/);
+  const sp = solar();
+  sp.model.constants.find((c) => c.id === 'efficiency').fits = 0;
+  sp.checks = sp.checks.filter((c, n) => n === 0 || !c.between);
+  assert.ok(validate(sp).some((e) => /none of them tests the model/.test(e)));
+  expectError((s) => (s.model.inputs[0].note = 5), /note must be a sentence/);
+  // a choice that sets a fact about the world must say where its numbers come from
+  expectError((s) => delete s.ask[1].choices[0].quote, /"Arizona": say where its numbers for/);
+  // circular and open checks
+  expectError((s) => s.checks.push({ claim: 'x', same: ['saving', 'billSaving + exportCredit'] }), /can never fail/);
+  const open = solar();
+  open.checks[1].between = [5, null];
+  assert.deepEqual(validate(open), []);
+  expectError((s) => (s.checks[1].between = [null, null]), /open end/);
+  expectError((s) => (s.source.url = 'tests/article.md'), /web address/);
+  expectError((s) => (s.model.inputs[0].toggle = true), /toggle/);
+  expectError((s) => s.model.stores.push({ id: 'spare', label: 'x', unit: '$', start: 0, change: 'saving' }), /isn't shown/);
+});
+
+test('a process story has no numbers', () => {
+  const p = () => load('fixtures/shapes/process-bill.json');
+  const bad = (mutate, pattern) => {
+    const sp = p();
+    mutate(sp);
+    assert.ok(validate(sp).some((e) => pattern.test(e)), `expected ${pattern} in:\n${validate(sp).join('\n')}`);
+  };
+  bad((s) => (s.model = { inputs: [] }), /model: a process story has no numbers/);
+  bad((s) => (s.world.flows[0].rate = '1'), /leave out "rate"/);
+  bad((s) => (s.world.nodes[0].plays = 'x'), /"plays" needs numbers/);
+  bad((s) => (s.explain[1].shot = 'timelapse'), /no numbers to sweep or clock/);
+  bad((s) => (s.decide.compare = []), /no numbers to compare/);
 });
 
 test('rejects non-objects and old versions', () => {
