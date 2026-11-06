@@ -21,99 +21,525 @@
   },
   "model": {
     "inputs": [
-      { "id": "wfhDays", "label": "Days a week you work from home", "unit": "workdays/week", "kind": "lever",
-        "min": 0, "max": 5, "step": 1, "default": 5, "source": "assumption" },
-      { "id": "workShare", "label": "Saved travel time that goes to work", "unit": "%", "kind": "lever",
-        "min": 0, "max": 60, "step": 1, "default": 33, "source": "article", "quote": 4, "note": "about a third" },
-      { "id": "commute", "label": "Trip to work and back", "unit": "h/workday", "kind": "condition",
-        "min": 0, "max": 2.5, "step": 0.1, "default": 1, "source": "article", "quote": 1, "note": "close to an hour a day" },
-      { "id": "workHours", "label": "Hours you work", "unit": "h/workday", "kind": "condition",
-        "min": 6, "max": 10, "step": 0.5, "default": 8, "source": "article", "quote": 1 }
+      {
+        "id": "wfhDays",
+        "label": "Days a week you work from home",
+        "unit": "workdays/week",
+        "kind": "lever",
+        "min": 0,
+        "max": 5,
+        "step": 1,
+        "default": 5,
+        "source": "assumption"
+      },
+      {
+        "id": "workShare",
+        "label": "Saved travel time that goes to work",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 60,
+        "step": 1,
+        "default": 33,
+        "source": "article",
+        "quote": 4,
+        "note": "about a third"
+      },
+      {
+        "id": "commute",
+        "label": "Trip to work and back",
+        "unit": "h/workday",
+        "kind": "condition",
+        "min": 0,
+        "max": 2.5,
+        "step": 0.1,
+        "default": 1,
+        "source": "article",
+        "quote": 1,
+        "note": "close to an hour a day"
+      },
+      {
+        "id": "workHours",
+        "label": "Hours you work",
+        "unit": "h/workday",
+        "kind": "condition",
+        "min": 6,
+        "max": 10,
+        "step": 0.5,
+        "default": 8,
+        "source": "article",
+        "quote": 1
+      }
     ],
     "constants": [
-      { "id": "dayHours", "label": "Hours in a day", "unit": "h/workday", "value": 24, "source": "article", "quote": 0 },
-      { "id": "sleep", "label": "Sleep", "unit": "h/workday", "value": 7, "source": "article", "quote": 1 },
-      { "id": "chores", "label": "Meals, chores and getting ready", "unit": "h/workday", "value": 3, "source": "article", "quote": 2 },
-      { "id": "choreShare", "label": "Saved travel time that goes to chores and family", "unit": "%", "value": 33, "source": "article", "quote": 4, "note": "about a third" },
-      { "id": "workdays", "label": "Workdays in a week", "unit": "workdays/week", "value": 5, "source": "assumption" }
+      {
+        "id": "dayHours",
+        "label": "Hours in a day",
+        "unit": "h/workday",
+        "value": 24,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "sleep",
+        "label": "Sleep",
+        "unit": "h/workday",
+        "value": 7,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "chores",
+        "label": "Meals, chores and getting ready",
+        "unit": "h/workday",
+        "value": 3,
+        "source": "article",
+        "quote": 2
+      },
+      {
+        "id": "choreShare",
+        "label": "Saved travel time that goes to chores and family",
+        "unit": "%",
+        "value": 33,
+        "source": "article",
+        "quote": 4,
+        "note": "about a third"
+      },
+      {
+        "id": "workdays",
+        "label": "Workdays in a week",
+        "unit": "workdays/week",
+        "value": 5,
+        "source": "assumption"
+      }
     ],
     "derived": [
-      { "id": "saved", "label": "Travel time saved, average workday", "unit": "h/workday", "formula": "commute * wfhDays / workdays" },
-      { "id": "travel", "label": "Travel time left, average workday", "unit": "h/workday", "formula": "commute - saved" },
-      { "id": "toWork", "label": "Saved time that goes to work", "unit": "h/workday", "formula": "saved * workShare / 100" },
-      { "id": "toChores", "label": "Saved time that goes to chores", "unit": "h/workday", "formula": "saved * choreShare / 100" },
-      { "id": "toFree", "label": "Saved time you keep", "unit": "h/workday", "formula": "saved * (100 - workShare - choreShare) / 100" },
-      { "id": "freeBase", "label": "Free time on an office day", "unit": "h/workday", "formula": "dayHours - sleep - workHours - chores - commute" },
-      { "id": "work", "label": "Work, average workday", "unit": "h/workday", "formula": "workHours + toWork" }
+      {
+        "id": "saved",
+        "label": "Travel time saved, average workday",
+        "unit": "h/workday",
+        "formula": "commute * wfhDays / workdays"
+      },
+      {
+        "id": "travel",
+        "label": "Travel time left, average workday",
+        "unit": "h/workday",
+        "formula": "commute - saved"
+      },
+      {
+        "id": "toWork",
+        "label": "Saved time that goes to work",
+        "unit": "h/workday",
+        "formula": "saved * workShare / 100"
+      },
+      {
+        "id": "toChores",
+        "label": "Saved time that goes to chores",
+        "unit": "h/workday",
+        "formula": "saved * choreShare / 100"
+      },
+      {
+        "id": "toFree",
+        "label": "Saved time you keep",
+        "unit": "h/workday",
+        "formula": "saved * (100 - workShare - choreShare) / 100"
+      },
+      {
+        "id": "freeBase",
+        "label": "Free time on an office day",
+        "unit": "h/workday",
+        "formula": "dayHours - sleep - workHours - chores - commute"
+      },
+      {
+        "id": "work",
+        "label": "Work, average workday",
+        "unit": "h/workday",
+        "formula": "workHours + toWork"
+      }
     ],
     "outputs": [
-      { "id": "free", "label": "Free time on an average workday", "unit": "h/workday", "formula": "freeBase + toFree" },
-      { "id": "weeklyGain", "label": "Extra free time a week", "unit": "h/week", "formula": "toFree * workdays" }
+      {
+        "id": "free",
+        "label": "Free time on an average workday",
+        "unit": "h/workday",
+        "formula": "freeBase + toFree"
+      },
+      {
+        "id": "weeklyGain",
+        "label": "Extra free time a week",
+        "unit": "h/week",
+        "formula": "toFree * workdays"
+      }
     ]
   },
   "checks": [
-    { "claim": "On a typical office workday, around 5 hours are left as free time", "value": "free", "between": [4.5, 5.5], "when": { "wfhDays": 0 }, "quote": 3 },
-    { "claim": "About 20 extra minutes a day is over an hour and a half across a working week", "value": "weeklyGain", "between": [1.5, 2], "when": { "wfhDays": 5 }, "quote": 5 },
-    { "claim": "More days at home means more free time each week", "value": "weeklyGain", "rises": "wfhDays" },
-    { "claim": "People with long commutes gain the most", "value": "weeklyGain", "rises": "commute" },
-    { "claim": "The more saved time slips into work, the less free time is left", "value": "free", "falls": "workShare" },
-    { "claim": "The parts of the day add up to 24 hours", "same": ["sleep + work + chores + toChores + travel + free", "dayHours"] }
+    {
+      "claim": "On a typical office workday, around 5 hours are left as free time",
+      "value": "free",
+      "between": [
+        4.5,
+        5.5
+      ],
+      "when": {
+        "wfhDays": 0
+      },
+      "quote": 3
+    },
+    {
+      "claim": "About 20 extra minutes a day is over an hour and a half across a working week",
+      "value": "weeklyGain",
+      "between": [
+        1.5,
+        2
+      ],
+      "when": {
+        "wfhDays": 5
+      },
+      "quote": 5
+    },
+    {
+      "claim": "More days at home means more free time each week",
+      "value": "weeklyGain",
+      "rises": "wfhDays"
+    },
+    {
+      "claim": "People with long commutes gain the most",
+      "value": "weeklyGain",
+      "rises": "commute"
+    },
+    {
+      "claim": "The more saved time slips into work, the less free time is left",
+      "value": "free",
+      "falls": "workShare"
+    },
+    {
+      "claim": "The parts of the day add up to 24 hours",
+      "same": [
+        "sleep + work + chores + toChores + travel + free",
+        "dayHours"
+      ]
+    }
   ],
   "world": {
     "nodes": [
-      { "id": "day", "prop": "clock", "label": "Your 24-hour day" },
-      { "id": "bed", "label": "Sleep", "recipe": [
-        { "shape": "box", "size": [0.14, 1.1, 1.3], "color": "#a07a58", "at": [-1.05, 0, 0] },
-        { "shape": "box", "size": [2.1, 0.4, 1.3], "color": "#a07a58", "at": [0, 0, 0] },
-        { "shape": "box", "size": [2.0, 0.28, 1.22], "color": "#f4f1ea", "at": [0, 0.4, 0] },
-        { "shape": "box", "size": [0.45, 0.18, 0.9], "color": "#ffffff", "at": [-0.72, 0.68, 0] },
-        { "shape": "box", "size": [1.3, 0.1, 1.26], "color": "#8fa9d6", "at": [0.33, 0.68, 0] }
-      ] },
-      { "id": "office", "prop": "building", "label": "Work", "plays": "work" },
-      { "id": "home", "prop": "house", "label": "Meals, chores, getting ready" },
-      { "id": "car", "prop": "car", "label": "Trip to work", "plays": "travel" },
-      { "id": "you", "prop": "person-figure", "label": "You: free time", "plays": "free" }
+      {
+        "id": "day",
+        "prop": "clock",
+        "label": "Your 24-hour day"
+      },
+      {
+        "id": "bed",
+        "label": "Sleep",
+        "recipe": [
+          {
+            "shape": "box",
+            "size": [
+              0.14,
+              1.1,
+              1.3
+            ],
+            "color": "#a07a58",
+            "at": [
+              -1.05,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              2.1,
+              0.4,
+              1.3
+            ],
+            "color": "#a07a58",
+            "at": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              2.0,
+              0.28,
+              1.22
+            ],
+            "color": "#f4f1ea",
+            "at": [
+              0,
+              0.4,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.45,
+              0.18,
+              0.9
+            ],
+            "color": "#ffffff",
+            "at": [
+              -0.72,
+              0.68,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              1.3,
+              0.1,
+              1.26
+            ],
+            "color": "#8fa9d6",
+            "at": [
+              0.33,
+              0.68,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "office",
+        "prop": "building",
+        "label": "Work",
+        "plays": "work"
+      },
+      {
+        "id": "home",
+        "prop": "house",
+        "label": "Meals, chores, getting ready"
+      },
+      {
+        "id": "car",
+        "prop": "car",
+        "label": "Trip to work",
+        "plays": "travel"
+      },
+      {
+        "id": "you",
+        "prop": "person-figure",
+        "label": "You: free time",
+        "plays": "free"
+      }
     ],
     "flows": [
-      { "id": "toSleep", "from": "day", "to": "bed", "carrier": "time", "rate": "sleep", "label": "Sleep", "unit": "h/workday" },
-      { "id": "toWorkBase", "from": "day", "to": "office", "carrier": "time", "rate": "workHours", "label": "Work hours", "unit": "h/workday" },
-      { "id": "toChoresBase", "from": "day", "to": "home", "carrier": "time", "rate": "chores", "label": "Meals and chores", "unit": "h/workday" },
-      { "id": "toTravel", "from": "day", "to": "car", "carrier": "time", "rate": "commute", "label": "Trip to work and back", "unit": "h/workday" },
-      { "id": "toFreeBase", "from": "day", "to": "you", "carrier": "time", "rate": "freeBase", "label": "Time left for you", "unit": "h/workday" },
-      { "id": "leakWork", "from": "car", "to": "office", "carrier": "time", "rate": "toWork", "label": "Saved trip time spent working", "unit": "h/workday" },
-      { "id": "leakChores", "from": "car", "to": "home", "carrier": "time", "rate": "toChores", "label": "Saved trip time spent on chores", "unit": "h/workday" },
-      { "id": "leakFree", "from": "car", "to": "you", "carrier": "time", "rate": "toFree", "label": "Saved trip time you keep", "unit": "h/workday" }
+      {
+        "id": "toSleep",
+        "from": "day",
+        "to": "bed",
+        "carrier": "time",
+        "rate": "sleep",
+        "label": "Sleep",
+        "unit": "h/workday"
+      },
+      {
+        "id": "toWorkBase",
+        "from": "day",
+        "to": "office",
+        "carrier": "time",
+        "rate": "workHours",
+        "label": "Work hours",
+        "unit": "h/workday"
+      },
+      {
+        "id": "toChoresBase",
+        "from": "day",
+        "to": "home",
+        "carrier": "time",
+        "rate": "chores",
+        "label": "Meals and chores",
+        "unit": "h/workday"
+      },
+      {
+        "id": "toTravel",
+        "from": "day",
+        "to": "car",
+        "carrier": "time",
+        "rate": "commute",
+        "label": "Trip to work and back",
+        "unit": "h/workday"
+      },
+      {
+        "id": "toFreeBase",
+        "from": "day",
+        "to": "you",
+        "carrier": "time",
+        "rate": "freeBase",
+        "label": "Time left for you",
+        "unit": "h/workday"
+      },
+      {
+        "id": "leakWork",
+        "from": "car",
+        "to": "office",
+        "carrier": "time",
+        "rate": "toWork",
+        "label": "Saved trip time spent working",
+        "unit": "h/workday"
+      },
+      {
+        "id": "leakChores",
+        "from": "car",
+        "to": "home",
+        "carrier": "time",
+        "rate": "toChores",
+        "label": "Saved trip time spent on chores",
+        "unit": "h/workday"
+      },
+      {
+        "id": "leakFree",
+        "from": "car",
+        "to": "you",
+        "carrier": "time",
+        "rate": "toFree",
+        "label": "Saved trip time you keep",
+        "unit": "h/workday"
+      }
     ]
   },
   "ask": [
-    { "question": "How many days a week do you work from home?", "help": "Count a usual week. Put 0 if you never do.", "input": "wfhDays" },
-    { "question": "How long is your trip to work, there and back?", "choices": [
-      { "label": "Under half an hour", "set": { "commute": 0.4 }, "source": "assumption" },
-      { "label": "About an hour, or not sure", "set": { "commute": 1 } },
-      { "label": "Two hours or more", "set": { "commute": 2 }, "source": "assumption" } ] },
-    { "question": "On days at home, when does your work stop?", "choices": [
-      { "label": "At a fixed time", "set": { "workShare": 10 } },
-      { "label": "When the work is done", "set": { "workShare": 50 } },
-      { "label": "Not sure", "set": { "workShare": 33 } } ] },
-    { "question": "How many hours do you work on a usual day?", "help": "Your contract hours, or a usual day last week.", "input": "workHours" }
+    {
+      "question": "How many days a week do you work from home?",
+      "help": "Count a usual week. Put 0 if you never do.",
+      "input": "wfhDays"
+    },
+    {
+      "question": "How long is your trip to work, there and back?",
+      "choices": [
+        {
+          "label": "Under half an hour",
+          "set": {
+            "commute": 0.4
+          },
+          "source": "assumption"
+        },
+        {
+          "label": "About an hour, or not sure",
+          "set": {
+            "commute": 1
+          }
+        },
+        {
+          "label": "Two hours or more",
+          "set": {
+            "commute": 2
+          },
+          "source": "assumption"
+        }
+      ]
+    },
+    {
+      "question": "On days at home, when does your work stop?",
+      "choices": [
+        {
+          "label": "At a fixed time",
+          "set": {
+            "workShare": 10
+          }
+        },
+        {
+          "label": "When the work is done",
+          "set": {
+            "workShare": 50
+          }
+        },
+        {
+          "label": "Not sure",
+          "set": {
+            "workShare": 33
+          }
+        }
+      ]
+    },
+    {
+      "question": "How many hours do you work on a usual day?",
+      "help": "Your contract hours, or a usual day last week.",
+      "input": "workHours"
+    }
   ],
   "explain": [
-    { "shot": "establish", "caption": "Every day has 24 hours. Here is where yours go." },
-    { "shot": "follow", "focus": "toFreeBase", "caption": "After sleep, work and chores, a few hours are yours." },
-    { "shot": "compare", "focus": "car", "drive": "wfhDays", "caption": "Working from home cuts the commute. You expect the hour back." },
-    { "shot": "turn", "focus": "leakWork", "caption": "But about a third of it slips into longer workdays." },
-    { "shot": "follow", "focus": "leakChores", "caption": "Another third goes on chores and family care." },
-    { "shot": "follow", "focus": "leakFree", "caption": "Only the rest comes back to you." },
-    { "shot": "cause", "focus": "leakWork", "drive": "workShare", "caption": "With a fixed finish time, less of it leaks into work." },
-    { "shot": "focus", "focus": "you", "drive": "wfhDays", "caption": "Over a working week, those small gains add up." },
-    { "shot": "handoff", "caption": "Now make it yours. Answer a few questions." }
+    {
+      "shot": "establish",
+      "caption": "Every day has 24 hours. Here is where yours go."
+    },
+    {
+      "shot": "follow",
+      "focus": "toFreeBase",
+      "caption": "After sleep, work and chores, a few hours are yours."
+    },
+    {
+      "shot": "compare",
+      "focus": "car",
+      "drive": "wfhDays",
+      "caption": "At home, you lose the commute. You expect the hour back."
+    },
+    {
+      "shot": "turn",
+      "focus": "leakWork",
+      "caption": "But about a third of it slips into longer workdays."
+    },
+    {
+      "shot": "follow",
+      "focus": "leakChores",
+      "caption": "Another third goes on chores and family care."
+    },
+    {
+      "shot": "follow",
+      "focus": "leakFree",
+      "caption": "Only the rest comes back to you."
+    },
+    {
+      "shot": "cause",
+      "focus": "leakWork",
+      "drive": "workShare",
+      "caption": "With a fixed finish time, less of it leaks into work."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "drive": "wfhDays",
+      "caption": "Over a working week, those small gains add up."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Answer a few questions."
+    }
   ],
-  "simulate": { "controls": ["wfhDays", "workShare", "commute", "workHours"], "prompt": "Try your own week, trip and finish time." },
+  "simulate": {
+    "controls": [
+      "wfhDays",
+      "workShare",
+      "commute",
+      "workHours"
+    ],
+    "prompt": "Try your own week, trip and finish time."
+  },
   "decide": {
     "compare": [
-      { "label": "Office every day", "set": { "wfhDays": 0 } },
-      { "label": "Home every day", "set": { "wfhDays": 5 } },
-      { "label": "Home every day, no extra work", "set": { "wfhDays": 5, "workShare": 0 } }
+      {
+        "label": "Office every day",
+        "set": {
+          "wfhDays": 0
+        }
+      },
+      {
+        "label": "Home every day",
+        "set": {
+          "wfhDays": 5
+        }
+      },
+      {
+        "label": "Home every day, no extra work",
+        "set": {
+          "wfhDays": 5,
+          "workShare": 0
+        }
+      }
     ],
     "tradeoffs": [
       "Working from home saves the trip, but much of that time can slip into longer workdays.",

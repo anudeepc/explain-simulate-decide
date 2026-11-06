@@ -2,7 +2,7 @@
 // that many stand lit in colour, the rest stay pale. Given several shares (groups), one
 // crowd shows every outcome at once, each in its own colour: one part instead of four. Made for chances and risks
 // ("out of 100 people like you, 4 will…"), which people read far better than percents.
-import { clay, mesh, group, rounded, PALETTE, THREE, clamp01 } from './kit.js';
+import { clay, mesh, group, rounded, torus, cone, PALETTE, THREE, clamp01 } from './kit.js';
 import { CROWD_COLORS } from './names.js';
 
 const N = 10;
@@ -46,8 +46,18 @@ export default function build({ tint = PALETTE.terracotta } = {}) {
     const col = i % N;
     return new THREE.Vector3(-side / 2 + col * GAP, 0.06, side / 2 - row * GAP);
   };
-  /** @param {number[]} shares each 0..1 of the crowd, filled in order */
-  const setGroups = (shares) => {
+  // "you": a ring at the feet and a marker above one person, so the viewer sees themself among the 100
+  const youMat = clay(PALETTE.ink, { emissive: 0.05 });
+  const you = group();
+  you.add(mesh(torus(0.11, 0.018, 32), youMat, { y: 0.075, rx: Math.PI / 2 }));
+  you.add(mesh(cone(0.06, 0.12, 16), youMat, { y: 0.62, rx: Math.PI }));
+  you.visible = false;
+  object.add(you);
+  /**
+   * @param {number[]} shares each 0..1 of the crowd, filled in order
+   * @param {number|null} [youIn] the group the viewer stands in; they are marked as its first person
+   */
+  const setGroups = (shares, youIn = null) => {
     const ends = [];
     let total = 0;
     for (const sh of shares.slice(0, tints.length)) ends.push((total = Math.min(N * N, total + Math.round(clamp01(sh) * N * N))));
@@ -58,6 +68,12 @@ export default function build({ tint = PALETTE.terracotta } = {}) {
       layers.forEach((im, k) => im.setMatrixAt(i, k === g ? m4 : hidden));
     }
     layers.forEach((im) => (im.instanceMatrix.needsUpdate = true));
+    const first = youIn === null ? -1 : youIn === 0 ? 0 : ends[youIn - 1] ?? -1;
+    you.visible = youIn !== null && first >= 0 && first < (ends[youIn] ?? 0);
+    if (you.visible) {
+      const p = place(first);
+      you.position.set(p.x, 0, p.z);
+    }
   };
   return {
     object,

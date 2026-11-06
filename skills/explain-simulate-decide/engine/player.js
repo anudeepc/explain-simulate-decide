@@ -10,6 +10,7 @@ import { layoutWorld, lanes, routeFlow, bounds, FOOT } from './layout.js';
 import { cameraSetups, poseAt, breathe } from './camera.js';
 import { createStage, toScreen } from './stage.js';
 import { toneOf } from './look.js';
+import { createScenes } from './director.js';
 import { createFlow } from './flows.js';
 import { resolveActor } from './cast/resolve.js';
 import { CROWD_COLORS } from './cast/names.js';
@@ -154,6 +155,9 @@ async function start(root, sp, options, api) {
   const tone = toneOf(sp);
   wrap.style.setProperty('--esd-accent', tone.accent);
   const stage = createStage(c3, tone);
+  // the director's scenes: small sets where the hero acts, cut into the film
+  const director = createScenes(sp, stage, tone);
+  const isScene = (seg) => seg?.act === 'explain' && director.has(seg.index);
   const ctx2 = c2.getContext('2d');
 
   // ---- nodes: build every prop, then place it (attached props ride on their host)
@@ -321,7 +325,17 @@ async function start(root, sp, options, api) {
     const prev = emphasisFor(tl.segments[Math.max(0, st.index - 1)]);
     const cur = emphasisFor(seg);
     f.emphasis = mixEmphasis(prev, cur, st.index === 0 ? 1 : easeInOut(span(local, 0, 0.3)));
-    f.pose = reducedMotion ? poseAt(setups, st.index, local, { reducedMotion }) : breathe(poseAt(setups, st.index, local), t);
+    const prevSeg = tl.segments[st.index - 1];
+    // a cut, not a camera move: into or out of a scene, the picture changes at once and
+    // fades up from white, the way a film cuts between places
+    const cut = st.index > 0 && (isScene(seg) || isScene(prevSeg));
+    f.dip = cut && !reducedMotion ? 1 - easeOut(span(local * (seg.end - seg.start), 0, 0.45)) : 0;
+    if (isScene(seg)) {
+      const shotFrame = director.frame(seg.index, local, t, { reducedMotion });
+      f.setScene = shotFrame.scene;
+      f.pose = shotFrame.pose;
+    } else if (cut) f.pose = reducedMotion ? setups[st.index].at(0) : breathe(setups[st.index].at(local), t);
+    else f.pose = reducedMotion ? poseAt(setups, st.index, local, { reducedMotion }) : breathe(poseAt(setups, st.index, local), t);
     const textAlpha = span(local, 0.1, 0.22) * (1 - span(local, 0.95, 1));
 
     if (seg.act === 'explain') {
@@ -349,7 +363,8 @@ async function start(root, sp, options, api) {
         }
       }
       if (shot.shot === 'timelapse') f.clockAlpha = span(local, 0.12, 0.2) * (1 - span(local, 0.96, 1));
-      f.readoutAlpha = st.index === 0 ? span(local, 0.7, 1) : 1;
+      // a scene is a moment in the hero's life: no dashboard in the corner
+      f.readoutAlpha = isScene(seg) ? 0 : st.index === 0 ? span(local, 0.7, 1) : 1;
     } else if (seg.act === 'simulate') {
       f.ask = span(local, 0.02, 0.07) * (1 - span(local, 0.26, 0.3));
       const controls = sp.simulate.controls.slice(0, 2);
@@ -499,7 +514,7 @@ async function start(root, sp, options, api) {
         const at = m ? sim.reached[m.id] : null;
         actor.setReached?.(at !== null && at !== undefined ? clamp01((frame.tau - at) / (SPAN * 0.05)) : 0);
         actor.setGhost?.(frame.ghost && ghost[nd.id] !== undefined ? clamp01(ghost[nd.id] / v.top) : null);
-      } else if (nd.groups && actor.setGroups) actor.setGroups(nd.groups.map((g) => clamp01((scope[g.value] ?? 0) / 100)));
+      } else if (nd.groups && actor.setGroups) actor.setGroups(nd.groups.map((g) => clamp01((scope[g.value] ?? 0) / 100)), nd.you ?? null);
       else if (nd.plays && actor.percent) actor.setValue(clamp01((scope[nd.plays] ?? 0) / 100));
       else if (nd.plays && ranges[nd.plays]) actor.setValue(normalise(scope[nd.plays], ranges[nd.plays]));
       else actor.setValue(actor.percent ? 1 : 0.6); // a crowd with no number is everyone
@@ -528,7 +543,7 @@ async function start(root, sp, options, api) {
     if (ringNode && pos[ringNode] && !pos[ringNode].sky) stage.markFocus(pos[ringNode].x, pos[ringNode].z, frame.ringAlpha);
     else stage.markFocus(0, 0, 0);
     stage.look(frame.pose.position, frame.pose.target);
-    stage.render(timeForFlow);
+    stage.render(timeForFlow, frame.setScene || stage.scene);
 
     // ---- overlay
     overlay.theme.accent = tone.accent; // two films on one page each keep their own colour
@@ -552,7 +567,7 @@ async function start(root, sp, options, api) {
         } else if (nd.groups) {
           // one crowd, several outcomes: a coloured dot and a share for each
           // whole people, as the crowd shows them; an outcome nobody reaches is left out
-          const parts = nd.groups.map((g, i) => ({ color: CROWD_COLORS[i], n: Math.round(scope[g.value] ?? 0), label: g.label })).filter((x) => x.n > 0);
+          const parts = nd.groups.map((g, i) => ({ color: CROWD_COLORS[i], n: Math.round(scope[g.value] ?? 0), label: g.label + (nd.you === i ? ' (you)' : '') })).filter((x) => x.n > 0);
           text = { title: nd.label, value: '', parts: parts.map((x) => ({ color: x.color, text: `${x.n} in 100: ${x.label}` })) };
         } else if (nd.plays) {
           const meta = model.meta(nd.plays);
@@ -594,6 +609,7 @@ async function start(root, sp, options, api) {
       overlay.drawDecideCard(ctx2, W, H, sp, frame.decideAlpha || 0, frame.decideAlpha > 0.01 && sp.decide.compare ? compareRows(defaults) : null);
     }
     overlay.drawCaption(ctx2, W, H, frame.caption, subtitles ? frame.captionAlpha : 0);
+    if (frame.dip > 0.001) overlay.drawDip(ctx2, W, H, frame.dip);
     overlay.drawSource(ctx2, W, H, sp, 1);
     return sim;
   }

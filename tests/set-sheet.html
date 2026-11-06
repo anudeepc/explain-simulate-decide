@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Film set sheet</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  canvas { display: block; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .name { position: absolute; font-size: 15px; font-weight: 650; color: #2b2b30; letter-spacing: 0.02em; background: rgba(255,255,255,0.82); padding: 3px 8px; border-radius: 6px; }
+  .meta { font-weight: 400; color: #6b7280; font-size: 12px; margin-left: 6px; }
+  .err { color: #c0392b; }
+  .rule { position: absolute; height: 1px; background: #e5e7eb; }
+  .vrule { position: absolute; width: 1px; background: #e5e7eb; }
+</style>
+</head>
+<body>
+<div id="labels"></div>
+<script type="module">
+// Contact sheet for the film sets: every set from one of its cameras (default "medium"),
+// with a 1.75 m stand-in at each mark (the main mark solid, others ghosted), the hand-held
+// objects at their spots, and a row of the three objects close up. Lit like stage.js.
+// Query params: ?cam=medium|close|wide   ?only=kitchen,lab   ?cols=3   ?debug=1 (spot markers)
+//               ?all=1 (one row per set: close, medium, wide; no objects row)
+import { SETS, OBJECTS } from '../skills/explain-simulate-decide/engine/sets/names.js';
+import { buildObject } from '../skills/explain-simulate-decide/engine/sets/objects.js';
+import { THREE } from '../skills/explain-simulate-decide/engine/cast/kit.js';
+import { RoomEnvironment } from '../skills/explain-simulate-decide/engine/vendor/three/RoomEnvironment.js';
+
+const q = new URLSearchParams(location.search);
+const camName = q.get('cam') || 'medium';
+const names = q.has('only') ? q.get('only').split(',') : SETS;
+const all = q.has('all');
+const cols = all ? 3 : Number(q.get('cols')) || Math.min(3, names.length);
+const CAMS = all ? ['close', 'medium', 'wide'] : [camName];
+const debug = q.has('debug');
+const MAX_TRIS = 25000;
+window.sheetErrors = [];
+const fail = (msg, e) => { console.error(msg, e || ''); window.sheetErrors.push(msg + (e ? `: ${e.message}` : '')); };
+
+// which object sits at which spot, and how
+const PROPS = {
+  doorway: [['mat', 'letter', 'flat', 0.5]],
+  kitchen: [['counter', 'kit', 'flat', 0.3]],
+  postbox: [['slot', 'envelope', 'slot', 0.18 + Math.PI]],
+  hospital: [['desk', 'letter', 'flat', 0.3]],
+  livingRoom: [['shelf', 'letter', 'lean', 0.15]],
+  lab: [['analyser', 'kit', 'stand', 0], ['tray', 'envelope', 'none', 0]],
+};
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.setClearColor('#ffffff');
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#ffffff');
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.45;
+scene.add(new THREE.HemisphereLight('#e4ecff', '#d9d6d0', 0.7));
+const key = new THREE.DirectionalLight('#fff4e6', 3.0);
+key.position.set(13, 14, 10);
+key.castShadow = true;
+key.shadow.mapSize.setScalar(4096);
+key.shadow.bias = -0.0003;
+key.shadow.normalBias = 0.03;
+key.shadow.radius = 7;
+key.shadow.blurSamples = 16;
+Object.assign(key.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 60 });
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight('#cfe1ff', 1.3);
+rim.position.set(-10, 8, -12);
+scene.add(rim);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ color: '#3a4250', opacity: 0.12 }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.081;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// other marks: a ring on the floor with an arrow for the facing
+const ringMat = new THREE.MeshBasicMaterial({ color: '#0e7c7b', transparent: true, opacity: 0.75 });
+function markRing(m) {
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.24, 40), ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.16, 3), ringMat);
+  arrow.rotation.x = Math.PI / 2;
+  arrow.position.z = 0.32;
+  g.add(ring, arrow);
+  g.position.fromArray(m.position);
+  g.position.y += 0.012;
+  g.rotation.y = m.facing;
+  return g;
+}
+
+// 1.75 m stand-ins: standing capsule, or a seated figure for marks with a seat
+const standMat = new THREE.MeshStandardMaterial({ color: '#0e7c7b', roughness: 0.6 });
+const ghostMat = new THREE.MeshStandardMaterial({ color: '#0e7c7b', roughness: 0.6, transparent: true, opacity: 0.28, depthWrite: false });
+const noseMat = new THREE.MeshStandardMaterial({ color: '#f5b83d', roughness: 0.5 });
+function standIn(m, ghost) {
+  const g = new THREE.Group();
+  const mat = ghost ? ghostMat : standMat;
+  const R = 0.19;
+  const add = (geo, mt, x, y, z, rx = 0) => {
+    const o = new THREE.Mesh(geo, mt);
+    o.position.set(x, y, z);
+    o.rotation.x = rx;
+    o.castShadow = !ghost;
+    g.add(o);
+  };
+  if (m.pose === 'sit') {
+    const seat = m.seat ?? 0.45;
+    // torso from the seat to the head (sitting height ≈ 0.91 for a 1.75 m person)
+    add(new THREE.CapsuleGeometry(R, 0.91 - 2 * R, 8, 20), mat, 0, seat + 0.455, -0.06);
+    add(new THREE.CapsuleGeometry(0.075, 0.38, 6, 12), mat, -0.1, seat + 0.07, 0.17, Math.PI / 2);
+    add(new THREE.CapsuleGeometry(0.075, 0.38, 6, 12), mat, 0.1, seat + 0.07, 0.17, Math.PI / 2);
+    add(new THREE.CapsuleGeometry(0.06, seat - 0.12, 6, 12), mat, -0.1, (seat + 0.0) / 2, 0.38);
+    add(new THREE.CapsuleGeometry(0.06, seat - 0.12, 6, 12), mat, 0.1, (seat + 0.0) / 2, 0.38);
+    add(new THREE.SphereGeometry(0.05, 12, 8), noseMat, 0, seat + 0.78, R + 0.0);
+  } else {
+    add(new THREE.CapsuleGeometry(R, 1.75 - 2 * R, 8, 24), mat, 0, 1.75 / 2, 0);
+    add(new THREE.SphereGeometry(0.05, 12, 8), noseMat, 0, 1.6, R + 0.02);
+  }
+  g.position.fromArray(m.position);
+  g.rotation.y = m.facing;
+  return g;
+}
+
+function placeProp(set, setName) {
+  const g = new THREE.Group();
+  for (const [spot, obj, how, ry] of PROPS[setName] || []) {
+    const p = set.spots[spot];
+    if (!p) { fail(`${setName}: missing spot "${spot}"`); continue; }
+    const o = buildObject(obj);
+    const size = o.userData.size;
+    const holder = new THREE.Group();
+    holder.position.fromArray(p);
+    holder.rotation.y = ry;
+    if (how === 'flat') {
+      o.rotation.fromArray(o.userData.flat);
+      o.position.y = (obj === 'kit' ? size[0] : size[2]) / 2;
+    } else if (how === 'lean') {
+      o.rotation.x = -0.22;
+      o.position.set(0, size[1] / 2 * Math.cos(0.22), -0.05);
+    } else if (how === 'stand') {
+      o.position.y = size[1] / 2;
+    } else if (how === 'slot') {
+      o.rotation.fromArray(o.userData.flat);
+      o.position.z = -size[1] * 0.3; // half in the slot, half toward the person
+    } else continue;
+    holder.add(o);
+    g.add(holder);
+  }
+  if (debug) for (const [n, p] of Object.entries(set.spots)) {
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff2d55' }));
+    d.position.fromArray(p);
+    g.add(d);
+  }
+  return g;
+}
+
+const tris = (o) => {
+  let n = 0;
+  o.traverse((m) => { if (m.isMesh) n += (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3; });
+  return Math.round(n);
+};
+
+const cells = [];
+for (const name of names) {
+  try {
+    const mod = await import(`../skills/explain-simulate-decide/engine/sets/${name}.js`);
+    const set = mod.default();
+    for (const k of ['object', 'marks', 'spots', 'cameras']) if (!set[k]) throw new Error(`no ${k}`);
+    for (const c of ['close', 'medium', 'wide']) if (!set.cameras[c]?.position || !set.cameras[c]?.target) throw new Error(`no ${c} camera`);
+    const t = tris(set.object);
+    if (t > MAX_TRIS) fail(`${name}: ${t} triangles (max ${MAX_TRIS})`);
+    const extras = new THREE.Group();
+    const markNames = Object.keys(set.marks);
+    // the main mark (the first) gets a stand-in; the nurse too, so the consultation reads
+    markNames.forEach((m, i) => extras.add(name !== 'lab' && (i === 0 || (name === 'hospital' && m === 'nurse')) ? standIn(set.marks[m], false) : markRing(set.marks[m])));
+    extras.add(placeProp(set, name));
+    for (const c of CAMS) cells.push({ name, set, extras, tris: t, camName: c, cam: set.cameras[c] });
+  } catch (e) {
+    fail(`${name}`, e);
+    for (const c of CAMS) cells.push({ name, error: true, camName: c });
+  }
+}
+
+// the objects row
+const objCells = [];
+for (const name of all ? [] : OBJECTS) {
+  try {
+    const o = buildObject(name);
+    if (!o.userData.size) throw new Error('no userData.size');
+    const s = o.userData.size;
+    const holder = new THREE.Group();
+    holder.add(o);
+    holder.rotation.set(-0.12, -0.45, 0);
+    const span = Math.max(s[0], s[1]);
+    objCells.push({ name, holder, span, size: s, tris: tris(o) });
+  } catch (e) {
+    fail(`object ${name}`, e);
+    objCells.push({ name, error: true });
+  }
+}
+const objFloor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ color: '#3a4250', opacity: 0.14 }));
+objFloor.rotation.x = -Math.PI / 2;
+objFloor.receiveShadow = true;
+
+const camera = new THREE.PerspectiveCamera(32, 16 / 9, 0.05, 200);
+const labels = document.getElementById('labels');
+
+function render() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H);
+  const setRows = Math.ceil(cells.length / cols);
+  const cw = W / cols, ch = cw * 9 / 16;
+  renderer.setScissorTest(true);
+  renderer.setClearColor('#ffffff');
+  labels.innerHTML = '';
+  const label = (x, y, text, meta, err) => {
+    const d = document.createElement('div');
+    d.className = 'name' + (err ? ' err' : '');
+    d.innerHTML = `${text}<span class="meta">${meta || ''}</span>`;
+    d.style.left = `${x + 10}px`;
+    d.style.top = `${y + 8}px`;
+    labels.appendChild(d);
+  };
+  const viewport = (x, yTop, w, h) => {
+    renderer.setViewport(x, H - yTop - h, w, h);
+    renderer.setScissor(x, H - yTop - h, w, h);
+  };
+  cells.forEach((cell, idx) => {
+    const c = idx % cols, r = Math.floor(idx / cols);
+    const x = c * cw, yTop = r * ch;
+    viewport(x, yTop, cw, ch);
+    if (cell.error) { renderer.clear(); label(x, yTop, cell.name, 'failed to build', true); return; }
+    camera.aspect = cw / ch;
+    camera.position.fromArray(cell.cam.position);
+    camera.lookAt(new THREE.Vector3().fromArray(cell.cam.target));
+    camera.updateProjectionMatrix();
+    scene.add(cell.set.object, cell.extras);
+    renderer.render(scene, camera);
+    scene.remove(cell.set.object, cell.extras);
+    label(x, yTop, cell.name, `${cell.camName} · ${(cell.tris / 1000).toFixed(1)}k tris`, cell.tris > MAX_TRIS);
+  });
+  // objects row: each object close up on a pale card, lit by the same rig
+  const oy = setRows * ch;
+  const ow = W / Math.max(1, objCells.length), oh = Math.min(ch, H - oy);
+  objCells.forEach((cell, i) => {
+    const x = i * ow;
+    viewport(x, oy, ow, oh);
+    if (cell.error) { renderer.clear(); label(x, oy, cell.name, 'failed', true); return; }
+    camera.aspect = ow / oh;
+    const dist = (cell.span * 0.62) / Math.tan(THREE.MathUtils.degToRad(16));
+    cell.holder.position.set(0, cell.span * 0.55 + 0.02, 0);
+    objFloor.position.y = 0;
+    camera.position.set(0.12 * dist, cell.span * 0.55 + 0.25 * dist, dist);
+    camera.lookAt(0, cell.span * 0.55, 0);
+    camera.updateProjectionMatrix();
+    scene.add(cell.holder, objFloor);
+    renderer.render(scene, camera);
+    scene.remove(cell.holder, objFloor);
+    const s = cell.size.map((v) => (v * 100).toFixed(1)).join(' × ');
+    label(x, oy, cell.name, `${s} cm · ${(cell.tris / 1000).toFixed(1)}k tris`);
+  });
+}
+render();
+window.addEventListener('resize', render);
+requestAnimationFrame(() => { window.sheetReady = true; });
+</script>
+</body>
+</html>

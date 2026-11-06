@@ -372,3 +372,12 @@ export function drawSource(ctx, W, H, sp, alpha) {
 }
 
 export const fmt = formatValue;
+
+/** A cut fades up from white, softly, as the new place appears. */
+export function drawDip(ctx, W, H, alpha) {
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, alpha) * 0.92;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}

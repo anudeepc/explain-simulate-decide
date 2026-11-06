@@ -161,6 +161,15 @@ At least one `between` and one `rises` or `falls`. The validator also runs every
 - `caption` is 12 words or fewer.
 - `drive` (optional) is the input to sweep during the shot.
 
+**Scenes** (`"shot": "scene"`): the hero acting in a small set, cut into the film like a scene in a movie. Fields:
+- `set`: `doorway`, `kitchen`, `postbox`, `hospital`, `livingRoom` or `lab`.
+- `camera`: `close`, `medium` (default) or `wide`.
+- `at`: the mark where the hero starts. `seated: true` starts them in a chair.
+- `with: "nurse"`: a second person in the scene.
+- `beats` (1–4, in order): `{"do": action, "to": mark, "object": letter|envelope|kit, "from": spot, "feel": expression}`. Actions are `idle`, `walk`, `pickUp`, `read`, `hold`, `give`, `place`, `sit`, `talk`, `listen`, `wait` and `react`. Expressions are `neutral`, `curious`, `worried`, `relieved` and `smile`.
+
+A scene counts as a shot about the hero. The film cuts into and out of a scene and fades up from white. `examples/bowel-screening` shows a full director's cut.
+
 **Simulate:** `controls` lists 1–6 input ids to show as sliders.
 
 **Decide:**

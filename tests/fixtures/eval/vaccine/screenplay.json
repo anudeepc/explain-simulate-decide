@@ -25,31 +25,119 @@
   },
   "world": {
     "nodes": [
-      { "id": "vaccine", "kind": "medicine", "label": "Vaccine" },
-      { "id": "you", "prop": "body", "label": "You" },
-      { "id": "learners", "kind": "cell", "label": "B and T cells" },
-      { "id": "memory", "kind": "cell", "label": "Memory cells" },
-      { "id": "germ", "kind": "germ", "label": "The real germ, later" }
+      {
+        "id": "vaccine",
+        "kind": "medicine",
+        "label": "Vaccine"
+      },
+      {
+        "id": "you",
+        "prop": "body",
+        "label": "You"
+      },
+      {
+        "id": "learners",
+        "kind": "cell",
+        "label": "B and T cells"
+      },
+      {
+        "id": "memory",
+        "kind": "cell",
+        "label": "Memory cells"
+      },
+      {
+        "id": "germ",
+        "kind": "germ",
+        "label": "The real germ, later"
+      }
     ],
     "flows": [
-      { "id": "shown", "from": "vaccine", "to": "you", "carrier": "substance", "label": "A harmless piece of the germ" },
-      { "id": "alarm", "from": "you", "to": "learners", "carrier": "data", "label": "Alarm raised" },
-      { "id": "kept", "from": "learners", "to": "memory", "carrier": "data", "label": "Some stay on as memory" },
-      { "id": "arrives", "from": "germ", "to": "memory", "carrier": "substance", "label": "Recognised at once" },
-      { "id": "stopped", "from": "memory", "to": "germ", "carrier": "influence", "label": "Antibodies in days, not weeks" }
+      {
+        "id": "shown",
+        "from": "vaccine",
+        "to": "you",
+        "carrier": "substance",
+        "label": "A harmless piece of the germ"
+      },
+      {
+        "id": "alarm",
+        "from": "you",
+        "to": "learners",
+        "carrier": "data",
+        "label": "Alarm raised"
+      },
+      {
+        "id": "kept",
+        "from": "learners",
+        "to": "memory",
+        "carrier": "data",
+        "label": "Some stay on as memory"
+      },
+      {
+        "id": "arrives",
+        "from": "germ",
+        "to": "memory",
+        "carrier": "substance",
+        "label": "Recognised at once"
+      },
+      {
+        "id": "stopped",
+        "from": "memory",
+        "to": "germ",
+        "carrier": "influence",
+        "label": "Antibodies in days, not weeks"
+      }
     ]
   },
   "explain": [
-    { "shot": "establish", "caption": "You feel well today. What does a vaccine actually do inside you?" },
-    { "shot": "follow", "focus": "shown", "caption": "The jab shows your body a harmless piece of a germ." },
-    { "shot": "follow", "focus": "alarm", "caption": "Your immune cells spot this stranger and raise the alarm." },
-    { "shot": "focus", "focus": "learners", "caption": "B cells make tagging antibodies. T cells learn to kill infected cells." },
-    { "shot": "focus", "focus": "you", "caption": "A sore arm or mild fever is your body learning, not infection." },
-    { "shot": "follow", "focus": "kept", "caption": "The response settles. Some cells stay on as memory, sometimes for years." },
-    { "shot": "follow", "focus": "arrives", "caption": "Later, the real germ arrives. Memory cells know it at once." },
-    { "shot": "turn", "focus": "stopped", "caption": "But the vaccine kills nothing. Your own trained cells stop the germ." },
-    { "shot": "focus", "focus": "you", "caption": "So the vaccine comes first, while you are still well." },
-    { "shot": "handoff", "caption": "Now weigh it up for yourself." }
+    {
+      "shot": "establish",
+      "caption": "You feel well today. What does a vaccine do inside you?"
+    },
+    {
+      "shot": "follow",
+      "focus": "shown",
+      "caption": "The jab shows your body a harmless piece of a germ."
+    },
+    {
+      "shot": "follow",
+      "focus": "alarm",
+      "caption": "Your immune cells spot this stranger and raise the alarm."
+    },
+    {
+      "shot": "focus",
+      "focus": "learners",
+      "caption": "B cells make tagging antibodies. T cells learn to kill infected cells."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "caption": "A sore arm or mild fever is your body learning, not infection."
+    },
+    {
+      "shot": "follow",
+      "focus": "kept",
+      "caption": "The response settles. Some cells stay on as memory, sometimes for years."
+    },
+    {
+      "shot": "follow",
+      "focus": "arrives",
+      "caption": "Later, the real germ arrives. Memory cells know it at once."
+    },
+    {
+      "shot": "turn",
+      "focus": "stopped",
+      "caption": "But the vaccine kills nothing. Your own trained cells stop the germ."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "caption": "So the vaccine comes first, while you are still well."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now weigh it up for yourself."
+    }
   ],
   "decide": {
     "tradeoffs": [

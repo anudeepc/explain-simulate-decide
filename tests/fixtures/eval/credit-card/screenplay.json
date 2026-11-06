@@ -21,84 +21,354 @@
   },
   "model": {
     "inputs": [
-      { "id": "fixedPay", "label": "Fixed amount you pay each month (0 = just the minimum)", "unit": "$/month", "kind": "lever",
-        "min": 0, "max": 500, "step": 10, "default": 0, "source": "assumption" },
-      { "id": "newSpend", "label": "New purchases on the card each month", "unit": "$/month", "kind": "lever",
-        "min": 0, "max": 500, "step": 10, "default": 0, "source": "assumption" },
-      { "id": "balance0", "label": "What you owe now", "unit": "$", "kind": "condition",
-        "min": 500, "max": 20000, "step": 100, "default": 5000, "source": "article", "quote": 2 },
-      { "id": "apr", "label": "Interest rate a year", "unit": "%/yr", "kind": "condition",
-        "min": 0, "max": 36, "step": 0.5, "default": 22, "source": "article", "quote": 1 }
+      {
+        "id": "fixedPay",
+        "label": "Fixed amount you pay each month (0 = just the minimum)",
+        "unit": "$/month",
+        "kind": "lever",
+        "min": 0,
+        "max": 500,
+        "step": 10,
+        "default": 0,
+        "source": "assumption"
+      },
+      {
+        "id": "newSpend",
+        "label": "New purchases on the card each month",
+        "unit": "$/month",
+        "kind": "lever",
+        "min": 0,
+        "max": 500,
+        "step": 10,
+        "default": 0,
+        "source": "assumption"
+      },
+      {
+        "id": "balance0",
+        "label": "What you owe now",
+        "unit": "$",
+        "kind": "condition",
+        "min": 500,
+        "max": 20000,
+        "step": 100,
+        "default": 5000,
+        "source": "article",
+        "quote": 2
+      },
+      {
+        "id": "apr",
+        "label": "Interest rate a year",
+        "unit": "%/yr",
+        "kind": "condition",
+        "min": 0,
+        "max": 36,
+        "step": 0.5,
+        "default": 22,
+        "source": "article",
+        "quote": 1
+      }
     ],
     "constants": [
-      { "id": "minShare", "label": "Minimum payment, share of what you owe", "unit": "%/month", "value": 2, "source": "article", "quote": 0 },
-      { "id": "minFloor", "label": "Smallest minimum payment", "unit": "$/month", "value": 25, "source": "article", "quote": 0 },
-      { "id": "payGap", "label": "Time between payments", "unit": "month", "value": 1, "source": "article", "quote": [0, 5], "note": "You pay, and interest is added, once a month." }
+      {
+        "id": "minShare",
+        "label": "Minimum payment, share of what you owe",
+        "unit": "%/month",
+        "value": 2,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "minFloor",
+        "label": "Smallest minimum payment",
+        "unit": "$/month",
+        "value": 25,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "payGap",
+        "label": "Time between payments",
+        "unit": "month",
+        "value": 1,
+        "source": "article",
+        "quote": [
+          0,
+          5
+        ],
+        "note": "You pay, and interest is added, once a month."
+      }
     ],
     "derived": [
-      { "id": "interest", "label": "Interest added this month", "unit": "$/month", "formula": "balance * apr / 100 / 12" },
-      { "id": "payment", "label": "Your payment this month", "unit": "$/month",
-        "formula": "min(max(fixedPay, balance * minShare / 100, minFloor), balance / payGap + interest + newSpend)" }
+      {
+        "id": "interest",
+        "label": "Interest added this month",
+        "unit": "$/month",
+        "formula": "balance * apr / 100 / 12"
+      },
+      {
+        "id": "payment",
+        "label": "Your payment this month",
+        "unit": "$/month",
+        "formula": "min(max(fixedPay, balance * minShare / 100, minFloor), balance / payGap + interest + newSpend)"
+      }
     ],
     "outputs": [
-      { "id": "firstInterest", "label": "Interest in the first month", "unit": "$/month", "formula": "balance0 * apr / 100 / 12" },
-      { "id": "firstCut", "label": "Off what you owe in the first month", "unit": "$/month",
-        "formula": "max(fixedPay, balance0 * minShare / 100, minFloor) - firstInterest - newSpend" }
+      {
+        "id": "firstInterest",
+        "label": "Interest in the first month",
+        "unit": "$/month",
+        "formula": "balance0 * apr / 100 / 12"
+      },
+      {
+        "id": "firstCut",
+        "label": "Off what you owe in the first month",
+        "unit": "$/month",
+        "formula": "max(fixedPay, balance0 * minShare / 100, minFloor) - firstInterest - newSpend"
+      }
     ],
     "stores": [
-      { "id": "balance", "label": "What you owe", "unit": "$", "start": "balance0", "floor": 0, "change": "(balance * apr / 100 / 12 + newSpend - payment) * 12" },
-      { "id": "interestPaid", "label": "Interest you've paid", "unit": "$", "start": 0, "change": "interest * 12" }
+      {
+        "id": "balance",
+        "label": "What you owe",
+        "unit": "$",
+        "start": "balance0",
+        "floor": 0,
+        "change": "(balance * apr / 100 / 12 + newSpend - payment) * 12"
+      },
+      {
+        "id": "interestPaid",
+        "label": "Interest you've paid",
+        "unit": "$",
+        "start": 0,
+        "change": "interest * 12"
+      }
     ],
     "milestones": [
-      { "id": "debtFree", "label": "Card cleared in", "store": "balance", "reaches": "0" },
-      { "id": "interestTops", "label": "Interest paid passes what you owed, in", "store": "interestPaid", "reaches": "balance0" }
+      {
+        "id": "debtFree",
+        "label": "Card cleared in",
+        "store": "balance",
+        "reaches": "0"
+      },
+      {
+        "id": "interestTops",
+        "label": "Interest paid passes what you owed, in",
+        "store": "interestPaid",
+        "reaches": "balance0"
+      }
     ]
   },
   "checks": [
-    { "claim": "Paying the minimum, $5,000 at 22% takes over 20 years to clear", "value": "debtFree", "between": [20, null], "quote": 3 },
-    { "claim": "Paying the minimum, you pay more in interest than you borrowed", "value": "interestPaid", "between": [5000, null], "quote": 3 },
-    { "claim": "A fixed $200 a month clears the same balance in about two and a half years", "value": "debtFree", "between": [2.125, 2.875], "when": { "fixedPay": 200 }, "quote": 4 },
-    { "claim": "22% a year is just under 2% a month on what you owe", "value": "firstInterest", "between": [90, 100], "quote": 1 },
-    { "claim": "A bigger fixed payment clears the card sooner", "value": "debtFree", "falls": "fixedPay" },
-    { "claim": "New purchases leave more owing", "value": "balance", "rises": "newSpend" },
-    { "claim": "A lower rate clears the card sooner", "value": "debtFree", "rises": "apr" }
+    {
+      "claim": "Paying the minimum, $5,000 at 22% takes over 20 years to clear",
+      "value": "debtFree",
+      "between": [
+        20,
+        null
+      ],
+      "quote": 3
+    },
+    {
+      "claim": "Paying the minimum, you pay more in interest than you borrowed",
+      "value": "interestPaid",
+      "between": [
+        5000,
+        null
+      ],
+      "quote": 3
+    },
+    {
+      "claim": "A fixed $200 a month clears the same balance in about two and a half years",
+      "value": "debtFree",
+      "between": [
+        2.125,
+        2.875
+      ],
+      "when": {
+        "fixedPay": 200
+      },
+      "quote": 4
+    },
+    {
+      "claim": "22% a year is just under 2% a month on what you owe",
+      "value": "firstInterest",
+      "between": [
+        90,
+        100
+      ],
+      "quote": 1
+    },
+    {
+      "claim": "A bigger fixed payment clears the card sooner",
+      "value": "debtFree",
+      "falls": "fixedPay"
+    },
+    {
+      "claim": "New purchases leave more owing",
+      "value": "balance",
+      "rises": "newSpend"
+    },
+    {
+      "claim": "A lower rate clears the card sooner",
+      "value": "debtFree",
+      "rises": "apr"
+    }
   ],
   "world": {
-    "time": { "unit": "year", "span": 20 },
+    "time": {
+      "unit": "year",
+      "span": 20
+    },
     "nodes": [
-      { "id": "you", "prop": "person-figure", "label": "You", "plays": "fixedPay" },
-      { "id": "shop", "prop": "shopping-bag", "label": "New purchases", "plays": "newSpend", "appears": "newSpend" },
-      { "id": "bank", "prop": "bank", "label": "Card company", "plays": "apr" },
-      { "id": "debt", "prop": "jar", "label": "What you owe", "store": "balance" },
-      { "id": "paid", "prop": "coin-stack", "label": "Interest you've paid", "store": "interestPaid" }
+      {
+        "id": "you",
+        "prop": "person-figure",
+        "label": "You",
+        "plays": "fixedPay"
+      },
+      {
+        "id": "shop",
+        "prop": "shopping-bag",
+        "label": "New purchases",
+        "plays": "newSpend",
+        "appears": "newSpend"
+      },
+      {
+        "id": "bank",
+        "prop": "bank",
+        "label": "Card company",
+        "plays": "apr"
+      },
+      {
+        "id": "debt",
+        "prop": "jar",
+        "label": "What you owe",
+        "store": "balance"
+      },
+      {
+        "id": "paid",
+        "prop": "coin-stack",
+        "label": "Interest you've paid",
+        "store": "interestPaid"
+      }
     ],
     "flows": [
-      { "id": "pay", "from": "you", "to": "bank", "carrier": "money", "rate": "payment", "label": "Your payment", "unit": "$/month" },
-      { "id": "charge", "from": "bank", "to": "debt", "carrier": "money", "rate": "interest", "label": "Interest added", "unit": "$/month" },
-      { "id": "buy", "from": "shop", "to": "debt", "carrier": "money", "rate": "newSpend", "label": "New purchases", "unit": "$/month" }
+      {
+        "id": "pay",
+        "from": "you",
+        "to": "bank",
+        "carrier": "money",
+        "rate": "payment",
+        "label": "Your payment",
+        "unit": "$/month"
+      },
+      {
+        "id": "charge",
+        "from": "bank",
+        "to": "debt",
+        "carrier": "money",
+        "rate": "interest",
+        "label": "Interest added",
+        "unit": "$/month"
+      },
+      {
+        "id": "buy",
+        "from": "shop",
+        "to": "debt",
+        "carrier": "money",
+        "rate": "newSpend",
+        "label": "New purchases",
+        "unit": "$/month"
+      }
     ]
   },
   "ask": [
-    { "question": "How much do you owe on your card right now?", "help": "It's the balance on your latest statement, or in your card's app.", "input": "balance0" },
-    { "question": "What interest rate does your card charge a year?", "help": "Look for the purchase rate on your statement.", "input": "apr" },
-    { "question": "Do you pay a fixed amount each month? How much?", "help": "Enter 0 if you pay just the minimum.", "input": "fixedPay" },
-    { "question": "About how much do you add to the card in new purchases each month?", "help": "Add up the purchases on your last statement. Enter 0 if none.", "input": "newSpend" }
+    {
+      "question": "How much do you owe on your card right now?",
+      "help": "It's the balance on your latest statement, or in your card's app.",
+      "input": "balance0"
+    },
+    {
+      "question": "What interest rate does your card charge a year?",
+      "help": "Look for the purchase rate on your statement.",
+      "input": "apr"
+    },
+    {
+      "question": "Do you pay a fixed amount each month? How much?",
+      "help": "Enter 0 if you pay just the minimum.",
+      "input": "fixedPay"
+    },
+    {
+      "question": "About how much do you add to the card in new purchases each month?",
+      "help": "Add up the purchases on your last statement. Enter 0 if none.",
+      "input": "newSpend"
+    }
   ],
   "explain": [
-    { "shot": "establish", "caption": "You owe money on your card. When will it be cleared?" },
-    { "shot": "follow", "focus": "pay", "caption": "You pay the minimum, trusting it will clear the card in time." },
-    { "shot": "follow", "focus": "charge", "caption": "Each month, the card company adds interest to what you owe." },
-    { "shot": "turn", "focus": "pay", "caption": "But nearly all of the minimum goes on interest." },
-    { "shot": "timelapse", "focus": "debt", "caption": "So years pass. The debt stays; the interest you've paid piles up." },
-    { "shot": "cause", "focus": "buy", "drive": "newSpend", "caption": "New purchases add to the debt faster than small payments shrink it." },
-    { "shot": "cause", "focus": "pay", "drive": "fixedPay", "caption": "A fixed amount doesn't shrink with the debt, so it clears sooner." },
-    { "shot": "handoff", "caption": "Now make it yours. Your numbers decide the rest." }
+    {
+      "shot": "establish",
+      "caption": "You owe money on your card. When will you clear it?"
+    },
+    {
+      "shot": "follow",
+      "focus": "pay",
+      "caption": "You pay the minimum, trusting it will clear the card in time."
+    },
+    {
+      "shot": "follow",
+      "focus": "charge",
+      "caption": "Each month, the card company adds interest to what you owe."
+    },
+    {
+      "shot": "turn",
+      "focus": "pay",
+      "caption": "But nearly all of the minimum goes on interest."
+    },
+    {
+      "shot": "timelapse",
+      "focus": "debt",
+      "caption": "So years pass. The debt stays. The interest you pay piles up."
+    },
+    {
+      "shot": "cause",
+      "focus": "buy",
+      "drive": "newSpend",
+      "caption": "New things you buy grow the debt faster than payments cut it."
+    },
+    {
+      "shot": "cause",
+      "focus": "pay",
+      "drive": "fixedPay",
+      "caption": "A fixed amount doesn't shrink with the debt, so it clears sooner."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Your numbers decide the rest."
+    }
   ],
-  "simulate": { "controls": ["fixedPay", "newSpend", "balance0", "apr"], "prompt": "Try your own balance, rate and payment." },
+  "simulate": {
+    "controls": [
+      "fixedPay",
+      "newSpend",
+      "balance0",
+      "apr"
+    ],
+    "prompt": "Try your own balance, rate and payment."
+  },
   "decide": {
     "compare": [
-      { "label": "Pay just the minimum", "set": { "fixedPay": 0 } },
-      { "label": "Pay a fixed $200 a month", "set": { "fixedPay": 200 } }
+      {
+        "label": "Pay just the minimum",
+        "set": {
+          "fixedPay": 0
+        }
+      },
+      {
+        "label": "Pay a fixed $200 a month",
+        "set": {
+          "fixedPay": 200
+        }
+      }
     ],
     "tradeoffs": [
       "Paying the minimum leaves more cash free each month, but the debt lasts far longer and the interest keeps adding up.",

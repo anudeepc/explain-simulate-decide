@@ -165,6 +165,26 @@ test('every film has a story: a hero it opens and ends on', () => {
   bad((s) => (s.tone = 'beige'), /tone must be one of/);
 });
 
+test('scenes: the hero acting in a set, with subtitles in ASD-STE100 style', () => {
+  const b = () => load('../examples/bowel-screening/screenplay.json');
+  const bad = (mutate, pattern) => {
+    const sp = b();
+    mutate(sp);
+    assert.ok(validate(sp).some((e) => pattern.test(e)), `expected ${pattern} in:\n${validate(sp).join('\n')}`);
+  };
+  assert.deepEqual(validate(b()), []);
+  const scene = (s) => s.explain.find((x) => x.shot === 'scene');
+  bad((s) => (scene(s).set = 'castle'), /set "castle" must be one of/);
+  bad((s) => (scene(s).beats = []), /a scene needs 1–4 beats/);
+  bad((s) => (scene(s).beats[0].do = 'dance'), /do "dance" must be one of/);
+  bad((s) => (scene(s).beats[0] = { do: 'walk' }), /walk needs "to"/);
+  bad((s) => (scene(s).camera = 'drone'), /camera must be close, medium or wide/);
+  bad((s) => (scene(s).beats[1].object = 'parcel'), /object "parcel"/);
+  bad((s) => (scene(s).caption = 'The sample is sent to the lab.'), /"is sent" is passive/);
+  bad((s) => (scene(s).caption = 'Utilize the kit prior to the deadline.'), /instead of "Utilize"/);
+  bad((s) => (s.world.nodes.find((n) => n.id === 'crowd').you = 9), /you must be the index of the group/);
+});
+
 test('a process story has no numbers', () => {
   const p = () => load('fixtures/shapes/process-bill.json');
   const bad = (mutate, pattern) => {

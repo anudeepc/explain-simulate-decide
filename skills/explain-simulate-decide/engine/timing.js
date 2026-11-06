@@ -14,6 +14,8 @@ export const FOLLOW_MIN = 8; // a tracking shot needs room to travel
 export const TIMELAPSE_EXTRA = 4; // the clock needs time to run
 export const DECIDE = 18; // the Decide card holds a lot of text
 export const TRAVEL = 0.38; // share of a shot the camera spends moving to its new setup
+export const SCENE_BEAT = 2.4; // seconds for each thing the hero does in a scene
+export const SCENE_LEAD = 1.6;
 
 const words = (s = '') => s.trim().split(/\s+/).filter(Boolean).length;
 
@@ -27,6 +29,8 @@ export function shotDuration(shot, voiceSeconds = 0) {
   if (shot.shot === 'turn') d += TURN_EXTRA;
   if (shot.shot === 'follow') d = Math.max(d, FOLLOW_MIN);
   if (shot.shot === 'timelapse') d += TIMELAPSE_EXTRA;
+  // a scene needs room for each thing the hero does
+  if (shot.shot === 'scene') d = Math.max(d, SCENE_LEAD + SCENE_BEAT * (shot.beats?.length || 1));
   return d;
 }
 

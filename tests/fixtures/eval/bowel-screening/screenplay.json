@@ -22,94 +22,364 @@
   },
   "model": {
     "inputs": [
-      { "id": "rounds", "label": "Home tests you do from 50 to 74", "unit": "", "kind": "lever",
-        "min": 0, "max": 13, "step": 1, "default": 13,
-        "source": "article", "quote": 0, "note": "every two years from 50 to 74 is 13 tests" },
-      { "id": "risk", "label": "Chance of bowel cancer in 25 years, unscreened", "unit": "%", "kind": "condition",
-        "min": 1, "max": 10, "step": 0.5, "default": 3,
-        "source": "article", "quote": 1, "note": "about 30 in 1,000 is 3 in 100" }
+      {
+        "id": "rounds",
+        "label": "Home tests you do from 50 to 74",
+        "unit": "",
+        "kind": "lever",
+        "min": 0,
+        "max": 13,
+        "step": 1,
+        "default": 13,
+        "source": "article",
+        "quote": 0,
+        "note": "every two years from 50 to 74 is 13 tests"
+      },
+      {
+        "id": "risk",
+        "label": "Chance of bowel cancer in 25 years, unscreened",
+        "unit": "%",
+        "kind": "condition",
+        "min": 1,
+        "max": 10,
+        "step": 0.5,
+        "default": 3,
+        "source": "article",
+        "quote": 1,
+        "note": "about 30 in 1,000 is 3 in 100"
+      }
     ],
     "constants": [
-      { "id": "testsOffered", "label": "Tests offered from 50 to 74", "unit": "", "value": 13,
-        "source": "article", "quote": 0, "note": "every two years from 50 to 74 is 13 tests" },
-      { "id": "positiveRate", "label": "Tests that come back positive", "unit": "%", "value": 5,
-        "source": "article", "quote": 3 },
-      { "id": "detect", "label": "Cancers found early when you do every test", "unit": "%", "value": 60,
-        "source": "article", "quote": 2 }
+      {
+        "id": "testsOffered",
+        "label": "Tests offered from 50 to 74",
+        "unit": "",
+        "value": 13,
+        "source": "article",
+        "quote": 0,
+        "note": "every two years from 50 to 74 is 13 tests"
+      },
+      {
+        "id": "positiveRate",
+        "label": "Tests that come back positive",
+        "unit": "%",
+        "value": 5,
+        "source": "article",
+        "quote": 3
+      },
+      {
+        "id": "detect",
+        "label": "Cancers found early when you do every test",
+        "unit": "%",
+        "value": 60,
+        "source": "article",
+        "quote": 2
+      }
     ],
     "derived": [
-      { "id": "everPositive", "label": "People with at least one positive result", "unit": "%",
-        "formula": "100 - 100 * pow(1 - positiveRate / 100, rounds)" },
-      { "id": "missed", "label": "Cancer not found early, out of 100", "unit": "%",
-        "formula": "risk - caughtEarly" },
-      { "id": "cancerShare", "label": "Colonoscopies that find cancer", "unit": "%",
-        "formula": "caughtEarly / max(everPositive, 1) * 100" }
+      {
+        "id": "everPositive",
+        "label": "People with at least one positive result",
+        "unit": "%",
+        "formula": "100 - 100 * pow(1 - positiveRate / 100, rounds)"
+      },
+      {
+        "id": "missed",
+        "label": "Cancer not found early, out of 100",
+        "unit": "%",
+        "formula": "risk - caughtEarly"
+      },
+      {
+        "id": "cancerShare",
+        "label": "Colonoscopies that find cancer",
+        "unit": "%",
+        "formula": "caughtEarly / max(everPositive, 1) * 100"
+      }
     ],
     "outputs": [
-      { "id": "caughtEarly", "label": "Cancer found early, out of 100", "unit": "%",
-        "formula": "risk * detect / 100 * rounds / testsOffered" },
-      { "id": "falseAlarm", "label": "Colonoscopy that finds no cancer, out of 100", "unit": "%",
-        "formula": "max(0, everPositive - caughtEarly)" }
+      {
+        "id": "caughtEarly",
+        "label": "Cancer found early, out of 100",
+        "unit": "%",
+        "formula": "risk * detect / 100 * rounds / testsOffered"
+      },
+      {
+        "id": "falseAlarm",
+        "label": "Colonoscopy that finds no cancer, out of 100",
+        "unit": "%",
+        "formula": "max(0, everPositive - caughtEarly)"
+      }
     ]
   },
   "checks": [
-    { "claim": "Fewer than 1 in 20 positive results turn out to be cancer", "value": "cancerShare", "between": [0, 5], "quote": 5 },
-    { "claim": "Without screening, about 30 in 1,000 get bowel cancer that isn't found early", "value": "missed", "between": [2.55, 3.45], "when": { "rounds": 0 }, "quote": 1 },
-    { "claim": "Doing more tests finds more cancers early", "value": "caughtEarly", "rises": "rounds" },
-    { "claim": "Doing more tests also means more colonoscopies that find nothing", "value": "falseAlarm", "rises": "rounds" },
-    { "claim": "Missing rounds lets cancers grow without being found", "value": "missed", "falls": "rounds" },
-    { "claim": "Everyone sent for a colonoscopy either has cancer found or not", "same": ["everPositive", "caughtEarly + falseAlarm"] }
+    {
+      "claim": "Fewer than 1 in 20 positive results turn out to be cancer",
+      "value": "cancerShare",
+      "between": [
+        0,
+        5
+      ],
+      "quote": 5
+    },
+    {
+      "claim": "Without screening, about 30 in 1,000 get bowel cancer that isn't found early",
+      "value": "missed",
+      "between": [
+        2.55,
+        3.45
+      ],
+      "when": {
+        "rounds": 0
+      },
+      "quote": 1
+    },
+    {
+      "claim": "Doing more tests finds more cancers early",
+      "value": "caughtEarly",
+      "rises": "rounds"
+    },
+    {
+      "claim": "Doing more tests also means more colonoscopies that find nothing",
+      "value": "falseAlarm",
+      "rises": "rounds"
+    },
+    {
+      "claim": "Missing rounds lets cancers grow without being found",
+      "value": "missed",
+      "falls": "rounds"
+    },
+    {
+      "claim": "Everyone sent for a colonoscopy either has cancer found or not",
+      "same": [
+        "everPositive",
+        "caughtEarly + falseAlarm"
+      ]
+    }
   ],
   "world": {
     "nodes": [
-      { "id": "home", "prop": "house", "label": "Your home" },
-      { "id": "kit", "label": "Home test kit", "recipe": [
-          { "shape": "box", "size": [1.6, 0.12, 1.1], "color": "#f4efe6" },
-          { "shape": "cylinder", "size": [0.35, 1.1, 0.35], "color": "#eef3f6", "at": [0.3, 0.12, 0] },
-          { "shape": "cylinder", "size": [0.4, 0.3, 0.4], "color": "#3f8f7a", "at": [0.3, 1.22, 0] }
-        ] },
-      { "id": "hospital", "kind": "building", "label": "Colonoscopy" },
-      { "id": "crowd", "prop": "crowd", "label": "100 people like you, over 25 years", "groups": [
-          { "value": "caughtEarly", "label": "cancer found early" },
-          { "value": "missed", "label": "cancer not found early" },
-          { "value": "falseAlarm", "label": "colonoscopy, no cancer" }
-        ] }
+      {
+        "id": "home",
+        "prop": "house",
+        "label": "Your home"
+      },
+      {
+        "id": "kit",
+        "label": "Home test kit",
+        "recipe": [
+          {
+            "shape": "box",
+            "size": [
+              1.6,
+              0.12,
+              1.1
+            ],
+            "color": "#f4efe6"
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.35,
+              1.1,
+              0.35
+            ],
+            "color": "#eef3f6",
+            "at": [
+              0.3,
+              0.12,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.4,
+              0.3,
+              0.4
+            ],
+            "color": "#3f8f7a",
+            "at": [
+              0.3,
+              1.22,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hospital",
+        "kind": "building",
+        "label": "Colonoscopy"
+      },
+      {
+        "id": "crowd",
+        "prop": "crowd",
+        "label": "100 people like you, over 25 years",
+        "groups": [
+          {
+            "value": "caughtEarly",
+            "label": "cancer found early"
+          },
+          {
+            "value": "missed",
+            "label": "cancer not found early"
+          },
+          {
+            "value": "falseAlarm",
+            "label": "colonoscopy, no cancer"
+          }
+        ]
+      }
     ],
     "flows": [
-      { "id": "fTest", "from": "home", "to": "kit", "carrier": "goods", "rate": "rounds", "label": "Your sample, every two years", "unit": "" },
-      { "id": "fPositive", "from": "kit", "to": "hospital", "carrier": "people", "rate": "everPositive", "label": "Positive: sent for a colonoscopy", "unit": "%" },
-      { "id": "fFound", "from": "hospital", "to": "crowd", "carrier": "people", "rate": "caughtEarly", "label": "Cancer found early", "unit": "%" },
-      { "id": "fNoCancer", "from": "hospital", "to": "crowd", "carrier": "people", "rate": "falseAlarm", "label": "No cancer found", "unit": "%" }
+      {
+        "id": "fTest",
+        "from": "home",
+        "to": "kit",
+        "carrier": "goods",
+        "rate": "rounds",
+        "label": "Your sample, every two years",
+        "unit": ""
+      },
+      {
+        "id": "fPositive",
+        "from": "kit",
+        "to": "hospital",
+        "carrier": "people",
+        "rate": "everPositive",
+        "label": "Positive: sent for a colonoscopy",
+        "unit": "%"
+      },
+      {
+        "id": "fFound",
+        "from": "hospital",
+        "to": "crowd",
+        "carrier": "people",
+        "rate": "caughtEarly",
+        "label": "Cancer found early",
+        "unit": "%"
+      },
+      {
+        "id": "fNoCancer",
+        "from": "hospital",
+        "to": "crowd",
+        "carrier": "people",
+        "rate": "falseAlarm",
+        "label": "No cancer found",
+        "unit": "%"
+      }
     ]
   },
   "ask": [
-    { "question": "How many of your home tests do you expect to do?",
+    {
+      "question": "How many of your home tests do you expect to do?",
       "help": "A kit is offered every two years from 50 to 74: 13 in all.",
       "choices": [
-        { "label": "Every one, or not sure yet", "set": { "rounds": 13 } },
-        { "label": "About half", "set": { "rounds": 6 } },
-        { "label": "Just one", "set": { "rounds": 1 } },
-        { "label": "None", "set": { "rounds": 0 } }
-      ] }
+        {
+          "label": "Every one, or not sure yet",
+          "set": {
+            "rounds": 13
+          }
+        },
+        {
+          "label": "About half",
+          "set": {
+            "rounds": 6
+          }
+        },
+        {
+          "label": "Just one",
+          "set": {
+            "rounds": 1
+          }
+        },
+        {
+          "label": "None",
+          "set": {
+            "rounds": 0
+          }
+        }
+      ]
+    }
   ],
   "explain": [
-    { "shot": "establish", "caption": "A test kit lands on your doormat. What does it change?" },
-    { "shot": "follow", "focus": "fTest", "caption": "You take a tiny sample. The test looks for hidden blood." },
-    { "shot": "follow", "focus": "fPositive", "caption": "A positive result means a colonoscopy: a camera check of the bowel." },
-    { "shot": "focus", "focus": "hospital", "caption": "Many people think a positive result means you probably have cancer." },
-    { "shot": "turn", "focus": "fNoCancer", "caption": "But most positives aren't cancer. Harmless growths and piles bleed too." },
-    { "shot": "follow", "focus": "fFound", "caption": "A few colonoscopies find cancer early, when it's easier to treat." },
-    { "shot": "cause", "focus": "fFound", "drive": "rounds", "caption": "So skip tests, and fewer cancers are found early." },
-    { "shot": "focus", "focus": "crowd", "caption": "Over 25 years, a hundred people like you split like this." },
-    { "shot": "focus", "focus": "home", "caption": "Back at your door, the next kit is your choice." },
-    { "shot": "handoff", "caption": "Now make it yours." }
+    {
+      "shot": "establish",
+      "caption": "A test kit lands on your doormat. What does it change?"
+    },
+    {
+      "shot": "follow",
+      "focus": "fTest",
+      "caption": "You take a tiny sample. The test looks for hidden blood."
+    },
+    {
+      "shot": "follow",
+      "focus": "fPositive",
+      "caption": "A positive result means a colonoscopy: a camera check of the bowel."
+    },
+    {
+      "shot": "focus",
+      "focus": "hospital",
+      "caption": "Many people think a positive result means you probably have cancer."
+    },
+    {
+      "shot": "turn",
+      "focus": "fNoCancer",
+      "caption": "But most positives aren't cancer. Harmless growths and piles bleed too."
+    },
+    {
+      "shot": "follow",
+      "focus": "fFound",
+      "caption": "A few colonoscopies find cancer early, when it's easier to treat."
+    },
+    {
+      "shot": "cause",
+      "focus": "fFound",
+      "drive": "rounds",
+      "caption": "So if you skip tests, the tests find fewer cancers early."
+    },
+    {
+      "shot": "focus",
+      "focus": "crowd",
+      "caption": "Over 25 years, a hundred people like you split like this."
+    },
+    {
+      "shot": "focus",
+      "focus": "home",
+      "caption": "Back at your door, the next kit is your choice."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours."
+    }
   ],
-  "simulate": { "controls": ["rounds", "risk"], "prompt": "Change how many tests you do, and your starting risk." },
+  "simulate": {
+    "controls": [
+      "rounds",
+      "risk"
+    ],
+    "prompt": "Change how many tests you do, and your starting risk."
+  },
   "decide": {
     "compare": [
-      { "label": "Every test (13)", "set": { "rounds": 13 } },
-      { "label": "About half (6)", "set": { "rounds": 6 } },
-      { "label": "No tests", "set": { "rounds": 0 } }
+      {
+        "label": "Every test (13)",
+        "set": {
+          "rounds": 13
+        }
+      },
+      {
+        "label": "About half (6)",
+        "set": {
+          "rounds": 6
+        }
+      },
+      {
+        "label": "No tests",
+        "set": {
+          "rounds": 0
+        }
+      }
     ],
     "tradeoffs": [
       "Each test you do raises your chance of a cancer being found early, and also your chance of a colonoscopy that finds nothing.",

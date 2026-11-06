@@ -4,7 +4,7 @@
   "tone": "health",
   "story": {
     "hero": "home",
-    "logline": "A kit lands on your doormat; most kits find nothing, and most people sent for a colonoscopy do not have cancer, so what does doing the test really change for you?"
+    "logline": "A letter brings a test kit to your door; most kits find nothing, and most people asked to come in do not have cancer. What does the test change for you?"
   },
   "question": "Should I do the NHS bowel screening home test each time it arrives?",
   "source": {
@@ -405,7 +405,8 @@
             "value": "notChecked",
             "label": "Sent, but no colonoscopy"
           }
-        ]
+        ],
+        "you": 2
       }
     ],
     "flows": [
@@ -500,49 +501,161 @@
   "explain": [
     {
       "shot": "establish",
-      "caption": "A kit lands on your doormat. What happens if you do it?"
+      "caption": "One small test arrives by post. Follow its journey."
+    },
+    {
+      "shot": "scene",
+      "set": "doorway",
+      "camera": "medium",
+      "beats": [
+        {
+          "do": "walk",
+          "to": "mat"
+        },
+        {
+          "do": "pickUp",
+          "object": "letter",
+          "from": "mat"
+        },
+        {
+          "do": "read",
+          "feel": "curious"
+        }
+      ],
+      "caption": "A letter arrives. It is your turn for the bowel test.",
+      "at": "enter"
+    },
+    {
+      "shot": "scene",
+      "set": "kitchen",
+      "camera": "medium",
+      "at": "counter",
+      "beats": [
+        {
+          "do": "hold",
+          "object": "kit",
+          "feel": "curious"
+        },
+        {
+          "do": "place",
+          "object": "kit",
+          "to": "counter"
+        }
+      ],
+      "caption": "You take a tiny sample at home. It takes two minutes."
+    },
+    {
+      "shot": "scene",
+      "set": "postbox",
+      "camera": "medium",
+      "beats": [
+        {
+          "do": "walk",
+          "to": "box"
+        },
+        {
+          "do": "give",
+          "object": "envelope",
+          "to": "slot",
+          "feel": "smile"
+        }
+      ],
+      "caption": "You post the kit back. The lab does the rest.",
+      "at": "approach"
     },
     {
       "shot": "follow",
       "focus": "mailed",
-      "caption": "You put a tiny poo sample in a tube and post it."
+      "caption": "The lab looks for blood you cannot see."
     },
     {
-      "shot": "follow",
-      "focus": "clear",
-      "caption": "The lab looks for hidden blood. Most kits find none."
+      "shot": "focus",
+      "focus": "crowd",
+      "caption": "You are one of 100 people. Most kits find nothing."
     },
     {
-      "shot": "follow",
-      "focus": "sent",
-      "caption": "Blood found? A nurse talks with you about further tests."
+      "shot": "scene",
+      "set": "doorway",
+      "camera": "medium",
+      "at": "mat",
+      "beats": [
+        {
+          "do": "pickUp",
+          "object": "letter",
+          "from": "mat",
+          "feel": "worried"
+        },
+        {
+          "do": "read",
+          "feel": "worried"
+        }
+      ],
+      "caption": "Some people get a second letter. It asks them to come in."
     },
     {
-      "shot": "follow",
-      "focus": "results",
-      "caption": "A colonoscopy, a camera check inside your bowel, looks for cancer."
+      "shot": "scene",
+      "set": "hospital",
+      "camera": "medium",
+      "with": "nurse",
+      "beats": [
+        {
+          "do": "walk",
+          "to": "patientChair"
+        },
+        {
+          "do": "sit",
+          "at": "patientChair"
+        },
+        {
+          "do": "listen",
+          "feel": "worried"
+        }
+      ],
+      "caption": "A nurse explains the next step: a camera check of the bowel.",
+      "at": "door"
     },
     {
       "shot": "turn",
       "focus": "crowd",
-      "caption": "But for most people sent, it finds no cancer."
+      "caption": "But most people who come in do not have cancer."
     },
     {
-      "shot": "compare",
-      "focus": "crowd",
-      "drive": "rounds",
-      "caption": "More kits find more cancers, and more colonoscopies that find nothing."
+      "shot": "scene",
+      "set": "hospital",
+      "camera": "close",
+      "with": "nurse",
+      "at": "patientChair",
+      "seated": true,
+      "beats": [
+        {
+          "do": "listen",
+          "feel": "worried"
+        },
+        {
+          "do": "listen",
+          "feel": "relieved"
+        }
+      ],
+      "caption": "For you, the camera finds no cancer. You can relax."
     },
     {
-      "shot": "compare",
-      "focus": "crowd",
-      "drive": "goScope",
-      "caption": "A colonoscopy is your choice. Without one, the blood stays unexplained."
-    },
-    {
-      "shot": "focus",
-      "focus": "home",
-      "caption": "Back home, the next kit arrives in two years."
+      "shot": "scene",
+      "set": "livingRoom",
+      "camera": "medium",
+      "beats": [
+        {
+          "do": "walk",
+          "to": "shelf"
+        },
+        {
+          "do": "place",
+          "object": "letter",
+          "to": "shelf",
+          "feel": "smile"
+        }
+      ],
+      "caption": "In two years, the next kit arrives. You decide.",
+      "at": "sofa"
     },
     {
       "shot": "handoff",

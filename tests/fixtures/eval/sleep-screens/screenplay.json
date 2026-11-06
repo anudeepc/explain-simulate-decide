@@ -133,15 +133,26 @@
     {
       "claim": "An hour of screens in the hour before bed costs about 20 minutes of sleep",
       "value": "lostToScreens",
-      "between": [17, 23],
-      "when": { "screenMins": 60 },
+      "between": [
+        17,
+        23
+      ],
+      "when": {
+        "screenMins": 60
+      },
       "quote": 1
     },
     {
       "claim": "Losing 30 minutes a night leaves you two and a half hours short by the end of a working week",
       "value": "debt",
-      "between": [2.4, 2.6],
-      "when": { "screenMins": 45, "phoneInBed": 1 },
+      "between": [
+        2.4,
+        2.6
+      ],
+      "when": {
+        "screenMins": 45,
+        "phoneInBed": 1
+      },
       "quote": 3
     },
     {
@@ -161,17 +172,65 @@
     }
   ],
   "world": {
-    "time": { "unit": "day", "span": 5 },
+    "time": {
+      "unit": "day",
+      "span": 5
+    },
     "nodes": [
-      { "id": "phone", "prop": "phone", "label": "Screens before bed", "plays": "screenMins" },
-      { "id": "inbed", "prop": "phone", "label": "Phone in bed", "plays": "phoneInBed", "appears": "phoneInBed" },
-      { "id": "you", "prop": "body", "label": "You", "plays": "sleep" },
-      { "id": "debtTank", "prop": "tank", "label": "Sleep debt", "store": "debt" }
+      {
+        "id": "phone",
+        "prop": "phone",
+        "label": "Screens before bed",
+        "plays": "screenMins"
+      },
+      {
+        "id": "inbed",
+        "prop": "phone",
+        "label": "Phone in bed",
+        "plays": "phoneInBed",
+        "appears": "phoneInBed"
+      },
+      {
+        "id": "you",
+        "prop": "body",
+        "label": "You",
+        "plays": "sleep"
+      },
+      {
+        "id": "debtTank",
+        "prop": "tank",
+        "label": "Sleep debt",
+        "store": "debt"
+      }
     ],
     "flows": [
-      { "id": "cutsSleep", "from": "phone", "to": "you", "carrier": "influence", "rate": "lostToScreens", "label": "Cuts sleep", "unit": "min/night" },
-      { "id": "slowerAsleep", "from": "inbed", "to": "you", "carrier": "influence", "rate": "lostInBed", "label": "Slower to fall asleep", "unit": "min/night" },
-      { "id": "missed", "from": "you", "to": "debtTank", "carrier": "time", "rate": "shortfall", "label": "Sleep missed", "unit": "h/night" }
+      {
+        "id": "cutsSleep",
+        "from": "phone",
+        "to": "you",
+        "carrier": "influence",
+        "rate": "lostToScreens",
+        "label": "Cuts sleep",
+        "unit": "min/night"
+      },
+      {
+        "id": "slowerAsleep",
+        "from": "inbed",
+        "to": "you",
+        "carrier": "influence",
+        "rate": "lostInBed",
+        "label": "Slower to fall asleep",
+        "unit": "min/night"
+      },
+      {
+        "id": "missed",
+        "from": "you",
+        "to": "debtTank",
+        "carrier": "time",
+        "rate": "shortfall",
+        "label": "Sleep missed",
+        "unit": "h/night"
+      }
     ]
   },
   "ask": [
@@ -183,17 +242,44 @@
     {
       "question": "Do you use your phone once you are in bed?",
       "choices": [
-        { "label": "Most nights, or not sure", "set": { "phoneInBed": 1 } },
-        { "label": "Rarely", "set": { "phoneInBed": 0 } }
+        {
+          "label": "Most nights, or not sure",
+          "set": {
+            "phoneInBed": 1
+          }
+        },
+        {
+          "label": "Rarely",
+          "set": {
+            "phoneInBed": 0
+          }
+        }
       ]
     },
     {
       "question": "How much sleep do you need to feel rested?",
       "help": "Most adults need between seven and nine hours.",
       "choices": [
-        { "label": "About 7 hours", "set": { "need": 7 }, "quote": 0 },
-        { "label": "About 8 hours, or not sure", "set": { "need": 8 } },
-        { "label": "About 9 hours", "set": { "need": 9 }, "quote": 0 }
+        {
+          "label": "About 7 hours",
+          "set": {
+            "need": 7
+          },
+          "quote": 0
+        },
+        {
+          "label": "About 8 hours, or not sure",
+          "set": {
+            "need": 8
+          }
+        },
+        {
+          "label": "About 9 hours",
+          "set": {
+            "need": 9
+          },
+          "quote": 0
+        }
       ]
     },
     {
@@ -203,25 +289,84 @@
     }
   ],
   "explain": [
-    { "shot": "establish", "caption": "Tonight you scroll in bed. What does it cost your sleep?" },
-    { "shot": "introduce", "focus": "you", "caption": "You want a full night's sleep before work tomorrow." },
-    { "shot": "follow", "focus": "cutsSleep", "caption": "Screen time before bed trims your sleep that night." },
-    { "shot": "cause", "focus": "slowerAsleep", "drive": "phoneInBed", "caption": "Screens in bed also slow how fast you fall asleep." },
-    { "shot": "turn", "focus": "cutsSleep", "drive": "screenMins", "caption": "But dimming the screen barely helps. Putting it away does." },
-    { "shot": "follow", "focus": "missed", "caption": "Sleep you needed but missed becomes sleep debt." },
-    { "shot": "timelapse", "focus": "debtTank", "caption": "So small losses each night pile up across the working week." },
-    { "shot": "focus", "focus": "you", "caption": "A weekend lie-in repays only part. Your evenings decide the rest." },
-    { "shot": "handoff", "caption": "Now make it yours. Tell us about your evenings." }
+    {
+      "shot": "establish",
+      "caption": "Tonight you scroll in bed. What does it cost your sleep?"
+    },
+    {
+      "shot": "introduce",
+      "focus": "you",
+      "caption": "You want a full night's sleep before work tomorrow."
+    },
+    {
+      "shot": "follow",
+      "focus": "cutsSleep",
+      "caption": "Screen time before bed trims your sleep that night."
+    },
+    {
+      "shot": "cause",
+      "focus": "slowerAsleep",
+      "drive": "phoneInBed",
+      "caption": "Screens in bed also slow how fast you fall asleep."
+    },
+    {
+      "shot": "turn",
+      "focus": "cutsSleep",
+      "drive": "screenMins",
+      "caption": "But a dim screen barely helps. A phone out of reach does."
+    },
+    {
+      "shot": "follow",
+      "focus": "missed",
+      "caption": "Sleep you needed but missed becomes sleep debt."
+    },
+    {
+      "shot": "timelapse",
+      "focus": "debtTank",
+      "caption": "So small losses each night pile up across the working week."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "caption": "A weekend lie-in repays only part. Your evenings decide the rest."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Tell us about your evenings."
+    }
   ],
   "simulate": {
-    "controls": ["screenMins", "phoneInBed", "need", "usual"],
+    "controls": [
+      "screenMins",
+      "phoneInBed",
+      "need",
+      "usual"
+    ],
     "prompt": "Try your own evening and watch the week's sleep debt."
   },
   "decide": {
     "compare": [
-      { "label": "Screens until you fall asleep", "set": { "screenMins": 60, "phoneInBed": 1 } },
-      { "label": "Stop 30 minutes before bed", "set": { "screenMins": 30, "phoneInBed": 0 } },
-      { "label": "Stop an hour before bed", "set": { "screenMins": 0, "phoneInBed": 0 } }
+      {
+        "label": "Screens until you fall asleep",
+        "set": {
+          "screenMins": 60,
+          "phoneInBed": 1
+        }
+      },
+      {
+        "label": "Stop 30 minutes before bed",
+        "set": {
+          "screenMins": 30,
+          "phoneInBed": 0
+        }
+      },
+      {
+        "label": "Stop an hour before bed",
+        "set": {
+          "screenMins": 0,
+          "phoneInBed": 0
+        }
+      }
     ],
     "tradeoffs": [
       "Evening screens can be how you relax or keep in touch, but they cost some sleep that night.",

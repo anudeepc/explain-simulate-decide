@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hero character sheet</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  canvas { display: block; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .name { position: absolute; font-size: 15px; font-weight: 650; color: #2b2b30; letter-spacing: 0.02em; }
+  .val { position: absolute; font-size: 11px; color: #7a7266; transform: translateX(-50%); white-space: nowrap; }
+  .err { color: #c0392b; }
+  .cell { position: absolute; border-right: 1px solid #eee; border-bottom: 1px solid #eee; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="labels"></div>
+<script type="module">
+// Contact sheet for the hero character: every action at k = 0, 0.5, 1, the seated variants,
+// the expressions close up, and the scrubs (nurse) outfit, on a white studio floor.
+// Query params: ?only=pickUp,give  ?cols=4  ?k=0,0.25,0.5  ?turn=0.7 (yaw of each figure)
+import build from '../skills/explain-simulate-decide/engine/cast/character.js';
+import { ACTIONS, EXPRESSIONS } from '../skills/explain-simulate-decide/engine/cast/actions.js';
+import { THREE, clay, rounded, mesh, group, PALETTE } from '../skills/explain-simulate-decide/engine/cast/kit.js';
+import { RoomEnvironment } from '../skills/explain-simulate-decide/engine/vendor/three/RoomEnvironment.js';
+
+const q = new URLSearchParams(location.search);
+const ks = q.has('k') ? q.get('k').split(',').map(Number) : [0, 0.5, 1];
+const turn = q.has('turn') ? Number(q.get('turn')) : 0.75;
+window.sheetErrors = [];
+
+// ---- props that give each action its context ---------------------------------------------
+const box = () => mesh(rounded(0.13, 0.11, 0.13, 0.025), clay(PALETTE.terracotta));
+const paper = () => {
+  const g = group();
+  g.add(mesh(rounded(0.2, 0.26, 0.008, 0.004, 1), clay(PALETTE.paper)));
+  for (let i = 0; i < 5; i++) g.add(mesh(rounded(0.13 - (i === 4 ? 0.05 : 0), 0.012, 0.004, 0.002, 1), clay('#9aa3b2'), { y: 0.07 - i * 0.035, z: 0.006, x: i === 4 ? -0.025 : 0 }));
+  return g;
+};
+const letter = () => mesh(rounded(0.2, 0.012, 0.13, 0.004, 1), clay(PALETTE.paper), { rx: 0 });
+function mailbox() {
+  const g = group();
+  g.add(mesh(rounded(0.34, 0.44, 0.26, 0.1), clay(PALETTE.red), { y: 1.08, z: 0.66 }));
+  g.add(mesh(rounded(0.1, 0.86, 0.1, 0.04), clay(PALETTE.red), { y: 0.43, z: 0.66 }));
+  g.add(mesh(rounded(0.22, 0.03, 0.02, 0.012, 1), clay(PALETTE.ink), { y: 1.13, z: 0.528 }));
+  return g;
+}
+function table() {
+  const g = group();
+  g.add(mesh(rounded(0.5, 0.05, 0.42, 0.02), clay(PALETTE.sand), { y: 0.875, z: 0.66 }));
+  for (const [x, z] of [[-0.21, 0.49], [0.21, 0.49], [-0.21, 0.83], [0.21, 0.83]]) g.add(mesh(rounded(0.05, 0.85, 0.05, 0.02), clay(PALETTE.sand), { x, y: 0.425, z }));
+  return g;
+}
+function stool(seat) {
+  const g = group();
+  g.add(mesh(rounded(0.42, 0.06, 0.4, 0.025), clay(PALETTE.sage), { y: seat.y - 0.03, z: seat.z }));
+  for (const [x, z] of [[-0.16, -0.15], [0.16, -0.15], [-0.16, 0.15], [0.16, 0.15]]) g.add(mesh(rounded(0.045, seat.y - 0.06, 0.045, 0.02), clay(PALETTE.sage), { x, y: (seat.y - 0.06) / 2, z: seat.z + z }));
+  return g;
+}
+const at = (thing, x, y, z) => (thing.position.set(x, y, z), thing);
+const inHand = (c, thing, { x = 0, y = 0, z = 0 } = {}) => {
+  thing.position.set(x, y, z);
+  c.hand.add(thing);
+};
+
+/** One figure in a cell: builds a character, poses it and dresses the set around it. */
+function figure({ action = 'idle', k = 0, opts = {}, expression = 'neutral', outfit, tint, label, props }) {
+  const c = build(outfit === 'scrubs' ? { outfit, tint: tint || '#4fa3a5', hair: '#6b4a32', skin: '#c99878' } : {});
+  c.setExpression(expression);
+  c.pose(action, k, opts);
+  const holder = group();
+  holder.add(c.object);
+  props?.(c, holder, k);
+  return { holder, label: label ?? `k = ${k}`, c };
+}
+
+const SETS = {
+  pickUp: (c, h, k) => (k < 0.6 ? h.add(at(box(), -0.1, 0.055, 0.4)) : inHand(c, box(), { y: -0.01, z: 0.02 })),
+  read: (c) => inHand(c, paper(), { x: -0.06, y: 0.02, z: 0.0 }),
+  hold: (c) => inHand(c, box(), { y: -0.01, z: 0.02 }),
+  give: (c, h, k) => {
+    h.add(mailbox());
+    if (k <= 0.5) inHand(c, letter(), { z: 0.07 });
+  },
+  place: (c, h, k) => {
+    h.add(table());
+    if (k <= 0.5) inHand(c, box(), { y: -0.01, z: 0.03 });
+    else h.add(at(box(), -0.1, 0.955, 0.46));
+  },
+  sit: (c, h) => h.add(stool(c.seat)),
+};
+
+const cells = [];
+const only = q.has('only') ? q.get('only').split(',') : null;
+for (const action of ACTIONS) {
+  const expression = { worried: 'worried', react: 'relieved', talk: 'smile', listen: 'curious', read: 'curious', wait: 'worried' }[action] || 'neutral';
+  // walk at 0 / 0.5 / 1 is always the passing pose, so add the contact poses between
+  const kk = action === 'walk' && !q.has('k') ? [0, 0.125, 0.25, 0.5, 1] : ks;
+  cells.push({ title: action, figs: kk.map((k) => ({ action, k, expression, props: SETS[action] })) });
+}
+cells.push({
+  title: 'seated: talk / listen / read',
+  figs: [
+    { action: 'talk', k: 0.3, opts: { sitting: true }, expression: 'smile', label: 'talk', props: SETS.sit },
+    { action: 'listen', k: 0.5, opts: { sitting: true }, expression: 'curious', label: 'listen', props: SETS.sit },
+    { action: 'read', k: 0.5, opts: { sitting: true }, expression: 'neutral', label: 'read', props: (c, h) => (SETS.sit(c, h), SETS.read(c)) },
+  ],
+});
+cells.push({
+  title: 'nurse (scrubs)',
+  figs: [
+    { action: 'idle', k: 0.2, outfit: 'scrubs', expression: 'smile', label: 'idle' },
+    { action: 'hold', k: 0.5, outfit: 'scrubs', expression: 'neutral', label: 'hold', props: (c) => inHand(c, paper(), { x: -0.06, y: 0.03 }) },
+    { action: 'talk', k: 0.4, outfit: 'scrubs', expression: 'relieved', label: 'talk' },
+  ],
+});
+cells.push({
+  title: 'expressions',
+  span: 2,
+  face: true,
+  figs: EXPRESSIONS.map((e) => ({ action: 'idle', k: 0, expression: e, label: e })),
+});
+const shown = only ? cells.filter((c) => only.includes(c.title.split(':')[0].split(' ')[0])) : cells;
+
+for (const cell of shown) {
+  cell.inst = cell.figs.map((f) => {
+    try {
+      return figure(f);
+    } catch (e) {
+      console.error(`[${cell.title}]`, e);
+      window.sheetErrors.push(`${cell.title}: ${e.message}`);
+      return null;
+    }
+  });
+}
+
+// ---- studio --------------------------------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#ffffff');
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.45;
+scene.add(new THREE.HemisphereLight('#e4ecff', '#d9d6d0', 0.8));
+const key = new THREE.DirectionalLight('#fff4e6', 2.8);
+key.position.set(4, 8, 6);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 30 });
+key.shadow.bias = -0.0003;
+key.shadow.normalBias = 0.02;
+scene.add(key);
+const rim = new THREE.DirectionalLight('#cfe1ff', 1.1);
+rim.position.set(-5, 4, -6);
+scene.add(rim);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#3a3a40', opacity: 0.18 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 100);
+const labels = document.getElementById('labels');
+const cols = Number(q.get('cols')) || Math.min(4, shown.reduce((n, c) => n + (c.span || 1), 0));
+
+function layout() {
+  // place cells left to right, honouring spans
+  let slot = 0;
+  for (const cell of shown) {
+    const span = cell.span || 1;
+    if ((slot % cols) + span > cols) slot += cols - (slot % cols);
+    cell.slot = slot;
+    slot += span;
+  }
+  return Math.ceil(slot / cols);
+}
+
+function render() {
+  const rows = layout();
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H);
+  const cw = W / cols, ch = H / rows;
+  renderer.setScissorTest(true);
+  renderer.setClearColor('#ffffff');
+  labels.innerHTML = '';
+  const tmp = new THREE.Vector3();
+  for (const cell of shown) {
+    const span = cell.span || 1;
+    const c = cell.slot % cols, r = Math.floor(cell.slot / cols);
+    const x = c * cw, yTop = r * ch, w = cw * span;
+    const live = cell.inst.filter(Boolean);
+    const n = cell.inst.length;
+    const gap = cell.face ? 0.62 : n > 3 ? 0.95 : 1.15;
+    cell.inst.forEach((inst, i) => {
+      if (!inst) return;
+      inst.holder.position.set((i - (n - 1) / 2) * gap, 0, 0);
+      inst.holder.rotation.y = cell.face ? 0 : turn;
+    });
+    camera.aspect = w / ch;
+    camera.fov = cell.face ? 20 : 26;
+    const hHalf = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+    if (cell.face) {
+      const dist = (n * gap) / 2 / Math.tan(hHalf) + 0.2;
+      camera.position.set(0, 1.6, dist);
+      camera.lookAt(0, 1.52, 0);
+    } else {
+      const span3 = (n - 1) * gap + 1.0;
+      const dist = Math.max(4.6, span3 / 2 / Math.tan(hHalf) + 0.6);
+      camera.position.set(0.0, 1.45, dist);
+      camera.lookAt(0, 0.9, 0);
+    }
+    camera.updateProjectionMatrix();
+    renderer.setViewport(x, H - yTop - ch, w, ch);
+    renderer.setScissor(x, H - yTop - ch, w, ch);
+    live.forEach((inst) => scene.add(inst.holder));
+    renderer.render(scene, camera);
+    live.forEach((inst) => scene.remove(inst.holder));
+    const frame = document.createElement('div');
+    frame.className = 'cell';
+    Object.assign(frame.style, { left: `${x}px`, top: `${yTop}px`, width: `${w}px`, height: `${ch}px` });
+    labels.appendChild(frame);
+    const name = document.createElement('div');
+    name.className = 'name' + (live.length < cell.inst.length ? ' err' : '');
+    name.textContent = cell.title;
+    name.style.left = `${x + 14}px`;
+    name.style.top = `${yTop + 10}px`;
+    labels.appendChild(name);
+    cell.inst.forEach((inst) => {
+      if (!inst) return;
+      tmp.copy(inst.holder.position).setY(cell.face ? 1.9 : -0.12).project(camera);
+      const val = document.createElement('div');
+      val.className = 'val';
+      val.textContent = inst.label;
+      val.style.left = `${x + (tmp.x * 0.5 + 0.5) * w}px`;
+      val.style.top = `${yTop + (1 - (tmp.y * 0.5 + 0.5)) * ch}px`;
+      labels.appendChild(val);
+    });
+  }
+}
+render();
+window.addEventListener('resize', render);
+requestAnimationFrame(() => {
+  window.sheetReady = true;
+});
+</script>
+</body>
+</html>

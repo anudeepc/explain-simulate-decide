@@ -144,7 +144,39 @@ export function createStage(canvas, tone = TONES.neutral) {
   };
 
   /** Draw a frame. The lens focuses on whatever the camera is aimed at. */
-  const render = (time = 0) => post.render(scene, camera, { time, focus: camera.position.distanceTo(aim) });
+  const render = (time = 0, which = scene) => post.render(which, camera, { time, focus: camera.position.distanceTo(aim) });
+
+  /**
+   * A second studio for a film scene (a kitchen, a doorway): the same white backdrop
+   * and light as the diorama, with a floor at y = 0 and shadows sized to a small set.
+   */
+  const makeSetScene = () => {
+    const s = new THREE.Scene();
+    s.fog = scene.fog;
+    s.environment = scene.environment;
+    s.environmentIntensity = scene.environmentIntensity;
+    s.add(new THREE.Mesh(sky.geometry, sky.material));
+    s.add(new THREE.HemisphereLight('#e4ecff', '#d9d6d0', 0.75));
+    const k = new THREE.DirectionalLight('#fff4e6', 2.8);
+    k.position.set(4, 7, 5);
+    k.castShadow = true;
+    k.shadow.mapSize.setScalar(level > 0 ? 1024 : 2048);
+    k.shadow.bias = -0.0004;
+    k.shadow.normalBias = 0.02;
+    k.shadow.radius = 6;
+    k.shadow.blurSamples = 16;
+    Object.assign(k.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 0.5, far: 30 });
+    k.shadow.camera.updateProjectionMatrix();
+    s.add(k, k.target);
+    const r = new THREE.DirectionalLight('#cfe1ff', 1.1);
+    r.position.set(-5, 4, -6);
+    s.add(r);
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(200, 48), new THREE.MeshStandardMaterial({ color: LOOK.floor, roughness: 1 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    s.add(ground);
+    return s;
+  };
 
   /** Step quality down once. Returns false when there is nothing left to trim. */
   const degrade = () => {
@@ -167,7 +199,7 @@ export function createStage(canvas, tone = TONES.neutral) {
     }
   };
 
-  return { THREE, renderer, scene, camera, setSize, look, addBase, markFocus, render, post, degrade, withFullQuality };
+  return { THREE, renderer, scene, camera, setSize, look, addBase, markFocus, render, post, degrade, withFullQuality, makeSetScene };
 }
 
 /** Project a world point to canvas CSS pixels. */

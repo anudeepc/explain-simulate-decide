@@ -25,134 +25,740 @@
   },
   "model": {
     "inputs": [
-      { "id": "bikeShare", "label": "Commutes by e-bike", "unit": "%", "kind": "lever",
-        "min": 0, "max": 100, "step": 10, "default": 80, "source": "assumption" },
-      { "id": "distance", "label": "Distance each way", "unit": "km/trip", "kind": "condition",
-        "min": 1, "max": 30, "step": 1, "default": 10, "source": "article", "quote": 6 },
-      { "id": "days", "label": "Commute days a week", "unit": "workdays/week", "kind": "condition",
-        "min": 1, "max": 7, "step": 1, "default": 5, "source": "article", "quote": 6 },
-      { "id": "carFuel", "label": "Your car's fuel use", "unit": "L/100 km", "kind": "condition",
-        "min": 4, "max": 15, "step": 0.5, "default": 7, "source": "article", "quote": 0 },
-      { "id": "petrolPrice", "label": "Petrol price", "unit": "$/L", "kind": "condition",
-        "min": 1.2, "max": 3, "step": 0.05, "default": 1.9, "source": "article", "quote": 2 }
+      {
+        "id": "bikeShare",
+        "label": "Commutes by e-bike",
+        "unit": "%",
+        "kind": "lever",
+        "min": 0,
+        "max": 100,
+        "step": 10,
+        "default": 80,
+        "source": "assumption"
+      },
+      {
+        "id": "distance",
+        "label": "Distance each way",
+        "unit": "km/trip",
+        "kind": "condition",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "default": 10,
+        "source": "article",
+        "quote": 6
+      },
+      {
+        "id": "days",
+        "label": "Commute days a week",
+        "unit": "workdays/week",
+        "kind": "condition",
+        "min": 1,
+        "max": 7,
+        "step": 1,
+        "default": 5,
+        "source": "article",
+        "quote": 6
+      },
+      {
+        "id": "carFuel",
+        "label": "Your car's fuel use",
+        "unit": "L/100 km",
+        "kind": "condition",
+        "min": 4,
+        "max": 15,
+        "step": 0.5,
+        "default": 7,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "petrolPrice",
+        "label": "Petrol price",
+        "unit": "$/L",
+        "kind": "condition",
+        "min": 1.2,
+        "max": 3,
+        "step": 0.05,
+        "default": 1.9,
+        "source": "article",
+        "quote": 2
+      }
     ],
     "constants": [
-      { "id": "trips", "label": "Trips each commute day", "unit": "trips/workday", "value": 2,
-        "source": "article", "quote": 6, "note": "There and back: 'each way'." },
-      { "id": "weeks", "label": "Commute weeks a year", "unit": "weeks/yr", "value": 46, "source": "article", "quote": 6 },
-      { "id": "co2PerL", "label": "CO2 from a litre of petrol", "unit": "kg/L", "value": 2.3, "source": "article", "quote": 1 },
-      { "id": "bikeUse", "label": "E-bike electricity use", "unit": "kWh/100 km", "value": 1, "source": "article", "quote": 3 },
-      { "id": "gridCO2", "label": "CO2 from a kilowatt hour on an average grid", "unit": "kg/kWh", "value": 0.5, "source": "article", "quote": 4 },
-      { "id": "powerPrice", "label": "Electricity price", "unit": "$/kWh", "value": 0.3, "source": "article", "quote": 5 },
-      { "id": "bikeCost", "label": "E-bike price", "unit": "$", "value": 2500, "source": "article", "quote": 9 }
+      {
+        "id": "trips",
+        "label": "Trips each commute day",
+        "unit": "trips/workday",
+        "value": 2,
+        "source": "article",
+        "quote": 6,
+        "note": "There and back: 'each way'."
+      },
+      {
+        "id": "weeks",
+        "label": "Commute weeks a year",
+        "unit": "weeks/yr",
+        "value": 46,
+        "source": "article",
+        "quote": 6
+      },
+      {
+        "id": "co2PerL",
+        "label": "CO2 from a litre of petrol",
+        "unit": "kg/L",
+        "value": 2.3,
+        "source": "article",
+        "quote": 1
+      },
+      {
+        "id": "bikeUse",
+        "label": "E-bike electricity use",
+        "unit": "kWh/100 km",
+        "value": 1,
+        "source": "article",
+        "quote": 3
+      },
+      {
+        "id": "gridCO2",
+        "label": "CO2 from a kilowatt hour on an average grid",
+        "unit": "kg/kWh",
+        "value": 0.5,
+        "source": "article",
+        "quote": 4
+      },
+      {
+        "id": "powerPrice",
+        "label": "Electricity price",
+        "unit": "$/kWh",
+        "value": 0.3,
+        "source": "article",
+        "quote": 5
+      },
+      {
+        "id": "bikeCost",
+        "label": "E-bike price",
+        "unit": "$",
+        "value": 2500,
+        "source": "article",
+        "quote": 9
+      }
     ],
     "derived": [
-      { "id": "yearKm", "label": "Commute distance a year", "unit": "km/yr", "formula": "distance * trips * days * weeks" },
-      { "id": "bikeKm", "label": "Ridden a year", "unit": "km/yr", "formula": "yearKm * bikeShare / 100" },
-      { "id": "carKm", "label": "Driven a year", "unit": "km/yr", "formula": "yearKm * (100 - bikeShare) / 100" },
-      { "id": "carPerKm", "label": "Car CO2 per kilometre", "unit": "kg/km", "formula": "carFuel * co2PerL / 100" },
-      { "id": "bikePerKm", "label": "E-bike CO2 per kilometre", "unit": "kg/km", "formula": "bikeUse * gridCO2 / 100" },
-      { "id": "co2Ratio", "label": "E-bike CO2 as a share of the car's, per kilometre", "unit": "%", "formula": "bikePerKm / carPerKm * 100" },
-      { "id": "petrolL", "label": "Petrol burned a year", "unit": "L/yr", "formula": "carKm * carFuel / 100" },
-      { "id": "bikeKwh", "label": "Electricity for charging a year", "unit": "kWh/yr", "formula": "bikeKm * bikeUse / 100" },
-      { "id": "carCO2", "label": "Car CO2 a year", "unit": "kg/yr", "formula": "carKm * carPerKm" },
-      { "id": "bikeCO2", "label": "Charging CO2 a year", "unit": "kg/yr", "formula": "bikeKm * bikePerKm" },
-      { "id": "fuelSaved", "label": "Petrol you no longer buy", "unit": "$/yr", "formula": "bikeKm * carFuel / 100 * petrolPrice" },
-      { "id": "chargeCost", "label": "Cost of charging", "unit": "$/yr", "formula": "bikeKwh * powerPrice" }
+      {
+        "id": "yearKm",
+        "label": "Commute distance a year",
+        "unit": "km/yr",
+        "formula": "distance * trips * days * weeks"
+      },
+      {
+        "id": "bikeKm",
+        "label": "Ridden a year",
+        "unit": "km/yr",
+        "formula": "yearKm * bikeShare / 100"
+      },
+      {
+        "id": "carKm",
+        "label": "Driven a year",
+        "unit": "km/yr",
+        "formula": "yearKm * (100 - bikeShare) / 100"
+      },
+      {
+        "id": "carPerKm",
+        "label": "Car CO2 per kilometre",
+        "unit": "kg/km",
+        "formula": "carFuel * co2PerL / 100"
+      },
+      {
+        "id": "bikePerKm",
+        "label": "E-bike CO2 per kilometre",
+        "unit": "kg/km",
+        "formula": "bikeUse * gridCO2 / 100"
+      },
+      {
+        "id": "co2Ratio",
+        "label": "E-bike CO2 as a share of the car's, per kilometre",
+        "unit": "%",
+        "formula": "bikePerKm / carPerKm * 100"
+      },
+      {
+        "id": "petrolL",
+        "label": "Petrol burned a year",
+        "unit": "L/yr",
+        "formula": "carKm * carFuel / 100"
+      },
+      {
+        "id": "bikeKwh",
+        "label": "Electricity for charging a year",
+        "unit": "kWh/yr",
+        "formula": "bikeKm * bikeUse / 100"
+      },
+      {
+        "id": "carCO2",
+        "label": "Car CO2 a year",
+        "unit": "kg/yr",
+        "formula": "carKm * carPerKm"
+      },
+      {
+        "id": "bikeCO2",
+        "label": "Charging CO2 a year",
+        "unit": "kg/yr",
+        "formula": "bikeKm * bikePerKm"
+      },
+      {
+        "id": "fuelSaved",
+        "label": "Petrol you no longer buy",
+        "unit": "$/yr",
+        "formula": "bikeKm * carFuel / 100 * petrolPrice"
+      },
+      {
+        "id": "chargeCost",
+        "label": "Cost of charging",
+        "unit": "$/yr",
+        "formula": "bikeKwh * powerPrice"
+      }
     ],
     "outputs": [
-      { "id": "totalCO2", "label": "Commute CO2 a year", "unit": "kg/yr", "formula": "carCO2 + bikeCO2" },
-      { "id": "saving", "label": "Saved a year, compared with driving every trip", "unit": "$/yr", "formula": "fuelSaved - chargeCost" }
+      {
+        "id": "totalCO2",
+        "label": "Commute CO2 a year",
+        "unit": "kg/yr",
+        "formula": "carCO2 + bikeCO2"
+      },
+      {
+        "id": "saving",
+        "label": "Saved a year, compared with driving every trip",
+        "unit": "$/yr",
+        "formula": "fuelSaved - chargeCost"
+      }
     ],
     "stores": [
-      { "id": "savings", "label": "Saved so far", "unit": "$", "start": 0, "change": "saving" }
+      {
+        "id": "savings",
+        "label": "Saved so far",
+        "unit": "$",
+        "start": 0,
+        "change": "saving"
+      }
     ],
     "milestones": [
-      { "id": "paidBack", "label": "E-bike paid back in", "store": "savings", "reaches": "bikeCost" }
+      {
+        "id": "paidBack",
+        "label": "E-bike paid back in",
+        "store": "savings",
+        "reaches": "bikeCost"
+      }
     ]
   },
   "checks": [
-    { "claim": "Driving every commute burns about 320 litres of petrol a year", "value": "petrolL", "when": { "bikeShare": 0 }, "between": [270, 370], "quote": 6 },
-    { "claim": "Driving every commute emits about 740 kilograms of CO2 a year", "value": "carCO2", "when": { "bikeShare": 0 }, "between": [630, 850], "quote": 6 },
-    { "claim": "Riding every commute uses about 46 kilowatt hours a year", "value": "bikeKwh", "when": { "bikeShare": 100 }, "between": [39, 53], "quote": 7 },
-    { "claim": "Each car kilometre adds about 160 grams of CO2", "value": "carPerKm", "between": [0.136, 0.184], "quote": 1 },
-    { "claim": "An e-bike kilometre causes about 5 grams of CO2", "value": "bikePerKm", "between": [0.00425, 0.00575], "quote": 4 },
-    { "claim": "Even counting the electricity, the e-bike emits a few percent of the car's CO2 for the same trip", "value": "co2Ratio", "between": [1, 10], "quote": 8 },
-    { "claim": "Riding more of your commutes cuts your commute CO2", "value": "totalCO2", "falls": "bikeShare" },
-    { "claim": "Riding more of your commutes saves more each year", "value": "saving", "rises": "bikeShare" },
-    { "claim": "Dearer petrol pays the e-bike back sooner", "value": "paidBack", "falls": "petrolPrice" },
-    { "claim": "Every commute kilometre is either driven or ridden", "same": ["carKm + bikeKm", "yearKm"] }
+    {
+      "claim": "Driving every commute burns about 320 litres of petrol a year",
+      "value": "petrolL",
+      "when": {
+        "bikeShare": 0
+      },
+      "between": [
+        270,
+        370
+      ],
+      "quote": 6
+    },
+    {
+      "claim": "Driving every commute emits about 740 kilograms of CO2 a year",
+      "value": "carCO2",
+      "when": {
+        "bikeShare": 0
+      },
+      "between": [
+        630,
+        850
+      ],
+      "quote": 6
+    },
+    {
+      "claim": "Riding every commute uses about 46 kilowatt hours a year",
+      "value": "bikeKwh",
+      "when": {
+        "bikeShare": 100
+      },
+      "between": [
+        39,
+        53
+      ],
+      "quote": 7
+    },
+    {
+      "claim": "Each car kilometre adds about 160 grams of CO2",
+      "value": "carPerKm",
+      "between": [
+        0.136,
+        0.184
+      ],
+      "quote": 1
+    },
+    {
+      "claim": "An e-bike kilometre causes about 5 grams of CO2",
+      "value": "bikePerKm",
+      "between": [
+        0.00425,
+        0.00575
+      ],
+      "quote": 4
+    },
+    {
+      "claim": "Even counting the electricity, the e-bike emits a few percent of the car's CO2 for the same trip",
+      "value": "co2Ratio",
+      "between": [
+        1,
+        10
+      ],
+      "quote": 8
+    },
+    {
+      "claim": "Riding more of your commutes cuts your commute CO2",
+      "value": "totalCO2",
+      "falls": "bikeShare"
+    },
+    {
+      "claim": "Riding more of your commutes saves more each year",
+      "value": "saving",
+      "rises": "bikeShare"
+    },
+    {
+      "claim": "Dearer petrol pays the e-bike back sooner",
+      "value": "paidBack",
+      "falls": "petrolPrice"
+    },
+    {
+      "claim": "Every commute kilometre is either driven or ridden",
+      "same": [
+        "carKm + bikeKm",
+        "yearKm"
+      ]
+    }
   ],
   "world": {
-    "time": { "unit": "year", "span": 10 },
+    "time": {
+      "unit": "year",
+      "span": 10
+    },
     "nodes": [
-      { "id": "station", "label": "Petrol station", "plays": "petrolPrice",
+      {
+        "id": "station",
+        "label": "Petrol station",
+        "plays": "petrolPrice",
         "recipe": [
-          { "shape": "box", "size": [1.0, 1.8, 0.7], "color": "#c94a3c", "at": [0, 0, 0] },
-          { "shape": "box", "size": [0.6, 0.4, 0.06], "color": "#e6edf2", "at": [0, 1.2, 0.36] },
-          { "shape": "box", "size": [1.15, 0.2, 0.85], "color": "#ece6dc", "at": [0, 1.8, 0] },
-          { "shape": "cylinder", "size": [0.12, 0.9, 0.12], "color": "#333333", "at": [0.6, 0.5, 0] }
-        ] },
-      { "id": "grid", "prop": "power-pole", "label": "Power grid" },
-      { "id": "car", "prop": "car", "label": "Your car", "plays": "carFuel" },
-      { "id": "ebike", "label": "E-bike", "plays": "bikeShare", "appears": "bikeShare",
+          {
+            "shape": "box",
+            "size": [
+              1.0,
+              1.8,
+              0.7
+            ],
+            "color": "#c94a3c",
+            "at": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.6,
+              0.4,
+              0.06
+            ],
+            "color": "#e6edf2",
+            "at": [
+              0,
+              1.2,
+              0.36
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              1.15,
+              0.2,
+              0.85
+            ],
+            "color": "#ece6dc",
+            "at": [
+              0,
+              1.8,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.12,
+              0.9,
+              0.12
+            ],
+            "color": "#333333",
+            "at": [
+              0.6,
+              0.5,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "grid",
+        "prop": "power-pole",
+        "label": "Power grid"
+      },
+      {
+        "id": "car",
+        "prop": "car",
+        "label": "Your car",
+        "plays": "carFuel"
+      },
+      {
+        "id": "ebike",
+        "label": "E-bike",
+        "plays": "bikeShare",
+        "appears": "bikeShare",
         "recipe": [
-          { "shape": "torus", "size": [1.0, 1.0, 0.15], "color": "#333333", "at": [-0.75, 0, 0] },
-          { "shape": "torus", "size": [1.0, 1.0, 0.15], "color": "#333333", "at": [0.75, 0, 0] },
-          { "shape": "box", "size": [1.5, 0.12, 0.12], "color": "#2f7d6d", "at": [0, 0.45, 0] },
-          { "shape": "box", "size": [0.5, 0.22, 0.22], "color": "#e8e8e8", "at": [-0.1, 0.25, 0] },
-          { "shape": "box", "size": [0.1, 0.55, 0.1], "color": "#2f7d6d", "at": [-0.4, 0.5, 0] },
-          { "shape": "box", "size": [0.4, 0.08, 0.18], "color": "#222222", "at": [-0.4, 1.05, 0] },
-          { "shape": "box", "size": [0.1, 0.7, 0.1], "color": "#2f7d6d", "at": [0.6, 0.5, 0] },
-          { "shape": "box", "size": [0.12, 0.08, 0.6], "color": "#222222", "at": [0.6, 1.2, 0] }
-        ] },
-      { "id": "you", "prop": "person-figure", "label": "You" },
-      { "id": "air", "prop": "cloud", "label": "The air", "plays": "totalCO2", "sky": true },
-      { "id": "jar", "prop": "jar", "label": "Money saved", "store": "savings", "target": "bikeCost" }
+          {
+            "shape": "torus",
+            "size": [
+              1.0,
+              1.0,
+              0.15
+            ],
+            "color": "#333333",
+            "at": [
+              -0.75,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "torus",
+            "size": [
+              1.0,
+              1.0,
+              0.15
+            ],
+            "color": "#333333",
+            "at": [
+              0.75,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              1.5,
+              0.12,
+              0.12
+            ],
+            "color": "#2f7d6d",
+            "at": [
+              0,
+              0.45,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.5,
+              0.22,
+              0.22
+            ],
+            "color": "#e8e8e8",
+            "at": [
+              -0.1,
+              0.25,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.1,
+              0.55,
+              0.1
+            ],
+            "color": "#2f7d6d",
+            "at": [
+              -0.4,
+              0.5,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.4,
+              0.08,
+              0.18
+            ],
+            "color": "#222222",
+            "at": [
+              -0.4,
+              1.05,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.1,
+              0.7,
+              0.1
+            ],
+            "color": "#2f7d6d",
+            "at": [
+              0.6,
+              0.5,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.12,
+              0.08,
+              0.6
+            ],
+            "color": "#222222",
+            "at": [
+              0.6,
+              1.2,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "you",
+        "prop": "person-figure",
+        "label": "You"
+      },
+      {
+        "id": "air",
+        "prop": "cloud",
+        "label": "The air",
+        "plays": "totalCO2",
+        "sky": true
+      },
+      {
+        "id": "jar",
+        "prop": "jar",
+        "label": "Money saved",
+        "store": "savings",
+        "target": "bikeCost"
+      }
     ],
     "flows": [
-      { "id": "petrol", "from": "station", "to": "car", "carrier": "substance", "rate": "petrolL", "label": "Petrol burned", "unit": "L/yr" },
-      { "id": "carRide", "from": "car", "to": "you", "carrier": "people", "rate": "carKm", "label": "Kilometres driven", "unit": "km/yr" },
-      { "id": "carSmoke", "from": "car", "to": "air", "carrier": "carbon", "rate": "carCO2", "label": "CO2 from the exhaust", "unit": "kg/yr" },
-      { "id": "power", "from": "grid", "to": "ebike", "carrier": "energy", "rate": "bikeKwh", "label": "Electricity for charging", "unit": "kWh/yr" },
-      { "id": "bikeRide", "from": "ebike", "to": "you", "carrier": "people", "rate": "bikeKm", "label": "Kilometres ridden", "unit": "km/yr" },
-      { "id": "chargeSmoke", "from": "grid", "to": "air", "carrier": "carbon", "rate": "bikeCO2", "label": "CO2 from making the power", "unit": "kg/yr" },
-      { "id": "kept", "from": "station", "to": "jar", "carrier": "money", "rate": "fuelSaved", "label": "Petrol you no longer buy", "unit": "$/yr" },
-      { "id": "chargeBill", "from": "jar", "to": "grid", "carrier": "money", "rate": "chargeCost", "label": "Cost of charging", "unit": "$/yr" }
+      {
+        "id": "petrol",
+        "from": "station",
+        "to": "car",
+        "carrier": "substance",
+        "rate": "petrolL",
+        "label": "Petrol burned",
+        "unit": "L/yr"
+      },
+      {
+        "id": "carRide",
+        "from": "car",
+        "to": "you",
+        "carrier": "people",
+        "rate": "carKm",
+        "label": "Kilometres driven",
+        "unit": "km/yr"
+      },
+      {
+        "id": "carSmoke",
+        "from": "car",
+        "to": "air",
+        "carrier": "carbon",
+        "rate": "carCO2",
+        "label": "CO2 from the exhaust",
+        "unit": "kg/yr"
+      },
+      {
+        "id": "power",
+        "from": "grid",
+        "to": "ebike",
+        "carrier": "energy",
+        "rate": "bikeKwh",
+        "label": "Electricity for charging",
+        "unit": "kWh/yr"
+      },
+      {
+        "id": "bikeRide",
+        "from": "ebike",
+        "to": "you",
+        "carrier": "people",
+        "rate": "bikeKm",
+        "label": "Kilometres ridden",
+        "unit": "km/yr"
+      },
+      {
+        "id": "chargeSmoke",
+        "from": "grid",
+        "to": "air",
+        "carrier": "carbon",
+        "rate": "bikeCO2",
+        "label": "CO2 from making the power",
+        "unit": "kg/yr"
+      },
+      {
+        "id": "kept",
+        "from": "station",
+        "to": "jar",
+        "carrier": "money",
+        "rate": "fuelSaved",
+        "label": "Petrol you no longer buy",
+        "unit": "$/yr"
+      },
+      {
+        "id": "chargeBill",
+        "from": "jar",
+        "to": "grid",
+        "carrier": "money",
+        "rate": "chargeCost",
+        "label": "Cost of charging",
+        "unit": "$/yr"
+      }
     ]
   },
   "ask": [
-    { "question": "How far is your commute, one way?", "help": "A map app shows the distance in kilometres.", "input": "distance" },
-    { "question": "How many days a week do you travel to work?", "help": "Count a usual week.", "input": "days" },
-    { "question": "How much petrol does your car use?", "help": "Your trip computer or car manual shows litres per 100 km. Not sure? Leave 7.", "input": "carFuel" },
-    { "question": "How many of your commutes could the e-bike take?", "help": "Think of rain, heavy loads and days you go further.", "choices": [
-      { "label": "A few", "set": { "bikeShare": 30 } },
-      { "label": "Most of them, or not sure", "set": { "bikeShare": 80 } },
-      { "label": "All of them", "set": { "bikeShare": 100 } }
-    ] }
+    {
+      "question": "How far is your commute, one way?",
+      "help": "A map app shows the distance in kilometres.",
+      "input": "distance"
+    },
+    {
+      "question": "How many days a week do you travel to work?",
+      "help": "Count a usual week.",
+      "input": "days"
+    },
+    {
+      "question": "How much petrol does your car use?",
+      "help": "Your trip computer or car manual shows litres per 100 km. Not sure? Leave 7.",
+      "input": "carFuel"
+    },
+    {
+      "question": "How many of your commutes could the e-bike take?",
+      "help": "Think of rain, heavy loads and days you go further.",
+      "choices": [
+        {
+          "label": "A few",
+          "set": {
+            "bikeShare": 30
+          }
+        },
+        {
+          "label": "Most of them, or not sure",
+          "set": {
+            "bikeShare": 80
+          }
+        },
+        {
+          "label": "All of them",
+          "set": {
+            "bikeShare": 100
+          }
+        }
+      ]
+    }
   ],
   "explain": [
-    { "shot": "establish", "caption": "Car or e-bike for your commute? Follow one trip to work." },
-    { "shot": "follow", "focus": "carRide", "caption": "Every workday, your car carries you there and back." },
-    { "shot": "follow", "focus": "petrol", "caption": "To move you, your car burns petrol you pay for." },
-    { "shot": "follow", "focus": "carSmoke", "caption": "Each litre burned puffs carbon dioxide, CO2, into the air." },
-    { "shot": "cause", "focus": "bikeRide", "drive": "bikeShare", "caption": "An e-bike can take some trips, so the car does fewer." },
-    { "shot": "follow", "focus": "power", "caption": "Its battery charges from the grid. Making power makes CO2 too." },
-    { "shot": "turn", "focus": "air", "caption": "But per kilometre, charging makes a few percent of the car's CO2." },
-    { "shot": "follow", "focus": "kept", "caption": "So the petrol you don't buy stays in your pocket." },
-    { "shot": "timelapse", "focus": "jar", "caption": "Savings build up until they cover the e-bike's price." },
-    { "shot": "focus", "focus": "you", "caption": "Rain, heavy loads and long trips may still send you by car." },
-    { "shot": "handoff", "caption": "Now make it yours. Your commute decides the rest." }
+    {
+      "shot": "establish",
+      "caption": "Car or e-bike for your commute? Follow one trip to work."
+    },
+    {
+      "shot": "follow",
+      "focus": "carRide",
+      "caption": "Every workday, your car carries you there and back."
+    },
+    {
+      "shot": "follow",
+      "focus": "petrol",
+      "caption": "To move you, your car burns petrol you pay for."
+    },
+    {
+      "shot": "follow",
+      "focus": "carSmoke",
+      "caption": "Each litre burned puffs carbon dioxide, CO2, into the air."
+    },
+    {
+      "shot": "cause",
+      "focus": "bikeRide",
+      "drive": "bikeShare",
+      "caption": "An e-bike can take some trips, so the car does fewer."
+    },
+    {
+      "shot": "follow",
+      "focus": "power",
+      "caption": "Its battery charges from the grid. Power stations make CO2 too."
+    },
+    {
+      "shot": "turn",
+      "focus": "air",
+      "caption": "But per kilometre, charging makes a few percent of the car's CO2."
+    },
+    {
+      "shot": "follow",
+      "focus": "kept",
+      "caption": "So the petrol you don't buy stays in your pocket."
+    },
+    {
+      "shot": "timelapse",
+      "focus": "jar",
+      "caption": "Savings build up until they cover the e-bike's price."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "caption": "Rain, heavy loads and long trips may still send you by car."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now make it yours. Your commute decides the rest."
+    }
   ],
   "simulate": {
-    "controls": ["bikeShare", "distance", "days", "carFuel", "petrolPrice"],
+    "controls": [
+      "bikeShare",
+      "distance",
+      "days",
+      "carFuel",
+      "petrolPrice"
+    ],
     "prompt": "Try your own distance, car and petrol price."
   },
   "decide": {
     "compare": [
-      { "label": "Drive every trip", "set": { "bikeShare": 0 } },
-      { "label": "E-bike most trips", "set": { "bikeShare": 80 } },
-      { "label": "E-bike every trip", "set": { "bikeShare": 100 } }
+      {
+        "label": "Drive every trip",
+        "set": {
+          "bikeShare": 0
+        }
+      },
+      {
+        "label": "E-bike most trips",
+        "set": {
+          "bikeShare": 80
+        }
+      },
+      {
+        "label": "E-bike every trip",
+        "set": {
+          "bikeShare": 100
+        }
+      }
     ],
     "tradeoffs": [
       "An e-bike costs around $2,500 up front, but each trip after that costs very little to power.",

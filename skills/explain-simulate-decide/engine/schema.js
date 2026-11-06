@@ -5,8 +5,12 @@ import { PROPS, KINDS } from './cast/names.js';
 import { parseUnit, checkUnit, unitsOf, per } from './units.js';
 import { createModel, formatValue } from './model.js';
 import { TONES } from './look.js';
+import { steProblems } from './ste.js';
+import { ACTIONS, EXPRESSIONS } from './cast/actions.js';
+import { SETS, OBJECTS } from './sets/names.js';
 
-export const SHOTS = ['establish', 'introduce', 'focus', 'follow', 'cause', 'compare', 'turn', 'timelapse', 'handoff'];
+export const SHOTS = ['establish', 'introduce', 'focus', 'follow', 'cause', 'compare', 'turn', 'timelapse', 'handoff', 'scene'];
+export const CAMERAS = ['close', 'medium', 'wide'];
 export const CARRIERS = ['energy', 'money', 'water', 'heat', 'light', 'goods', 'people', 'data', 'influence', 'time', 'carbon', 'substance'];
 // The story shapes (see references/story-shapes.md). Each one needs a different world.
 export const STORY_SHAPES = ['build-up', 'conversion', 'budget', 'cause', 'feedback', 'chances', 'process'];
@@ -240,6 +244,7 @@ export function validate(sp) {
           if (!allIds.has(g.value)) err(`${where}: groups[${k}] value "${g.value}" is not a model value`);
           else if (![...inputs, ...derived, ...outputs].some((x) => x.id === g.value && x.unit === '%')) err(`${where}: groups[${k}] value "${g.value}" must be a share in "%"`);
         });
+      if (nd.you !== undefined && !(Number.isInteger(nd.you) && nd.you >= 0 && nd.you < arr(nd.groups).length)) err(`${where}: you must be the index of the group the viewer stands in (0 for the first group)`);
     }
   });
   for (const st of stores) if (!nodes.some((nd) => nd.store === st.id)) err(`model.stores "${st.id}" isn't shown: give it a node with "store": "${st.id}", or the viewer never sees it build up`);
@@ -681,12 +686,12 @@ function checkShots(shots, nodeById, flowIds, allowed, err, why = '') {
   shots.forEach((x, n) => {
     const where = `explain[${n}]`;
     if (!allowed.includes(x.shot)) err(`${where}: shot "${x.shot}" must be one of ${allowed.join(', ')}${why}`);
+    if (x.shot === 'scene') return checkScene(x, where, err);
     if (x.focus === undefined) {
       if (!['establish', 'handoff'].includes(x.shot)) err(`${where}: focus is required (a node or flow id)`);
     } else if (!nodeById[x.focus] && !flowIds.has(x.focus)) err(`${where}: focus "${x.focus}" is not a node or flow`);
     if (x.shot === 'follow' && !flowIds.has(x.focus)) err(`${where}: follow shots need focus = a flow id`);
-    if (!isStr(x.caption)) err(`${where}: caption is required`);
-    else if (words(x.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(x.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
+    checkCaption(x, where, err);
   });
   if (!shots.some((x) => x.shot === 'establish')) err('explain: needs an "establish" shot');
 }
@@ -762,6 +767,7 @@ function checkStory(sp, nodes, flows, shots, err) {
   const hostOf = (id) => nodes.find((n) => n.id === id)?.on || id;
   const isHero = (id) => id === hero.id || hostOf(id) === hero.id || hostOf(hero.id) === id;
   const involves = (x) => {
+    if (x?.shot === 'scene') return true; // a scene is the hero, acting
     if (!x?.focus) return false;
     const f = flows.find((g) => g.id === x.focus);
     return f ? isHero(f.from) || isHero(f.to) : isHero(x.focus);
@@ -770,4 +776,34 @@ function checkStory(sp, nodes, flows, shots, err) {
   if (!inner.length) return;
   if (!involves(inner[0])) err(`story: open on the hero. Make the first shot after "establish" about "${hero.id}" (focus on it, or on a flow to or from it), not "${inner[0].focus}".`);
   if (!involves(inner.at(-1))) err(`story: end with the hero. Make the last shot before "handoff" about "${hero.id}" again, so the film comes back to the person it started with (now: "${inner.at(-1).focus}").`);
+}
+
+/**
+ * A scene: the hero acting in a small set, as in a film. "beats" are what they do, in
+ * order: walk to a mark, pick up an object, read it, post it, sit, talk, react.
+ */
+function checkScene(x, where, err) {
+  if (!SETS.includes(x.set)) err(`${where}: set "${x.set}" must be one of ${SETS.join(', ')}`);
+  if (x.camera !== undefined && !CAMERAS.includes(x.camera)) err(`${where}: camera must be close, medium or wide`);
+  if (x.with !== undefined && x.with !== 'nurse') err(`${where}: with can only be "nurse" (a second person in the scene)`);
+  if (x.feel !== undefined && !EXPRESSIONS.includes(x.feel)) err(`${where}: feel must be one of ${EXPRESSIONS.join(', ')}`);
+  if (x.seated !== undefined && typeof x.seated !== 'boolean') err(`${where}: seated must be true or false (the hero starts in a chair)`);
+  const beats = x.beats;
+  if (!Array.isArray(beats) || beats.length < 1 || beats.length > 4) err(`${where}: a scene needs 1–4 beats: what the hero does, in order, such as {"do": "pickUp", "object": "letter", "from": "mat"}`);
+  else
+    beats.forEach((b, k) => {
+      if (!ACTIONS.includes(b.do)) err(`${where}.beats[${k}]: do "${b.do}" must be one of ${ACTIONS.join(', ')}`);
+      if (b.object !== undefined && !OBJECTS.includes(b.object)) err(`${where}.beats[${k}]: object "${b.object}" must be one of ${OBJECTS.join(', ')}`);
+      if (b.feel !== undefined && !EXPRESSIONS.includes(b.feel)) err(`${where}.beats[${k}]: feel must be one of ${EXPRESSIONS.join(', ')}`);
+      if (b.do === 'walk' && !isStr(b.to)) err(`${where}.beats[${k}]: walk needs "to", a mark in the set`);
+      if (b.do === 'pickUp' && !isStr(b.object)) err(`${where}.beats[${k}]: pickUp needs "object"`);
+    });
+  checkCaption(x, where, err);
+}
+
+/** Captions are the film's subtitles: short, and in ASD-STE100 style (see writing-rules.md). */
+function checkCaption(x, where, err) {
+  if (!isStr(x.caption)) return err(`${where}: caption is required`);
+  if (words(x.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(x.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
+  for (const m of steProblems(x.caption)) err(`${where} caption: ${m}`);
 }
