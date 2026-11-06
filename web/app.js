@@ -1,7 +1,7 @@
 // The upload tool: article → AI screenplay → validated → directed film.
 import { readFile, readUrl, prepare } from './article.js';
 import { PROVIDERS, complete } from './providers.js';
-import { systemPrompt, articleMessage, repairMessage, extractJson } from './prompt.js';
+import { systemPrompt, articleMessage, repairMessage, extractJson, quoteProblems } from './prompt.js';
 import { createProgress, clock } from './progress.js';
 import { validate } from '../skills/explain-simulate-decide/engine/schema.js';
 import { mount } from '../skills/explain-simulate-decide/engine/player.js';
@@ -276,6 +276,8 @@ async function generate() {
       try {
         sp = extractJson(reply);
         errors = validate(sp);
+        // the tool has the article, so it can check the quotes really are in it
+        if (provider !== 'demo') errors.push(...quoteProblems(sp, text));
       } catch (e) {
         errors = [`The reply was not a valid screenplay: ${e.message}`];
       }

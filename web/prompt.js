@@ -42,3 +42,37 @@ export function extractJson(reply) {
   if (start < 0 || end <= start) throw new Error('The AI did not return a screenplay.');
   return JSON.parse(reply.slice(start, end + 1));
 }
+
+/** Lower-case, plain quote marks and dashes, single spaces: how sentences are compared. */
+const plain = (t) =>
+  String(t)
+    .toLowerCase()
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Quotes from the article must be in the article, word for word. A quote may skip
+ * words with "..." or "…"; each piece must then appear, in order. Researched quotes
+ * (with a url) come from other pages and are not checked here.
+ * @returns {string[]} problems in the validator's style
+ */
+export function quoteProblems(sp, article) {
+  const text = plain(article);
+  const out = [];
+  (sp?.source?.quotes || []).forEach((q, n) => {
+    if (typeof q !== 'string') return;
+    let from = 0;
+    for (const piece of plain(q).split(/\.\.\.|…/).map((x) => x.trim()).filter(Boolean)) {
+      const at = text.indexOf(piece, from);
+      if (at < 0) {
+        out.push(`source.quotes[${n}] is not in the article word for word: "${q}". Copy the sentence exactly as the article writes it, or remove it and anything that cites it.`);
+        return;
+      }
+      from = at + piece.length;
+    }
+  });
+  return out;
+}

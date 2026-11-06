@@ -132,11 +132,14 @@ tests/                     node --test unit tests + browser checks (Playwright)
 ## Development
 
 ```bash
-npm test                    # unit tests: formulas, model, schema, timing, layout, camera, export
+npm test                    # unit tests: formulas, units, model, schema, timing, coverage, export
 npm run render:solar        # rebuild the demo page
 npm install && npm run check            # browser render check (needs Playwright's Chromium)
-node tests/web-check.mjs                # web tool with a fake AI provider
-node tests/record-mp4.mjs examples/solar/solar.html out.mp4 --channel chrome
+node tests/cast-check.mjs               # every prop and every character kind builds and renders
+node tests/audio-sync-check.mjs         # the picture keeps time with the music, even on slow machines
+npm run render:examples                 # rebuild example pages after any engine change (a test fails until you do)
+node tests/web-check.mjs                # web tool with a fake AI provider (repairs, made-up quotes)
+node tests/record-mp4.mjs examples/solar/solar.html out.mp4 --size 1280x720 --fps 30
 python3 -m http.server 8080 # then open http://localhost:8080/web/
 ```
 
@@ -145,7 +148,9 @@ python3 -m http.server 8080 # then open http://localhost:8080/web/
 1. Create `skills/explain-simulate-decide/engine/cast/<name>.js`, exporting `build(ctx) → { object, height, setValue(v) }`.
 2. Register it in `cast/index.js` and `cast/names.js`.
 3. Add a row to `references/prop-catalog.md`.
-4. Check it on `tests/cast-sheet.html`.
+4. Run `node tests/cast-check.mjs` and look at `test-results/cast-sheet.png`.
+
+**Coverage.** `tests/coverage.test.mjs` fails if any story shape, carrier or shot type is used by no screenplay in the repo, or any character kind has no look. Add a fixture when you add one. The cross-topic test set in `tests/fixtures/eval` shows how the skill handles eight different fields.
 
 ## Content principles
 

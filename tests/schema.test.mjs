@@ -133,6 +133,13 @@ test('a process story has no numbers', () => {
   bad((s) => (s.world.nodes[0].plays = 'x'), /"plays" needs numbers/);
   bad((s) => (s.explain[1].shot = 'timelapse'), /no numbers to sweep or clock/);
   bad((s) => (s.decide.compare = []), /no numbers to compare/);
+  // the same world rules as every other story
+  bad((s) => (s.world.nodes[0] = { id: 'idea', label: 'A bill', recipe: [{ shape: 'blob', size: [1, 1, 1] }] }), /shape "blob"/);
+  bad((s) => (s.world.nodes[0] = { id: 'idea', label: 'A bill', url: 'https://x/a.glb' }), /need "url" and "credit"/);
+  bad((s) => {
+    s.world.nodes[1].on = 'upper';
+    s.world.nodes[0].on = 'lower';
+  }, /already sits on another node/);
 });
 
 test('rejects non-objects and old versions', () => {

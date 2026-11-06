@@ -216,26 +216,9 @@ export function validate(sp) {
   }
   const nodes = arr(w.nodes);
   const flows = arr(w.flows);
-  if (nodes.length < 2 || nodes.length > 10) err(`world.nodes: need 2–10 (found ${nodes.length})`);
-  const nodeById = {};
+  const { nodeById, flowIds } = checkWorld(nodes, flows, err);
   nodes.forEach((nd, n) => {
     const where = `world.nodes[${n}] "${nd.id}"`;
-    if (!ID.test(nd.id || '') || nodeById[nd.id]) err(`${where}: id must be unique letters, digits or _`);
-    nodeById[nd.id] = nd;
-    if (!isStr(nd.label)) err(`${where}: label is required`);
-    if (nd.recipe !== undefined) {
-      if (!Array.isArray(nd.recipe) || nd.recipe.length === 0 || nd.recipe.length > 12) err(`${where}: recipe needs 1–12 shapes`);
-      else
-        nd.recipe.forEach((p, k) => {
-          if (!SHAPES.includes(p.shape)) err(`${where}: recipe[${k}] shape "${p.shape}" must be one of ${SHAPES.join(', ')}`);
-          if (!Array.isArray(p.size) || p.size.length !== 3 || !p.size.every(isNum)) err(`${where}: recipe[${k}] size must be [x, y, z]`);
-        });
-    } else if (nd.url !== undefined) {
-      if (!isStr(nd.url) || !isStr(nd.credit)) err(`${where}: open-library props need "url" and "credit"`);
-    } else if (nd.prop !== undefined) {
-      if (!PROPS.includes(nd.prop)) err(`${where}: prop "${nd.prop}" is not in the catalog (${PROPS.join(', ')}). Give a "kind" instead, or a "recipe".`);
-    } else if (nd.kind === undefined && nd.store === undefined) err(`${where}: needs a "prop", a "kind" (${KINDS.join(', ')}), or a "recipe"`);
-    if (nd.kind !== undefined && !KINDS.includes(nd.kind)) err(`${where}: kind "${nd.kind}" must be one of ${KINDS.join(', ')}`);
     if (nd.plays !== undefined && !allIds.has(nd.plays)) err(`${where}: plays "${nd.plays}" is not a model value`);
     if (nd.store !== undefined && !storeIds.has(nd.store)) err(`${where}: store "${nd.store}" is not in model.stores`);
     if (nd.target !== undefined) {
@@ -243,32 +226,16 @@ export function validate(sp) {
       checkRefs(checkFormula(nd.target, `${where} target`), `${where} target`, staticIds);
     }
     if (nd.appears !== undefined && !inputById[nd.appears]) err(`${where}: appears "${nd.appears}" must be an input (the node shows when that input is above its minimum)`);
-    if (nd.sky !== undefined && typeof nd.sky !== 'boolean') err(`${where}: sky must be true or false`);
   });
   for (const st of stores) if (!nodes.some((nd) => nd.store === st.id)) err(`model.stores "${st.id}" isn't shown: give it a node with "store": "${st.id}", or the viewer never sees it build up`);
-  nodes.forEach((nd, n) => {
-    if (nd.on === undefined) return;
-    const host = nodeById[nd.on];
-    if (!host || nd.on === nd.id) err(`world.nodes[${n}] "${nd.id}": on "${nd.on}" must be another node`);
-    else if (host.on !== undefined) err(`world.nodes[${n}] "${nd.id}": can't sit on "${nd.on}", which already sits on another node`);
-  });
-  if (flows.length < 1 || flows.length > 12) err(`world.flows: need 1–12 (found ${flows.length})`);
-  const flowIds = new Set();
   flows.forEach((f, n) => {
     const where = `world.flows[${n}] "${f.id}"`;
-    if (!ID.test(f.id || '') || flowIds.has(f.id) || nodeById[f.id]) err(`${where}: id must be unique (and not a node id)`);
-    flowIds.add(f.id);
-    if (!nodeById[f.from]) err(`${where}: from "${f.from}" is not a node`);
-    if (!nodeById[f.to]) err(`${where}: to "${f.to}" is not a node`);
-    if (f.from === f.to) err(`${where}: from and to must be different nodes`);
-    if (!CARRIERS.includes(f.carrier)) err(`${where}: carrier must be one of ${CARRIERS.join(', ')}`);
-    if (!isStr(f.label)) err(`${where}: label is required`);
     if (typeof f.unit !== 'string') err(`${where}: unit is required, for example "kWh/yr", "$/month", "h/night" or "people/yr"`);
     if (!isStr(f.rate)) err(`${where}: rate is required (a formula)`);
     else checkRefs(checkFormula(f.rate, `${where} rate`), `${where} rate`, allIds);
   });
 
-  // ---- ask: questions the page puts to the viewer
+  // ---- ask: questions the page puts to the viewer  // ---- ask: questions the page puts to the viewer
   const ask = arr(sp.ask);
   if (sp.ask !== undefined && (!Array.isArray(sp.ask) || ask.length > 5)) err('ask: at most 5 questions');
   ask.forEach((q, n) => {
@@ -302,35 +269,24 @@ export function validate(sp) {
 
   // ---- explain
   const shots = arr(sp.explain);
-  if (shots.length < 3 || shots.length > 12) err(`explain: need 3–12 shots (found ${shots.length})`);
-  shots.forEach((s, n) => {
+  checkShots(shots, nodeById, flowIds, SHOTS, err);
+  shots.forEach((x, n) => {
     const where = `explain[${n}]`;
-    if (!SHOTS.includes(s.shot)) err(`${where}: shot "${s.shot}" must be one of ${SHOTS.join(', ')}`);
-    const wide = ['establish', 'handoff'].includes(s.shot);
-    if (s.focus === undefined) {
-      if (!wide) err(`${where}: focus is required (a node or flow id)`);
-    } else if (!nodeById[s.focus] && !flowIds.has(s.focus)) err(`${where}: focus "${s.focus}" is not a node or flow`);
-    if (['follow', 'cause'].includes(s.shot) && !flowIds.has(s.focus)) err(`${where}: ${s.shot} shots need focus = a flow id`);
-    if (s.shot === 'timelapse') {
+    if (x.shot === 'cause' && !flowIds.has(x.focus)) err(`${where}: cause shots need focus = a flow id`);
+    if (x.shot === 'timelapse') {
       if (!w.time) err(`${where}: timelapse needs world.time`);
-      if (!nodeById[s.focus]?.store) err(`${where}: timelapse needs focus = a node that shows a store`);
+      if (!nodeById[x.focus]?.store) err(`${where}: timelapse needs focus = a node that shows a store`);
     }
-    if (s.drive !== undefined && !inputById[s.drive]) err(`${where}: drive "${s.drive}" is not an input`);
-    if (!isStr(s.caption)) err(`${where}: caption is required`);
-    else if (words(s.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(s.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
+    if (x.drive !== undefined && !inputById[x.drive]) err(`${where}: drive "${x.drive}" is not an input`);
   });
-  if (shots.filter((s) => s.shot === 'turn').length !== 1) err('explain: needs exactly one "turn" shot (the common misconception)');
-  if (!shots.some((s) => s.shot === 'establish')) err('explain: needs an "establish" shot');
-  if (!shots.some((s) => s.shot === 'follow' || s.shot === 'cause')) err('explain: needs at least one "follow" or "cause" shot, to show the system working');
+  if (shots.filter((x) => x.shot === 'turn').length !== 1) err('explain: needs exactly one "turn" shot (the common misconception)');
+  if (!shots.some((x) => x.shot === 'follow' || x.shot === 'cause')) err('explain: needs at least one "follow" or "cause" shot, to show the system working');
 
-  // ---- simulate & decide
+  // ---- simulate & decide  // ---- simulate & decide
   const controls = sp.simulate?.controls;
   if (!Array.isArray(controls) || controls.length === 0 || controls.length > 6) err('simulate.controls: list 1–6 input ids the viewer can change');
   else controls.forEach((c) => inputById[c] || err(`simulate: controls "${c}" is not an input`));
-  for (const key of ['tradeoffs', 'leftOut', 'questionsToAsk']) {
-    const list = sp.decide?.[key];
-    if (!Array.isArray(list) || list.length < 1 || list.length > 6 || !list.every(isStr)) err(`decide.${key}: need 1–6 sentences`);
-  }
+  checkDecide(sp, err);
   const compare = sp.decide?.compare;
   if (compare !== undefined) {
     if (!Array.isArray(compare) || compare.length < 2 || compare.length > 3) err('decide.compare: need 2–3 options');
@@ -632,6 +588,27 @@ function validateProcess(sp) {
   if (w.time !== undefined) err('world.time: a process story has no clock, so leave it out');
   const nodes = arr(w.nodes);
   const flows = arr(w.flows);
+  const { nodeById, flowIds } = checkWorld(nodes, flows, err);
+  nodes.forEach((nd, n) => {
+    for (const k of ['plays', 'store', 'appears', 'target']) if (nd[k] !== undefined) err(`world.nodes[${n}] "${nd.id}": "${k}" needs numbers; a process story has none, so leave it out`);
+  });
+  flows.forEach((f, n) => {
+    if (f.rate !== undefined) err(`world.flows[${n}] "${f.id}": a process story has no rates; leave out "rate" (every step flows at the same pace)`);
+  });
+  const shots = arr(sp.explain);
+  checkShots(shots, nodeById, flowIds, SHOTS.filter((x) => !['cause', 'timelapse'].includes(x)), err, ' (a process story has no numbers to sweep or clock to run)');
+  shots.forEach((x, n) => {
+    if (x.drive !== undefined) err(`explain[${n}]: drive needs an input; a process story has none`);
+  });
+  if (shots.filter((x) => x.shot === 'turn').length > 1) err('explain: at most one "turn" shot');
+  if (!shots.some((x) => x.shot === 'follow')) err('explain: needs at least one "follow" shot, to walk through a step');
+  checkDecide(sp, err);
+  bannedWords(sp, err);
+  return errors;
+}
+
+/** What every story's world needs: unique ids, labels, a look for each node, and flows between real nodes. */
+function checkWorld(nodes, flows, err) {
   if (nodes.length < 2 || nodes.length > 10) err(`world.nodes: need 2–10 (found ${nodes.length})`);
   const nodeById = {};
   nodes.forEach((nd, n) => {
@@ -639,13 +616,26 @@ function validateProcess(sp) {
     if (!ID.test(nd.id || '') || nodeById[nd.id]) err(`${where}: id must be unique letters, digits or _`);
     nodeById[nd.id] = nd;
     if (!isStr(nd.label)) err(`${where}: label is required`);
-    if (nd.prop !== undefined && !PROPS.includes(nd.prop)) err(`${where}: prop "${nd.prop}" is not in the catalog. Give a "kind" instead.`);
+    if (nd.recipe !== undefined) {
+      if (!Array.isArray(nd.recipe) || nd.recipe.length === 0 || nd.recipe.length > 12) err(`${where}: recipe needs 1–12 shapes`);
+      else
+        nd.recipe.forEach((p, k) => {
+          if (!SHAPES.includes(p.shape)) err(`${where}: recipe[${k}] shape "${p.shape}" must be one of ${SHAPES.join(', ')}`);
+          if (!Array.isArray(p.size) || p.size.length !== 3 || !p.size.every(isNum)) err(`${where}: recipe[${k}] size must be [x, y, z]`);
+        });
+    } else if (nd.url !== undefined) {
+      if (!isStr(nd.url) || !isStr(nd.credit)) err(`${where}: open-library props need "url" and "credit"`);
+    } else if (nd.prop !== undefined) {
+      if (!PROPS.includes(nd.prop)) err(`${where}: prop "${nd.prop}" is not in the catalog (${PROPS.join(', ')}). Give a "kind" instead, or a "recipe".`);
+    } else if (nd.kind === undefined && nd.store === undefined) err(`${where}: needs a "prop", a "kind" (${KINDS.join(', ')}), or a "recipe"`);
     if (nd.kind !== undefined && !KINDS.includes(nd.kind)) err(`${where}: kind "${nd.kind}" must be one of ${KINDS.join(', ')}`);
-    if (nd.prop === undefined && nd.kind === undefined && nd.recipe === undefined && nd.url === undefined) err(`${where}: needs a "prop", a "kind" (${KINDS.join(', ')}), or a "recipe"`);
-    for (const k of ['plays', 'store', 'appears', 'target']) if (nd[k] !== undefined) err(`${where}: "${k}" needs numbers; a process story has none, so leave it out`);
+    if (nd.sky !== undefined && typeof nd.sky !== 'boolean') err(`${where}: sky must be true or false`);
   });
   nodes.forEach((nd, n) => {
-    if (nd.on !== undefined && (!nodeById[nd.on] || nd.on === nd.id)) err(`world.nodes[${n}] "${nd.id}": on "${nd.on}" must be another node`);
+    if (nd.on === undefined) return;
+    const host = nodeById[nd.on];
+    if (!host || nd.on === nd.id) err(`world.nodes[${n}] "${nd.id}": on "${nd.on}" must be another node`);
+    else if (host.on !== undefined) err(`world.nodes[${n}] "${nd.id}": can't sit on "${nd.on}", which already sits on another node`);
   });
   if (flows.length < 1 || flows.length > 12) err(`world.flows: need 1–12 (found ${flows.length})`);
   const flowIds = new Set();
@@ -658,28 +648,30 @@ function validateProcess(sp) {
     if (f.from === f.to) err(`${where}: from and to must be different nodes`);
     if (!CARRIERS.includes(f.carrier)) err(`${where}: carrier must be one of ${CARRIERS.join(', ')}`);
     if (!isStr(f.label)) err(`${where}: label is required`);
-    if (f.rate !== undefined) err(`${where}: a process story has no rates; leave out "rate" (every step flows at the same pace)`);
   });
-  const shots = arr(sp.explain);
+  return { nodeById, flowIds };
+}
+
+/** What every film's shots need: a known shot type, something to look at, and a short caption. */
+function checkShots(shots, nodeById, flowIds, allowed, err, why = '') {
   if (shots.length < 3 || shots.length > 12) err(`explain: need 3–12 shots (found ${shots.length})`);
   shots.forEach((x, n) => {
     const where = `explain[${n}]`;
-    if (!SHOTS.includes(x.shot) || ['cause', 'timelapse'].includes(x.shot)) err(`${where}: shot "${x.shot}" must be one of establish, introduce, focus, follow, compare, turn, handoff (a process story has no numbers to sweep or clock to run)`);
+    if (!allowed.includes(x.shot)) err(`${where}: shot "${x.shot}" must be one of ${allowed.join(', ')}${why}`);
     if (x.focus === undefined) {
       if (!['establish', 'handoff'].includes(x.shot)) err(`${where}: focus is required (a node or flow id)`);
     } else if (!nodeById[x.focus] && !flowIds.has(x.focus)) err(`${where}: focus "${x.focus}" is not a node or flow`);
     if (x.shot === 'follow' && !flowIds.has(x.focus)) err(`${where}: follow shots need focus = a flow id`);
-    if (x.drive !== undefined) err(`${where}: drive needs an input; a process story has none`);
     if (!isStr(x.caption)) err(`${where}: caption is required`);
     else if (words(x.caption) > MAX_CAPTION_WORDS) err(`${where}: caption has ${words(x.caption)} words (max ${MAX_CAPTION_WORDS} words)`);
   });
-  if (shots.filter((x) => x.shot === 'turn').length > 1) err('explain: at most one "turn" shot');
   if (!shots.some((x) => x.shot === 'establish')) err('explain: needs an "establish" shot');
-  if (!shots.some((x) => x.shot === 'follow')) err('explain: needs at least one "follow" shot, to walk through a step');
+}
+
+/** Decide always weighs the choice: trade-offs, limits and questions, never a recommendation. */
+function checkDecide(sp, err) {
   for (const key of ['tradeoffs', 'leftOut', 'questionsToAsk']) {
     const list = sp.decide?.[key];
     if (!Array.isArray(list) || list.length < 1 || list.length > 6 || !list.every(isStr)) err(`decide.${key}: need 1–6 sentences`);
   }
-  bannedWords(sp, err);
-  return errors;
 }

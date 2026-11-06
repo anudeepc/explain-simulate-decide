@@ -1,12 +1,15 @@
 // Records a rendered page to MP4 in headless Chromium using the page's own
 // in-browser recorder (WebCodecs), then saves it.
-// Usage: node tests/record-mp4.mjs examples/solar/solar.html examples/solar/solar.mp4 [--channel chrome]
+// Usage: node tests/record-mp4.mjs examples/solar/solar.html examples/solar/solar.mp4 [--channel chrome] [--size 1280x720] [--fps 30]
 import { chromium } from 'playwright';
 import { writeFileSync } from 'node:fs';
 import { serve } from './serve.mjs';
 
 const [page = 'examples/solar/solar.html', out = 'examples/solar/solar.mp4'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-const channel = process.argv.includes('--channel') ? process.argv[process.argv.indexOf('--channel') + 1] : undefined;
+const flag = (name) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : undefined);
+const channel = flag('--channel');
+const [width, height] = (flag('--size') || '1920x1080').split('x').map(Number);
+const fps = Number(flag('--fps') || 60);
 const srv = serve();
 const browser = await chromium.launch({ channel, args: ['--autoplay-policy=no-user-gesture-required', '--use-angle=metal', '--enable-gpu'] });
 try {
@@ -25,14 +28,14 @@ try {
   const timer = setInterval(async () => console.log('progress', await p.evaluate(() => Math.round((window.__p || 0) * 100)).catch(() => '?')), 15000);
   const [dl] = await Promise.all([
     p.waitForEvent('download', { timeout: 20 * 60_000 }),
-    p.evaluate(async () => {
-      const blob = await window.ESD.record({ onProgress: (x) => (window.__p = x) });
+    p.evaluate(async ({ width, height, fps }) => {
+      const blob = await window.ESD.record({ width, height, fps, onProgress: (x) => (window.__p = x) });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'film.mp4';
       document.body.append(a);
       a.click();
-    }),
+    }, { width, height, fps }),
   ]);
   clearInterval(timer);
   await dl.saveAs(out);

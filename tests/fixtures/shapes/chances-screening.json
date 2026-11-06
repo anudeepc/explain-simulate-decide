@@ -5,57 +5,222 @@
   "source": {
     "title": "Test fixture written for this repo",
     "publisher": "Illustrative numbers",
-    "quotes": ["About 4 in 100 people like you develop the condition within ten years."]
+    "quotes": [
+      "About 4 in 100 people like you develop the condition within ten years."
+    ]
   },
   "model": {
     "inputs": [
-      { "id": "tests", "label": "Screening tests over ten years", "unit": "tests", "kind": "lever", "min": 0, "max": 10, "step": 1, "default": 5, "source": "assumption" },
-      { "id": "followUp", "label": "Positive results followed up", "unit": "%", "kind": "lever", "min": 50, "max": 100, "step": 5, "default": 90, "source": "assumption" },
-      { "id": "risk", "label": "Chance of the condition in ten years", "unit": "%", "kind": "condition", "min": 1, "max": 10, "step": 0.5, "default": 4, "source": "article", "quote": 0 },
-      { "id": "falsePos", "label": "False alarms per test", "unit": "% per test", "kind": "condition", "min": 2, "max": 15, "step": 1, "default": 7, "source": "assumption" }
+      {
+        "id": "tests",
+        "label": "Screening tests over ten years",
+        "unit": "tests",
+        "kind": "lever",
+        "min": 0,
+        "max": 10,
+        "step": 1,
+        "default": 5,
+        "source": "assumption"
+      },
+      {
+        "id": "followUp",
+        "label": "Positive results followed up",
+        "unit": "%",
+        "kind": "lever",
+        "min": 50,
+        "max": 100,
+        "step": 5,
+        "default": 90,
+        "source": "assumption"
+      },
+      {
+        "id": "risk",
+        "label": "Chance of the condition in ten years",
+        "unit": "%",
+        "kind": "condition",
+        "min": 1,
+        "max": 10,
+        "step": 0.5,
+        "default": 4,
+        "source": "article",
+        "quote": 0
+      },
+      {
+        "id": "falsePos",
+        "label": "False alarms per test",
+        "unit": "% per test",
+        "kind": "condition",
+        "min": 2,
+        "max": 15,
+        "step": 1,
+        "default": 7,
+        "source": "assumption"
+      }
     ],
     "constants": [
-      { "id": "findRate", "label": "Share of cases each test finds early", "unit": "% per test", "value": 15, "source": "assumption" }
+      {
+        "id": "findRate",
+        "label": "Share of cases each test finds early",
+        "unit": "% per test",
+        "value": 15,
+        "source": "assumption"
+      }
     ],
     "derived": [
-      { "id": "found", "label": "Cases found early", "unit": "%", "formula": "min(100, tests * findRate)" }
+      {
+        "id": "found",
+        "label": "Cases found early",
+        "unit": "%",
+        "formula": "min(100, tests * findRate)"
+      }
     ],
     "outputs": [
-      { "id": "caughtEarly", "label": "Out of 100, caught early", "unit": "%", "formula": "risk * found / 100 * followUp / 100" },
-      { "id": "falseAlarm", "label": "Out of 100, a false alarm", "unit": "%", "formula": "min(100, tests * falsePos)" }
+      {
+        "id": "caughtEarly",
+        "label": "Out of 100, caught early",
+        "unit": "%",
+        "formula": "risk * found / 100 * followUp / 100"
+      },
+      {
+        "id": "falseAlarm",
+        "label": "Out of 100, a false alarm",
+        "unit": "%",
+        "formula": "min(100, tests * falsePos)"
+      }
     ]
   },
   "checks": [
-    { "claim": "About 4 in 100 develop the condition, so fewer than 4 in 100 can be caught early", "value": "caughtEarly", "between": [0.5, 4], "quote": 0 },
-    { "claim": "More tests catch more cases early", "value": "caughtEarly", "rises": "tests" },
-    { "claim": "More tests also mean more false alarms", "value": "falseAlarm", "rises": "tests" }
+    {
+      "claim": "About 4 in 100 develop the condition, so fewer than 4 in 100 can be caught early",
+      "value": "caughtEarly",
+      "between": [
+        0.5,
+        4
+      ],
+      "quote": 0
+    },
+    {
+      "claim": "More tests catch more cases early",
+      "value": "caughtEarly",
+      "rises": "tests"
+    },
+    {
+      "claim": "More tests also mean more false alarms",
+      "value": "falseAlarm",
+      "rises": "tests"
+    }
   ],
   "world": {
     "nodes": [
-      { "id": "clinic", "kind": "building", "label": "Clinic", "plays": "tests" },
-      { "id": "early", "prop": "crowd", "label": "Caught early", "plays": "caughtEarly" },
-      { "id": "alarm", "prop": "crowd", "label": "False alarm", "plays": "falseAlarm" }
+      {
+        "id": "clinic",
+        "kind": "building",
+        "label": "Clinic",
+        "plays": "tests"
+      },
+      {
+        "id": "early",
+        "prop": "crowd",
+        "label": "Caught early",
+        "plays": "caughtEarly"
+      },
+      {
+        "id": "alarm",
+        "prop": "crowd",
+        "label": "False alarm",
+        "plays": "falseAlarm"
+      }
     ],
     "flows": [
-      { "id": "toEarly", "from": "clinic", "to": "early", "carrier": "people", "rate": "caughtEarly", "label": "Found early", "unit": "%" },
-      { "id": "toAlarm", "from": "clinic", "to": "alarm", "carrier": "people", "rate": "falseAlarm", "label": "Told something is wrong, wrongly", "unit": "%" }
+      {
+        "id": "toEarly",
+        "from": "clinic",
+        "to": "early",
+        "carrier": "people",
+        "rate": "caughtEarly",
+        "label": "Found early",
+        "unit": "%"
+      },
+      {
+        "id": "toAlarm",
+        "from": "clinic",
+        "to": "alarm",
+        "carrier": "people",
+        "rate": "falseAlarm",
+        "label": "Told something is wrong, wrongly",
+        "unit": "%"
+      }
     ]
   },
   "ask": [
-    { "question": "How many screening tests would you have over ten years?", "input": "tests" }
+    {
+      "question": "How many screening tests would you have over ten years?",
+      "input": "tests"
+    }
   ],
   "explain": [
-    { "shot": "establish", "caption": "Picture 100 people like you, over ten years." },
-    { "shot": "follow", "focus": "toEarly", "caption": "Screening finds some cases early, while they are easier to treat." },
-    { "shot": "turn", "focus": "toAlarm", "caption": "But many more get a false alarm along the way." },
-    { "shot": "cause", "focus": "toAlarm", "drive": "tests", "caption": "More tests catch more cases, and cause more false alarms." },
-    { "shot": "handoff", "caption": "Now try your own numbers." }
+    {
+      "shot": "establish",
+      "caption": "Picture 100 people like you, over ten years."
+    },
+    {
+      "shot": "follow",
+      "focus": "toEarly",
+      "caption": "Screening finds some cases early, while they are easier to treat."
+    },
+    {
+      "shot": "turn",
+      "focus": "toAlarm",
+      "caption": "But many more get a false alarm along the way."
+    },
+    {
+      "shot": "compare",
+      "focus": "alarm",
+      "caption": "Side by side: false alarms far outnumber cases caught early."
+    },
+    {
+      "shot": "cause",
+      "focus": "toAlarm",
+      "drive": "tests",
+      "caption": "More tests catch more cases, and cause more false alarms."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now try your own numbers."
+    }
   ],
-  "simulate": { "controls": ["tests", "followUp", "risk", "falsePos"], "prompt": "Try your own risk and how often you test." },
+  "simulate": {
+    "controls": [
+      "tests",
+      "followUp",
+      "risk",
+      "falsePos"
+    ],
+    "prompt": "Try your own risk and how often you test."
+  },
   "decide": {
-    "compare": [ { "label": "No screening", "set": { "tests": 0 } }, { "label": "A test every two years", "set": { "tests": 5 } } ],
-    "tradeoffs": ["Screening finds some cases early, and gives many more people a worrying false alarm."],
-    "leftOut": ["How serious the condition is, and the harms of treatment that turns out not to be needed."],
-    "questionsToAsk": ["What happens after a positive result, and how often is it a false alarm?"]
+    "compare": [
+      {
+        "label": "No screening",
+        "set": {
+          "tests": 0
+        }
+      },
+      {
+        "label": "A test every two years",
+        "set": {
+          "tests": 5
+        }
+      }
+    ],
+    "tradeoffs": [
+      "Screening finds some cases early, and gives many more people a worrying false alarm."
+    ],
+    "leftOut": [
+      "How serious the condition is, and the harms of treatment that turns out not to be needed."
+    ],
+    "questionsToAsk": [
+      "What happens after a positive result, and how often is it a false alarm?"
+    ]
   }
 }

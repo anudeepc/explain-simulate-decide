@@ -217,7 +217,7 @@ export function formatValue(value, unit = '') {
     return `${sign}$${abs.toFixed(abs !== 0 && abs < 0.1 ? 3 : 2)}/${unit.slice(2)}`;
   }
   const num = value.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
-  if (unit === '%') return `${num}%`;
+  if (unit === '%' || unit.startsWith('%/') || unit.startsWith('% ')) return `${num}${unit}`;
   return unit ? `${num} ${unit}` : num;
 }
 

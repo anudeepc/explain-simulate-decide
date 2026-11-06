@@ -163,6 +163,14 @@ export function drawReadout(ctx, W, H, items, alpha) {
 }
 
 /** Painted slider panel for the recorded Simulate act. */
+/** Text shortened with an ellipsis to fit a width (the suffix, such as " *", always stays). */
+function fit(ctx, text, width, suffix = '') {
+  if (ctx.measureText(text + suffix).width <= width) return text + suffix;
+  let t = text;
+  while (t.length > 1 && ctx.measureText(t + '…' + suffix).width > width) t = t.slice(0, -1);
+  return t.trimEnd() + '…' + suffix;
+}
+
 export function drawSimPanel(ctx, W, H, controls, alpha, activeId) {
   if (alpha <= 0.01) return;
   const fs = Math.round(H * 0.017);
@@ -180,7 +188,9 @@ export function drawSimPanel(ctx, W, H, controls, alpha, activeId) {
     ctx.font = `${c.id === activeId ? 700 : 500} ${fs}px ${FONT}`;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
-    ctx.fillText(c.label + (c.assumption ? ' *' : ''), x + fs, ry);
+    // the value keeps its room; a long label is shortened to fit beside it
+    const valueW = ctx.measureText(c.value).width;
+    ctx.fillText(fit(ctx, c.label, w - fs * 3 - valueW, c.assumption ? ' *' : ''), x + fs, ry);
     ctx.textAlign = 'right';
     ctx.fillText(c.value, x + w - fs, ry);
     const tx = x + fs;

@@ -11,7 +11,8 @@
     "render": "node skills/explain-simulate-decide/scripts/render.mjs",
     "render:solar": "node skills/explain-simulate-decide/scripts/render.mjs examples/solar/screenplay.json -o examples/solar/solar.html",
     "serve": "python3 -m http.server 8080",
-    "check": "node tests/render-check.mjs"
+    "check": "node tests/render-check.mjs",
+    "render:examples": "node examples/build.mjs"
   },
   "devDependencies": {
     "playwright": "^1.56.0"

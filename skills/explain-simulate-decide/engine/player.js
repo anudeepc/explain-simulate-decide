@@ -592,7 +592,11 @@ async function start(root, sp, options, api) {
   let score = null;
   let soundOn = opts.music;
   let clipNodes = [];
+  // While sound plays, the music is the film's clock (as in any video player): the picture
+  // follows the audio, so slow frames skip ahead instead of drifting out of time with it.
+  let audioClock = null; // { at: audio time when scheduled, film: film time then }
   const stopAudio = () => {
+    audioClock = null;
     score?.stop();
     score = null;
     clipNodes.forEach((n) => {
@@ -606,8 +610,16 @@ async function start(root, sp, options, api) {
   const startAudio = (offset) => {
     stopAudio();
     if (!soundOn) return;
-    audioCtx ||= new AudioContext();
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+      // a browser may hold sound until the viewer clicks; when it starts, schedule from where the film is
+      audioCtx.addEventListener('statechange', () => {
+        if (audioCtx.state === 'running' && playing && mode === 'film' && !audioClock) startAudio(t);
+      });
+    }
     audioCtx.resume();
+    if (audioCtx.state !== 'running') return; // the statechange above schedules it once sound is allowed
+    audioClock = { at: audioCtx.currentTime, film: offset };
     const limit = opts.interactive ? { segments: tl.segments.filter((s) => s.end <= tl.explainEnd + 1e-6), total: tl.explainEnd } : tl;
     score = scheduleScore(audioCtx, limit, audioCtx.destination, { offset });
     if (opts.voice === 'clips') {
@@ -864,6 +876,7 @@ async function start(root, sp, options, api) {
   let onScreen = true;
   new IntersectionObserver(([e]) => (onScreen = e.isIntersecting)).observe(root);
   let drawnKey = '';
+  let wasShown = true;
   globalThis.document?.fonts?.ready.then(() => (drawnKey = '')); // redraw captions in the real typeface
   // frame pacing: if frames run slow, trim the costliest finishing passes, one step at a time
   let slow = 0;
@@ -880,12 +893,18 @@ async function start(root, sp, options, api) {
   }
   function tick(now) {
     const shown = onScreen && !globalThis.document?.hidden;
-    if (!recording && !shown) last = now; // the film waits while nobody can see it
+    // the film and its sound wait together while nobody can see them
+    if (!recording && shown !== wasShown) {
+      wasShown = shown;
+      if (playing && mode === 'film') shown ? startAudio(t) : stopAudio();
+    }
+    if (!recording && !shown) last = now;
     else if (!recording) {
       const dt = now - last;
       if (mode === 'film') {
         if (playing) {
-          t += Math.min(0.1, dt / 1000);
+          if (audioClock && audioCtx.state === 'running') t = audioClock.film + (audioCtx.currentTime - audioClock.at);
+          else t += Math.min(0.1, dt / 1000);
           if (t >= filmEnd()) {
             t = filmEnd();
             if (opts.interactive) afterFilm();

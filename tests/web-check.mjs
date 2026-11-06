@@ -7,6 +7,9 @@ import { serve } from './serve.mjs';
 const solar = JSON.parse(readFileSync('examples/solar/screenplay.json', 'utf8'));
 const broken = structuredClone(solar);
 broken.explain[0].caption = 'This caption is far too long for the rules because it has more than twelve words';
+broken.source.quotes[0] = 'A sentence the article never says.';
+// the article the tool is given holds every sentence the solar screenplay quotes from it
+const article = solar.source.quotes.filter((q) => typeof q === 'string').join(' ') + ' More text about home solar. '.repeat(10);
 
 const srv = serve();
 const browser = await chromium.launch();
@@ -27,17 +30,18 @@ try {
   await page.goto(`${srv.url}/web/`);
   await page.selectOption('#provider', 'anthropic');
   await page.fill('#key', 'sk-ant-test');
-  await page.fill('#article', 'Solar article text. '.repeat(40));
+  await page.fill('#article', article);
   await page.click('#generate');
   await page.waitForFunction(() => ['done', 'error'].includes(document.querySelector('#progress')?.dataset.state), null, { timeout: 60000 });
   const logText = await page.$$eval('#progress .pg-status, #progress .pg-steps li', (els) => els.map((l) => l.textContent));
   console.log(logText.join('\n'));
   if (!/^Ready/.test(logText[0])) throw new Error('progress did not finish with Ready');
-  if (!logText.some((t) => /Fix 1 problem/.test(t))) throw new Error('repair round not shown as a step');
+  if (!logText.some((t) => /Fix 2 problems/.test(t))) throw new Error('repair round (caption + made-up quote) not shown as a step');
   const bar = await page.$eval('#progress .pg-track', (t) => t.getAttribute('aria-valuenow'));
   if (bar !== '100') throw new Error(`progress bar ended at ${bar}%`);
   if (calls !== 2) throw new Error(`expected 2 provider calls (1 repair), got ${calls}`);
   if (!/12 words/.test(bodies[1].messages.at(-1).content)) throw new Error('repair message did not include validator errors');
+  if (!/word for word/.test(bodies[1].messages.at(-1).content)) throw new Error('repair message did not catch the made-up quote');
   if (!bodies[0].system.includes('explain-simulate-decide') || !bodies[0].system.includes('Shot types')) throw new Error('system prompt missing skill files');
   await page.waitForTimeout(800);
   await page.screenshot({ path: 'test-results/web-tool.png', fullPage: false });
