@@ -6,7 +6,7 @@ import { createProgress, clock } from './progress.js';
 import { validate } from '../skills/explain-simulate-decide/engine/schema.js';
 import { mount } from '../skills/explain-simulate-decide/engine/player.js';
 import { inline } from '../skills/explain-simulate-decide/engine/bundle.js';
-import { toHtml } from '../skills/explain-simulate-decide/engine/export.js';
+import { toHtml, assetsFor } from '../skills/explain-simulate-decide/engine/export.js';
 import { synthesizeClips } from '../skills/explain-simulate-decide/engine/voice.js';
 
 const $ = (id) => document.getElementById(id);
@@ -372,7 +372,13 @@ $('dlHtml').addEventListener('click', async () => {
   try {
     exporting.step('pack', 'Packing one offline HTML file');
     const bundle = await inline('player.js', async (p) => (await fetch(new URL(p, ENGINE))).text());
-    const html = toHtml(screenplay, bundle, { options: playerOptions() });
+    // the rigged people's bodies, hair and motion go inside the page as well
+    const assets = await assetsFor(bundle, async (name) => {
+      const res = await fetch(new URL(`assets/${name}.glb`, ENGINE));
+      if (!res.ok) throw new Error(`missing engine/assets/${name}.glb`);
+      return new Uint8Array(await res.arrayBuffer());
+    }, screenplay);
+    const html = toHtml(screenplay, bundle, { options: playerOptions(), assets });
     exporting.done('pack', `${(html.length / 1e6).toFixed(1)} MB`);
     exporting.step('save');
     download(new Blob([html], { type: 'text/html' }), `${slug()}.html`);

@@ -9,6 +9,36 @@ const D = 4.0;
 const BACK = -D / 2;
 const TOP = 0.92;
 const CAP = '#2f9a5c';
+const WALL_IN = BACK + WALL_T / 2;
+const BD = 0.75; // bench depth
+const AX = -0.45; // analyser
+const CAR = [0.2, 0.52, 0.02]; // its sample carousel
+const RX = 0.55; // tube rack
+const TX = 1.3; // envelope tray
+
+/** Marks, spots and cameras, in set space (no three.js needed to read them). */
+export const LAYOUT = (() => {
+  const freeA = (3 / 14) * Math.PI * 2;
+  const analyserSpot = [AX + CAR[0] + Math.sin(freeA) * 0.15, TOP + CAR[1] + 0.04, WALL_IN + 0.36 + CAR[2] + Math.cos(freeA) * 0.15];
+  return {
+    size: [W, D],
+    marks: {
+      bench: mark([0.15, 0, WALL_IN + BD + 0.4], Math.PI),
+    },
+    spots: {
+      analyser: r3(analyserSpot),
+      tray: r3([TX, TOP + 0.012, WALL_IN + 0.4]),
+      rack: r3([RX, TOP + 0.012, WALL_IN + 0.45]),
+      bench: r3([0.2, TOP, WALL_IN + 0.55]),
+    },
+    cameras: {
+      close: { position: [0.6, 1.78, -0.05], target: [-0.1, 1.3, -1.55] },
+      medium: { position: [0.85, 1.75, 2.6], target: [0.1, 1.05, -1.45] },
+      wide: { position: [0.2, 2.3, 6.4], target: [0, 1.05, -0.6] },
+    },
+    doors: [], // the bench fills the back wall: in the world the lab is reached through a lobby at its side
+  };
+})();
 
 function tube(capColor = CAP) {
   const g = group();
@@ -17,16 +47,17 @@ function tube(capColor = CAP) {
   return g;
 }
 
-export default function build() {
+/** @param {{shell?: boolean}} [o] shell: false leaves out the side wall (the world builds its own) */
+export default function build({ shell = true } = {}) {
   const object = group();
   object.name = 'set:lab';
   const C = { wall: '#f5f7f9', bench: '#ffffff', top: '#3a434e', grey: '#d5dbe1', teal: '#0e7c7b', blue: '#1f63b5' };
-  const WALL_IN = BACK + WALL_T / 2;
   const LEFT_IN = -W / 2 + WALL_T;
 
   object.add(floor(W, D, { map: floorTexture('tiles', '#e7ebef', '#d2d8de', { repeat: [3, 2.2] }) }));
-  object.add(wall(-W / 2, BACK, W / 2, BACK, { color: C.wall }));
-  object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.9, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
+  const back = wall(-W / 2, BACK, W / 2, BACK, { color: C.wall });
+  object.add(back);
+  if (shell) object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.9, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
   // a pale teal band at worktop height on the walls
   object.add(mesh(rounded(W - WALL_T, 0.5, 0.01, 0.004, 1), clay('#e2f0ee'), { x: WALL_T / 2, y: TOP + 0.25, z: WALL_IN + 0.006 }));
 
@@ -35,7 +66,6 @@ export default function build() {
   const X1 = 2.25;
   const BW = X1 - X0;
   const BX = (X0 + X1) / 2;
-  const BD = 0.75;
   const bz = WALL_IN + BD / 2;
   object.add(mesh(rounded(BW, 0.1, BD - 0.08, 0.01, 1), clay('#9aa5b0'), { x: BX, y: 0.05, z: bz - 0.04 }));
   object.add(mesh(rounded(BW, TOP - 0.14, BD - 0.03, 0.01, 1), clay('#e9edf1'), { x: BX, y: 0.1 + (TOP - 0.14) / 2, z: bz - 0.015 }));
@@ -48,7 +78,6 @@ export default function build() {
   object.add(mesh(rounded(BW + 0.02, 0.04, BD + 0.02, 0.01, 1), clay(C.top), { x: BX, y: TOP - 0.02, z: bz }));
 
   // the analyser: a white body with a sloped front, a screen, a status strip and a sample carousel
-  const AX = -0.45;
   const an = group();
   an.position.set(AX, TOP, WALL_IN + 0.36);
   const white = clay('#fbfcfd');
@@ -75,7 +104,6 @@ export default function build() {
   an.add(mesh(rounded(0.3, 0.2, 0.012, 0.01, 1), clay('#2b2f36'), { x: -0.22, y: 0.34, z: 0.275 }));
   an.add(mesh(rounded(0.7, 0.02, 0.01, 0.008, 1), new THREE.MeshStandardMaterial({ color: '#7fe0d2', emissive: '#2bb3a3', emissiveIntensity: 0.9 }), { y: 0.1, z: 0.282 }));
   // sample carousel on top-right, with a ring of tubes
-  const CAR = [0.2, 0.52, 0.02];
   an.add(mesh(cylinder(0.2, 0.2, 0.04, 40), clay(C.grey), { x: CAR[0], y: CAR[1] + 0.02, z: CAR[2] }));
   an.add(mesh(cylinder(0.06, 0.06, 0.07, 20), clay('#ffffff'), { x: CAR[0], y: CAR[1] + 0.06, z: CAR[2] }));
   for (let i = 0; i < 14; i++) {
@@ -86,11 +114,8 @@ export default function build() {
     an.add(t);
   }
   object.add(an);
-  const freeA = (3 / 14) * Math.PI * 2;
-  const analyserSpot = [AX + CAR[0] + Math.sin(freeA) * 0.15, TOP + CAR[1] + 0.04, WALL_IN + 0.36 + CAR[2] + Math.cos(freeA) * 0.15];
 
   // tube rack: 3 rows x 8, most filled
-  const RX = 0.55;
   const rack = group();
   rack.position.set(RX, TOP, WALL_IN + 0.45);
   rack.add(mesh(rounded(0.36, 0.015, 0.14, 0.005, 1), clay('#ffffff'), { y: 0.06 }));
@@ -105,7 +130,6 @@ export default function build() {
   object.add(rack);
 
   // tray of returned envelopes, standing on edge
-  const TX = 1.3;
   const tray = group();
   tray.position.set(TX, TOP, WALL_IN + 0.4);
   const tm = clay(C.blue);
@@ -194,21 +218,5 @@ export default function build() {
   pl.position.set(LEFT_IN + 0.35, 0, 0.6);
   object.add(pl);
 
-  return {
-    object,
-    marks: {
-      bench: mark([0.15, 0, WALL_IN + BD + 0.4], Math.PI),
-    },
-    spots: {
-      analyser: r3(analyserSpot),
-      tray: r3([TX, TOP + 0.012, WALL_IN + 0.4]),
-      rack: r3([RX, TOP + 0.012, WALL_IN + 0.45]),
-      bench: r3([0.2, TOP, WALL_IN + 0.55]),
-    },
-    cameras: {
-      close: { position: [0.6, 1.78, -0.05], target: [-0.1, 1.3, -1.55] },
-      medium: { position: [0.85, 1.75, 2.6], target: [0.1, 1.05, -1.45] },
-      wide: { position: [0.2, 2.3, 6.4], target: [0, 1.05, -0.6] },
-    },
-  };
+  return { object, ...LAYOUT, walls: { back }, doors: [] };
 }

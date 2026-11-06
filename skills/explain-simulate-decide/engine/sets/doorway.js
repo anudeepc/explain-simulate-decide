@@ -9,8 +9,40 @@ const BACK = -D / 2; // back wall centre line
 const DOOR_X = 0;
 const DOOR_W = 0.92;
 const DOOR_H = 2.06;
+const INNER = WALL_T / 2 - 0.01; // inside face of the door
+const MAT = { x: 0, z: BACK + 0.45, w: 0.95, d: 0.6 };
+const LB_Y = 1.02;
+const LX = -W / 2 + WALL_T;
 
-export default function build() {
+/** Marks, spots and cameras, in set space (no three.js needed to read them). */
+export const LAYOUT = (() => {
+  // entering down the hall toward the door; standing just behind the mat, looking down at the post
+  const matSpot = [MAT.x + 0.06, 0.03, MAT.z + 0.02];
+  const matMark = [0.62, 0, MAT.z + 0.72];
+  const enter = [1.15, 0, -0.05];
+  return {
+    size: [W, D],
+    marks: {
+      mat: mark(matMark, r3(faceToward(matMark, [matSpot[0], 0, matSpot[2] - 0.15]))),
+      enter: mark(enter, r3(faceToward(enter, [DOOR_X, 0, BACK]))),
+    },
+    spots: {
+      mat: r3(matSpot),
+      letterbox: r3([DOOR_X, LB_Y, BACK + INNER + 0.03]),
+      console: r3([LX + 0.17, 0.84, -0.6]),
+    },
+    cameras: {
+      close: { position: [-1.1, 1.15, 0.45], target: [0.0, 0.62, -1.6] },
+      medium: { position: [-1.35, 1.6, 3.4], target: [0.15, 0.95, -1.15] },
+      wide: { position: [-0.9, 2.3, 6.6], target: [0, 1.1, -0.6] },
+    },
+    // the front door, a way in from outside (set space, on the back wall)
+    doors: [{ at: [DOOR_X, BACK], w: DOOR_W }],
+  };
+})();
+
+/** @param {{shell?: boolean}} [o] shell: false leaves out the side wall (the world builds its own) */
+export default function build({ shell = true } = {}) {
   const object = group();
   object.name = 'set:doorway';
   const C = { door: '#23426e', brass: '#d2a948', mat: '#3d4046', matEdge: '#2c2f34', coat: '#e2a33b', wall: '#f6f6f3' };
@@ -18,20 +50,28 @@ export default function build() {
   object.add(floor(W, D, { map: floorTexture('boards', '#e4e0da', '#cfc8bf', { repeat: [2, 2] }) }));
 
   // back wall with the door opening, and a short left wall
-  object.add(wall(-W / 2, BACK, W / 2, BACK, { color: C.wall, openings: [{ at: W / 2 + DOOR_X, w: DOOR_W + 0.02, y0: 0, y1: DOOR_H + 0.38 }] }));
-  object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.6, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
+  const back = wall(-W / 2, BACK, W / 2, BACK, { color: C.wall, openings: [{ at: W / 2 + DOOR_X, w: DOOR_W + 0.02, y0: 0, y1: DOOR_H + 0.38 }] });
+  object.add(back);
+  if (shell) object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.6, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
 
   // the front door, set into the wall, its inside face toward the camera
   const door = group();
   door.position.set(DOOR_X, 0, BACK);
   const dm = clay(C.door);
-  const inner = WALL_T / 2 - 0.01; // inside face of the door
-  door.add(mesh(rounded(DOOR_W, DOOR_H, 0.06, 0.02, 2), dm, { y: DOOR_H / 2, z: inner - 0.03 }));
+  const inner = INNER;
+  // the leaf hangs on hinges at its left edge and swings into the hall
+  const leaf = group();
+  leaf.position.x = -DOOR_W / 2;
+  const hung = group();
+  hung.position.x = DOOR_W / 2;
+  leaf.add(hung);
+  door.add(leaf);
+  hung.add(mesh(rounded(DOOR_W, DOOR_H, 0.06, 0.02, 2), dm, { y: DOOR_H / 2, z: inner - 0.03 }));
   // raised panels: two tall at the bottom, two short at the top (Victorian four-panel)
   const pm = clay('#2a4c7c');
   for (const x of [-0.2, 0.2]) {
-    door.add(mesh(rounded(0.3, 0.62, 0.03, 0.015, 2), pm, { x, y: 0.42, z: inner + 0.01 }));
-    door.add(mesh(rounded(0.3, 0.55, 0.03, 0.015, 2), pm, { x, y: 1.55, z: inner + 0.01 }));
+    hung.add(mesh(rounded(0.3, 0.62, 0.03, 0.015, 2), pm, { x, y: 0.42, z: inner + 0.01 }));
+    hung.add(mesh(rounded(0.3, 0.55, 0.03, 0.015, 2), pm, { x, y: 1.55, z: inner + 0.01 }));
   }
   // fanlight above the door
   const fan = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#fff4d6', emissiveIntensity: 0.55, roughness: 0.3 });
@@ -44,23 +84,23 @@ export default function build() {
   door.add(mesh(rounded(DOOR_W + 0.18, 0.09, 0.03, 0.01, 1), frame, { y: DOOR_H + 0.42, z: WALL_T / 2 + 0.015 }));
   // letterbox: brass plate with a dark slot and a hinged flap, at about 1 m
   const brass = new THREE.MeshStandardMaterial({ color: C.brass, roughness: 0.35, metalness: 0.6 });
-  const LB_Y = 1.02;
-  door.add(mesh(rounded(0.34, 0.1, 0.02, 0.01, 2), brass, { y: LB_Y, z: inner + 0.01 }));
-  door.add(mesh(rounded(0.27, 0.035, 0.012, 0.006, 1), clay('#141414'), { y: LB_Y, z: inner + 0.018 }));
-  door.add(mesh(rounded(0.27, 0.03, 0.01, 0.005, 1), brass, { y: LB_Y + 0.026, z: inner + 0.023, rx: 0.25 }));
+  hung.add(mesh(rounded(0.34, 0.1, 0.02, 0.01, 2), brass, { y: LB_Y, z: inner + 0.01 }));
+  hung.add(mesh(rounded(0.27, 0.035, 0.012, 0.006, 1), clay('#141414'), { y: LB_Y, z: inner + 0.018 }));
+  hung.add(mesh(rounded(0.27, 0.03, 0.01, 0.005, 1), brass, { y: LB_Y + 0.026, z: inner + 0.023, rx: 0.25 }));
   // knob, latch and a spy-hole
-  door.add(mesh(sphere(0.035, 14), brass, { x: 0.34, y: 1.12, z: inner + 0.04 }));
-  door.add(mesh(rounded(0.08, 0.12, 0.03, 0.01, 1), brass, { x: 0.34, y: 1.32, z: inner + 0.015 }));
-  door.add(mesh(cylinder(0.012, 0.012, 0.02, 10), brass, { y: 1.52, z: inner + 0.02, rx: Math.PI / 2 }));
+  hung.add(mesh(sphere(0.035, 14), brass, { x: 0.34, y: 1.12, z: inner + 0.04 }));
+  hung.add(mesh(rounded(0.08, 0.12, 0.03, 0.01, 1), brass, { x: 0.34, y: 1.32, z: inner + 0.015 }));
+  hung.add(mesh(cylinder(0.012, 0.012, 0.02, 10), brass, { y: 1.52, z: inner + 0.02, rx: Math.PI / 2 }));
+  // outside: a brass knob and the house number
+  hung.add(mesh(sphere(0.035, 14), brass, { x: 0, y: 1.12, z: inner - 0.1 }));
+  hung.add(mesh(rounded(0.1, 0.12, 0.01, 0.01, 1), brass, { x: 0, y: 1.55, z: inner - 0.065 }));
   object.add(door);
 
   // doormat: dark coir with a darker border
-  const MAT = { x: 0, z: BACK + 0.45, w: 0.95, d: 0.6 };
   object.add(mesh(rounded(MAT.w, 0.022, MAT.d, 0.008, 1), clay(C.matEdge), { x: MAT.x, y: 0.011, z: MAT.z }));
   object.add(mesh(rounded(MAT.w - 0.08, 0.006, MAT.d - 0.08, 0.003, 1), clay(C.mat), { x: MAT.x, y: 0.023, z: MAT.z }));
 
   // left wall: a slim console table with a lamp, a bowl for keys and a mirror
-  const LX = -W / 2 + WALL_T;
   const oak = clay(SET_PALETTE.oak);
   const table = group();
   table.position.set(LX + 0.17, 0, -0.75);
@@ -113,25 +153,5 @@ export default function build() {
   pl.position.set(2.15, 0, BACK + 0.35);
   object.add(pl);
 
-  // marks: entering down the hall toward the door; standing just behind the mat, looking down at the post
-  const matSpot = [MAT.x + 0.06, 0.03, MAT.z + 0.02];
-  const matMark = [0.62, 0, MAT.z + 0.72];
-  const enter = [1.15, 0, -0.05];
-  return {
-    object,
-    marks: {
-      mat: mark(matMark, r3(faceToward(matMark, [matSpot[0], 0, matSpot[2] - 0.15]))),
-      enter: mark(enter, r3(faceToward(enter, [DOOR_X, 0, BACK]))),
-    },
-    spots: {
-      mat: r3(matSpot),
-      letterbox: r3([DOOR_X, LB_Y, BACK + inner + 0.03]),
-      console: r3([LX + 0.17, 0.84, -0.6]),
-    },
-    cameras: {
-      close: { position: [-1.1, 1.15, 0.45], target: [0.0, 0.62, -1.6] },
-      medium: { position: [-1.35, 1.6, 3.4], target: [0.15, 0.95, -1.15] },
-      wide: { position: [-0.9, 2.3, 6.6], target: [0, 1.1, -0.6] },
-    },
-  };
+  return { object, ...LAYOUT, walls: { back }, doors: [{ ...LAYOUT.doors[0], leaf, swing: -1 }] };
 }

@@ -1,5 +1,6 @@
 // Builds one offline HTML file: engine modules as data: URLs in an import map,
-// the screenplay as inert JSON, and a strict Content-Security-Policy.
+// the screenplay as inert JSON, binary assets (the rigged people) as inert base64 blocks,
+// and a strict Content-Security-Policy.
 
 const CSP = [
   "default-src 'none'",
@@ -22,10 +23,45 @@ function base64(str) {
   return btoa(bin);
 }
 
+/** Binary files the rigged people need (engine/assets/<name>.glb); cast/human.js reads them back. */
+export const HUMAN_ASSETS = ['human-male', 'human-female', 'hair', 'moves'];
+
+/** Does this bundle include the rigged people, so the page must carry their assets? */
+export const needsHumans = (bundle) => Object.keys(bundle.modules).some((k) => k.endsWith('cast/human.js'));
+
+/** Bytes → base64 (Node and browsers). */
+export function bytesToBase64(bytes) {
+  const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let bin = '';
+  for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/**
+ * Read the people's assets for a page, if the bundle needs them.
+ * @param {{modules: Record<string,string>}} bundle
+ * @param {(name: string) => Promise<Uint8Array|ArrayBuffer>|Uint8Array|ArrayBuffer} readAsset reads engine/assets/<name>.glb
+ * @param {any} [screenplay] when given, a film with no scene shots has no people to carry
+ * @returns {Promise<Record<string, string>>} name → base64
+ */
+export async function assetsFor(bundle, readAsset, screenplay) {
+  if (!needsHumans(bundle)) return {};
+  if (screenplay && !(screenplay.explain || []).some((s) => s.shot === 'scene')) return {};
+  const out = {};
+  for (const name of HUMAN_ASSETS) out[name] = bytesToBase64(await readAsset(name));
+  return out;
+}
+
+// inert base64 blocks (never run: not a script type the browser executes)
+const assetTags = (assets = {}) =>
+  Object.entries(assets)
+    .map(([name, b64]) => `<script type="application/octet-stream" id="esd-asset-${escapeHtml(name)}">${String(b64).replace(/[^A-Za-z0-9+/=]/g, '')}</script>\n`)
+    .join('');
+
 /**
  * @param {any} screenplay
  * @param {{modules: Record<string,string>, entryKey: string}} bundle
- * @param {{title?: string, options?: any}} [opts]
+ * @param {{title?: string, options?: any, assets?: Record<string, string>}} [opts] assets: name → base64
  */
 export function toHtml(screenplay, bundle, opts = {}) {
   const imports = {};
@@ -45,7 +81,7 @@ export function toHtml(screenplay, bundle, opts = {}) {
 <div id="esd-root" aria-label="${escapeHtml(title)}"></div>
 <script type="application/json" id="esd-screenplay">${safeJson(screenplay)}</script>
 <script type="application/json" id="esd-options">${safeJson(opts.options || {})}</script>
-<script type="importmap">${JSON.stringify({ imports })}</script>
+${assetTags(opts.assets)}<script type="importmap">${JSON.stringify({ imports })}</script>
 <script type="module">
 import { mount } from '${bundle.entryKey}';
 const read = (id) => JSON.parse(document.getElementById(id).textContent);

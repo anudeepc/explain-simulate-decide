@@ -1,6 +1,7 @@
-// Every film set and hand-held object builds and renders, within its triangle budget.
-// Saves the set sheet (each set from its medium camera) and, for review, the close and
-// wide framings too.
+// Every film set and hand-held object builds and renders, within its triangle budget,
+// and the sets join up into one story world. Saves the set sheet (each set from its medium
+// camera), the close and wide framings, and the world sheets (the street from above, and
+// each place as the story camera frames it).
 // Usage: node tests/set-check.mjs [outDir]
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
@@ -53,6 +54,18 @@ try {
     }
     return out;
   })));
+
+  // the story world: every set joined up as one street (plus a facade), and the bowel-screening film's world
+  for (const [name, q] of [['world-sheet', ''], ['world-bowel', '?sp=examples/bowel-screening/screenplay.json']]) {
+    const w = await ctx.newPage();
+    w.on('pageerror', (e) => problems.push(`[${name}] ${e}`));
+    w.on('console', (m) => m.type() === 'error' && problems.push(`[${name}] ${m.text()}`));
+    await w.goto(`${srv.url}/tests/world-sheet.html${q}`);
+    await w.waitForFunction(() => window.sheetReady, null, { timeout: 60000 });
+    problems.push(...(await w.evaluate(() => window.sheetErrors)));
+    await w.screenshot({ path: `${outDir}/${name}.png` });
+    await w.close();
+  }
 } finally {
   await browser.close();
   srv.close();
@@ -61,4 +74,4 @@ if (problems.length) {
   console.error('Set problems:\n' + problems.join('\n'));
   process.exit(1);
 }
-console.log(`set check passed (sheet saved to ${outDir}/set-sheet.png)`);
+console.log(`set check passed (sheets saved to ${outDir}/set-sheet.png and ${outDir}/world-sheet.png)`);

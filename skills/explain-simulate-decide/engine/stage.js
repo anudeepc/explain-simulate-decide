@@ -147,10 +147,12 @@ export function createStage(canvas, tone = TONES.neutral) {
   const render = (time = 0, which = scene) => post.render(which, camera, { time, focus: camera.position.distanceTo(aim) });
 
   /**
-   * A second studio for a film scene (a kitchen, a doorway): the same white backdrop
-   * and light as the diorama, with a floor at y = 0 and shadows sized to a small set.
+   * A second studio for the story world: the same white backdrop and light as the
+   * diorama, with a floor at `groundY`. The key light is s.userData.key; the director
+   * moves it with the camera so shadows stay sharp where we look. The sun shines from
+   * the north-west, the side the story camera looks from.
    */
-  const makeSetScene = () => {
+  const makeSetScene = ({ groundY = 0 } = {}) => {
     const s = new THREE.Scene();
     s.fog = scene.fog;
     s.environment = scene.environment;
@@ -158,7 +160,7 @@ export function createStage(canvas, tone = TONES.neutral) {
     s.add(new THREE.Mesh(sky.geometry, sky.material));
     s.add(new THREE.HemisphereLight('#e4ecff', '#d9d6d0', 0.75));
     const k = new THREE.DirectionalLight('#fff4e6', 2.8);
-    k.position.set(4, 7, 5);
+    k.position.set(-4, 7, -5);
     k.castShadow = true;
     k.shadow.mapSize.setScalar(level > 0 ? 1024 : 2048);
     k.shadow.bias = -0.0004;
@@ -169,10 +171,12 @@ export function createStage(canvas, tone = TONES.neutral) {
     k.shadow.camera.updateProjectionMatrix();
     s.add(k, k.target);
     const r = new THREE.DirectionalLight('#cfe1ff', 1.1);
-    r.position.set(-5, 4, -6);
+    r.position.set(5, 4, 6);
     s.add(r);
+    s.userData.key = k;
     const ground = new THREE.Mesh(new THREE.CircleGeometry(200, 48), new THREE.MeshStandardMaterial({ color: LOOK.floor, roughness: 1 }));
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = groundY;
     ground.receiveShadow = true;
     s.add(ground);
     return s;

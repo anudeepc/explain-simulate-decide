@@ -183,6 +183,42 @@ test('scenes: the hero acting in a set, with subtitles in ASD-STE100 style', () 
   bad((s) => (scene(s).caption = 'The sample is sent to the lab.'), /"is sent" is passive/);
   bad((s) => (scene(s).caption = 'Utilize the kit prior to the deadline.'), /instead of "Utilize"/);
   bad((s) => (s.world.nodes.find((n) => n.id === 'crowd').you = 9), /you must be the index of the group/);
+  // marks and spots must exist in the place
+  bad((s) => (scene(s).at = 'roof'), /at "roof" is not a mark in "doorway"/);
+  bad((s) => (scene(s).beats[0].to = 'garage'), /walks to "garage" is not a mark/);
+  bad((s) => (scene(s).beats[1].from = 'floor'), /picks up from "floor" is not a spot/);
+});
+
+test('places: built-in sets, hunted models and picture facades', () => {
+  const b = () => load('../examples/bowel-screening/screenplay.json');
+  const withPlaces = () => {
+    const sp = b();
+    sp.places = [
+      { id: 'home', kind: 'set', set: 'doorway' },
+      { id: 'regulator', kind: 'facade', label: 'Screening Office', image: 'https://example.org/office.jpg', credit: 'Photo: A. Person, CC BY-SA 4.0' },
+      { id: 'clinic', kind: 'model', url: 'clinic.glb', credit: 'Model: B. Person, CC0' },
+    ];
+    sp.explain[1].set = 'home';
+    sp.explain[6].set = 'home';
+    sp.explain[7] = { ...sp.explain[7], set: 'clinic', at: 'entrance', beats: [{ do: 'walk', to: 'front' }, { do: 'listen', feel: 'worried' }] };
+    sp.explain[9] = { shot: 'scene', set: 'regulator', camera: 'medium', at: 'desk', beats: [{ do: 'give', object: 'letter', to: 'desk' }, { do: 'talk' }], caption: 'You ask the office about your results.' };
+    return sp;
+  };
+  assert.deepEqual(validate(withPlaces()), []);
+  const bad = (mutate, pattern) => {
+    const sp = withPlaces();
+    mutate(sp);
+    assert.ok(validate(sp).some((e) => pattern.test(e)), `expected ${pattern} in:\n${validate(sp).join('\n')}`);
+  };
+  bad((s) => (s.places[1].kind = 'castle'), /kind must be one of set, model, facade/);
+  bad((s) => delete s.places[2].credit, /model place needs "url".*"credit"/);
+  bad((s) => delete s.places[1].credit, /facade with a picture needs "image".*"credit"/);
+  bad((s) => (s.places[0].set = 'garage'), /set must be one of/);
+  bad((s) => s.places.push({ id: 'kitchen', kind: 'facade' }), /name of a built-in set/);
+  bad((s) => s.places.push({ id: 'shop', kind: 'facade' }), /no scene happens here/);
+  bad((s) => s.places.push({ ...s.places[1] }), /used twice/);
+  bad((s) => (s.explain[9].at = 'mat'), /at "mat" is not a mark in "regulator"/);
+  bad((s) => (s.places[1].width = 80), /width is the building's frontage/);
 });
 
 test('a process story has no numbers', () => {

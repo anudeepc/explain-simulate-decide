@@ -8,18 +8,50 @@ const W = 5.6;
 const D = 4.4;
 const BACK = -D / 2;
 const DESK_TOP = 0.74;
+const WALL_IN = BACK + WALL_T / 2;
+const LEFT_IN = -W / 2 + WALL_T;
+const DOOR_AT = W / 2 - 1.0; // along the back wall from its left end (door at x = -1.0)
+const DESK_X = 0.95;
+const NURSE = [0.75, 0, -0.85];
+const PATIENT = [-0.55, 0, -0.48];
 
-export default function build() {
+/** Marks, spots and cameras, in set space (no three.js needed to read them). */
+export const LAYOUT = (() => {
+  const nurseFacing = faceToward(NURSE, PATIENT);
+  const patientFacing = faceToward(PATIENT, NURSE);
+  const doorMark = [-W / 2 + DOOR_AT, 0, BACK + 0.65];
+  return {
+    size: [W, D],
+    marks: {
+      patientChair: mark(PATIENT, r3(patientFacing), { pose: 'sit', seat: 0.45 }),
+      nurse: mark(NURSE, r3(nurseFacing), { pose: 'sit', seat: 0.45 }),
+      door: mark(r3(doorMark), r3(faceToward(doorMark, PATIENT))),
+      couch: mark([LEFT_IN + 0.95, 0, -0.75], -Math.PI / 2),
+    },
+    spots: {
+      desk: r3([DESK_X + 0.15, DESK_TOP, WALL_IN + 0.45]),
+      sideTable: r3([0.1, 0.565, -1.4]),
+      screen: r3([DESK_X - 0.15, DESK_TOP + 0.42, WALL_IN + 0.25]),
+    },
+    cameras: {
+      close: { position: [1.0, 1.25, 0.95], target: [-0.6, 0.98, -0.55] },
+      medium: { position: [-0.15, 1.45, 3.35], target: [0.1, 0.85, -0.8] },
+      wide: { position: [0.5, 2.3, 6.9], target: [-0.1, 1.05, -0.6] },
+    },
+    doors: [{ at: [-W / 2 + DOOR_AT, BACK], w: 0.94 }],
+  };
+})();
+
+/** @param {{shell?: boolean}} [o] shell: false leaves out the side wall (the world builds its own) */
+export default function build({ shell = true } = {}) {
   const object = group();
   object.name = 'set:hospital';
   const C = { wall: '#f1f5f9', rail: '#c5d8ec', blue: '#1f63b5', soft: '#7fa6cf', couch: '#4f7db0', grey: '#c3ccd5', screen: '#d7ebe8' };
-  const WALL_IN = BACK + WALL_T / 2;
-  const LEFT_IN = -W / 2 + WALL_T;
 
   object.add(floor(W, D, { map: floorTexture('plain', '#dfe6ee', '#9fb0c2', { repeat: [2, 2] }) }));
-  const DOOR_AT = W / 2 - 1.0; // along the back wall from its left end (door at x = -1.0)
-  object.add(wall(-W / 2, BACK, W / 2, BACK, { color: C.wall, openings: [{ at: DOOR_AT, w: 0.98, y0: 0, y1: 2.1 }] }));
-  object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.7, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
+  const back = wall(-W / 2, BACK, W / 2, BACK, { color: C.wall, openings: [{ at: DOOR_AT, w: 0.98, y0: 0, y1: 2.1 }] });
+  object.add(back);
+  if (shell) object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.7, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
   // a soft-blue protection rail along both walls at chair-back height
   const rail = clay(C.rail);
   object.add(mesh(rounded(DOOR_AT - 0.55, 0.1, 0.03, 0.012, 1), rail, { x: -W / 2 + (DOOR_AT - 0.55) / 2, y: 0.95, z: WALL_IN + 0.015 }));
@@ -30,10 +62,17 @@ export default function build() {
   const door = group();
   door.position.set(-W / 2 + DOOR_AT, 0, BACK);
   const frame = clay(C.blue);
-  door.add(mesh(rounded(0.94, 2.08, 0.05, 0.015, 1), clay('#ffffff'), { y: 1.04, z: 0 }));
-  door.add(mesh(new THREE.PlaneGeometry(0.16, 0.6), new THREE.MeshStandardMaterial({ color: '#dbe9f5', emissive: '#eef6ff', emissiveIntensity: 0.4, roughness: 0.2 }), { x: -0.2, y: 1.45, z: 0.027 }));
-  door.add(mesh(rounded(0.86, 0.22, 0.012, 0.005, 1), new THREE.MeshStandardMaterial({ color: '#c8cfd6', metalness: 0.6, roughness: 0.35 }), { y: 0.13, z: 0.03 }));
-  door.add(mesh(rounded(0.16, 0.025, 0.05, 0.01, 1), new THREE.MeshStandardMaterial({ color: '#c8cfd6', metalness: 0.7, roughness: 0.25 }), { x: 0.3, y: 1.05, z: 0.06 }));
+  // the leaf hangs at its left edge and swings into the room
+  const leaf = group();
+  leaf.position.x = -0.47;
+  const hung = group();
+  hung.position.x = 0.47;
+  leaf.add(hung);
+  door.add(leaf);
+  hung.add(mesh(rounded(0.94, 2.08, 0.05, 0.015, 1), clay('#ffffff'), { y: 1.04, z: 0 }));
+  hung.add(mesh(new THREE.PlaneGeometry(0.16, 0.6), new THREE.MeshStandardMaterial({ color: '#dbe9f5', emissive: '#eef6ff', emissiveIntensity: 0.4, roughness: 0.2 }), { x: -0.2, y: 1.45, z: 0.027 }));
+  hung.add(mesh(rounded(0.86, 0.22, 0.012, 0.005, 1), new THREE.MeshStandardMaterial({ color: '#c8cfd6', metalness: 0.6, roughness: 0.35 }), { y: 0.13, z: 0.03 }));
+  hung.add(mesh(rounded(0.16, 0.025, 0.05, 0.01, 1), new THREE.MeshStandardMaterial({ color: '#c8cfd6', metalness: 0.7, roughness: 0.25 }), { x: 0.3, y: 1.05, z: 0.06 }));
   door.add(mesh(rounded(0.07, 2.16, 0.04, 0.01, 1), frame, { x: -0.5, y: 1.08, z: WALL_T / 2 + 0.02 }));
   door.add(mesh(rounded(0.07, 2.16, 0.04, 0.01, 1), frame, { x: 0.5, y: 1.08, z: WALL_T / 2 + 0.02 }));
   door.add(mesh(rounded(1.07, 0.07, 0.04, 0.01, 1), frame, { y: 2.13, z: WALL_T / 2 + 0.02 }));
@@ -43,7 +82,6 @@ export default function build() {
   object.add(mesh(rounded(0.08, 0.05, 0.02, 0.01, 1), clay(C.blue), { x: -W / 2 + DOOR_AT + 0.72, y: 1.3, z: WALL_IN + 0.1 }));
 
   // the nurse's desk against the back wall: white top, pale grey pedestal, screen and keyboard
-  const DESK_X = 0.95;
   const DESK_W = 1.5;
   const DESK_D = 0.7;
   const deskZ = WALL_IN + DESK_D / 2;
@@ -88,8 +126,6 @@ export default function build() {
   object.add(mesh(rounded(0.2, 0.004, 0.06, 0.002, 1), clay(C.blue), { x: DESK_X + 0.42, y: DESK_TOP + 0.022, z: WALL_IN + 0.24, ry: -0.2 }));
 
   // the two chairs, turned toward each other in front of the desk
-  const NURSE = [0.75, 0, -0.85];
-  const PATIENT = [-0.55, 0, -0.48];
   const nurseFacing = faceToward(NURSE, PATIENT);
   const patientFacing = faceToward(PATIENT, NURSE);
   const nc = chair({ seat: 0.45, color: C.blue, frame: '#3e4248', style: 'office', back: 0.4 });
@@ -182,24 +218,5 @@ export default function build() {
   side.add(mesh(cylinder(0.035, 0.03, 0.1, 16), new THREE.MeshStandardMaterial({ color: '#e8f2fb', roughness: 0.1, transparent: true, opacity: 0.6 }), { x: 0.1, y: 0.62, z: 0.05 }));
   object.add(side);
 
-  const doorMark = [-W / 2 + DOOR_AT, 0, BACK + 0.65];
-  return {
-    object,
-    marks: {
-      patientChair: mark(PATIENT, r3(patientFacing), { pose: 'sit', seat: 0.45 }),
-      nurse: mark(NURSE, r3(nurseFacing), { pose: 'sit', seat: 0.45 }),
-      door: mark(r3(doorMark), r3(faceToward(doorMark, PATIENT))),
-      couch: mark([LEFT_IN + 0.95, 0, -0.75], -Math.PI / 2),
-    },
-    spots: {
-      desk: r3([DESK_X + 0.15, DESK_TOP, WALL_IN + 0.45]),
-      sideTable: r3([0.1, 0.565, -1.4]),
-      screen: r3([DESK_X - 0.15, DESK_TOP + 0.42, WALL_IN + 0.25]),
-    },
-    cameras: {
-      close: { position: [1.0, 1.25, 0.95], target: [-0.6, 0.98, -0.55] },
-      medium: { position: [-0.15, 1.45, 3.35], target: [0.1, 0.85, -0.8] },
-      wide: { position: [0.5, 2.3, 6.9], target: [-0.1, 1.05, -0.6] },
-    },
-  };
+  return { object, ...LAYOUT, walls: { back }, doors: [{ ...LAYOUT.doors[0], leaf, swing: -1 }] };
 }

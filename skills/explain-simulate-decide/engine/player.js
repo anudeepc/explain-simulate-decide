@@ -138,10 +138,6 @@ async function start(root, sp, options, api) {
     const decodeCtx = new OfflineAudioContext(1, 1, 48000);
     clips = await decodeClips(decodeCtx, opts.voiceClips);
   }
-  const tl = buildTimeline(sp, { voice: clips.map((c) => c?.duration || 0) });
-  const simIndex = tl.segments.findIndex((s) => s.act === 'simulate');
-  const decideIndex = tl.segments.length - 1;
-
   // ---- DOM + stage
   const wrap = document.createElement('div');
   wrap.className = 'esd';
@@ -155,8 +151,13 @@ async function start(root, sp, options, api) {
   const tone = toneOf(sp);
   wrap.style.setProperty('--esd-accent', tone.accent);
   const stage = createStage(c3, tone);
-  // the director's scenes: small sets where the hero acts, cut into the film
-  const director = createScenes(sp, stage, tone);
+  // the story world: one connected place where the hero acts. Its journeys (walks, cranes)
+  // need screen time, so the timeline is built once the world is planned.
+  const director = await createScenes(sp, stage, tone);
+  const tl = buildTimeline(sp, { voice: clips.map((c) => c?.duration || 0), scenes: director.scenes });
+  director.setTimeline(tl);
+  const simIndex = tl.segments.findIndex((s) => s.act === 'simulate');
+  const decideIndex = tl.segments.length - 1;
   const isScene = (seg) => seg?.act === 'explain' && director.has(seg.index);
   const ctx2 = c2.getContext('2d');
 
@@ -326,14 +327,16 @@ async function start(root, sp, options, api) {
     const cur = emphasisFor(seg);
     f.emphasis = mixEmphasis(prev, cur, st.index === 0 ? 1 : easeInOut(span(local, 0, 0.3)));
     const prevSeg = tl.segments[st.index - 1];
-    // a cut, not a camera move: into or out of a scene, the picture changes at once and
-    // fades up from white, the way a film cuts between places
-    const cut = st.index > 0 && (isScene(seg) || isScene(prevSeg));
+    // leaving the story world: the scene lifts away and fades to white (the director does
+    // that), and the diagram fades up from white. Scenes that follow one another are one
+    // continuous move, and a return to the story cranes down onto the place.
+    const cut = st.index > 0 && !isScene(seg) && isScene(prevSeg);
     f.dip = cut && !reducedMotion ? 1 - easeOut(span(local * (seg.end - seg.start), 0, 0.45)) : 0;
     if (isScene(seg)) {
       const shotFrame = director.frame(seg.index, local, t, { reducedMotion });
       f.setScene = shotFrame.scene;
       f.pose = shotFrame.pose;
+      f.dip = shotFrame.dip;
     } else if (cut) f.pose = reducedMotion ? setups[st.index].at(0) : breathe(setups[st.index].at(local), t);
     else f.pose = reducedMotion ? poseAt(setups, st.index, local, { reducedMotion }) : breathe(poseAt(setups, st.index, local), t);
     const textAlpha = span(local, 0.1, 0.22) * (1 - span(local, 0.95, 1));

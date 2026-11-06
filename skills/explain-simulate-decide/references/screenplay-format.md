@@ -161,14 +161,45 @@ At least one `between` and one `rises` or `falls`. The validator also runs every
 - `caption` is 12 words or fewer.
 - `drive` (optional) is the input to sweep during the shot.
 
-**Scenes** (`"shot": "scene"`): the hero acting in a small set, cut into the film like a scene in a movie. Fields:
-- `set`: `doorway`, `kitchen`, `postbox`, `hospital`, `livingRoom` or `lab`.
+**Scenes** (`"shot": "scene"`): the hero acting in a place, like a scene in a movie. Fields:
+- `set`: the place. Use the id of an entry in `places` (see below), or a built-in set: `doorway`, `kitchen`, `postbox`, `hospital`, `livingRoom` or `lab`.
 - `camera`: `close`, `medium` (default) or `wide`.
 - `at`: the mark where the hero starts. `seated: true` starts them in a chair.
-- `with: "nurse"`: a second person in the scene.
-- `beats` (1–4, in order): `{"do": action, "to": mark, "object": letter|envelope|kit, "from": spot, "feel": expression}`. Actions are `idle`, `walk`, `pickUp`, `read`, `hold`, `give`, `place`, `sit`, `talk`, `listen`, `wait` and `react`. Expressions are `neutral`, `curious`, `worried`, `relieved` and `smile`.
+- `with: "nurse"`: a second person in the scene (at a model or facade place, they stand at `host`).
+- `beats` (1–4, in order): `{"do": action, "to": mark or spot, "object": letter|envelope|kit, "from": spot, "feel": expression}`. Actions are `idle`, `walk`, `pickUp`, `read`, `hold`, `give`, `place`, `sit`, `talk`, `listen`, `wait` and `react`. Expressions are `neutral`, `curious`, `worried`, `relieved` and `smile`. `walk` goes `to` a mark and `sit` is `at` a mark; `pickUp` is `from` a spot, and `give` and `place` go `to` a spot. The validator checks each name against the place.
 
-A scene counts as a shot about the hero. The film cuts into and out of a scene and fades up from white. `examples/bowel-screening` shows a full director's cut.
+| Place | Marks (where the hero stands) | Spots (where things go) |
+|---|---|---|
+| `doorway` (front hall) | `mat`, `enter` | `mat`, `letterbox`, `console` |
+| `kitchen` | `counter`, `chair` | `counter`, `sink`, `sill`, `table` |
+| `livingRoom` | `shelf`, `sofa` | `shelf`, `coffeeTable` |
+| `postbox` (on the pavement) | `box`, `approach` | `slot`, `lamp` |
+| `hospital` (a clinic room) | `patientChair`, `nurse`, `door`, `couch` | `desk`, `sideTable`, `screen` |
+| `lab` | `bench` | `analyser`, `tray`, `rack`, `bench` |
+| a `model` place | `front`, `entrance`, `host` | `door` |
+| a `facade` place | `front`, `entrance`, `desk`, `host` | `door`, `desk`, `sign` |
+
+**Places** (optional, top level): the places the story goes to, when the built-in sets are not enough. Find the right place for the topic: a film about a regulation should show the regulator.
+```json
+"places": [
+  {"id": "regulator", "kind": "facade", "label": "Financial Conduct Authority", "image": "https://upload.wikimedia.org/…/fca-building.jpg", "credit": "Photo: A. Person, CC BY-SA 4.0, Wikimedia Commons"},
+  {"id": "townHall", "kind": "model", "url": "models/town-hall.glb", "credit": "Model: B. Person, CC0, Poly Pizza", "width": 14},
+  {"id": "home", "kind": "set", "set": "kitchen"}
+]
+```
+- `kind: "set"` uses a built-in set (`set`). Each built-in set can be one place only.
+- `kind: "model"` is a glTF/GLB model of a building (`url` and `credit` are required). Its front must face +Z in the file. It is scaled into a plot `width` metres wide (6–24, default 10).
+- `kind: "facade"` is a plain building with the place's name (`label`) over the door. Give it `image` (a photo or picture of the real place) and `credit` to show the picture on its front. `width` is 6–24 m (default 9).
+- `label` is the name shown on the building (up to 40 characters). Credits are shown with the sources.
+- Every place must have at least one scene. A screenplay with no `places` uses the built-in sets by name.
+
+**One world, one hero.** All the places stand along one street, in the order the film first goes to them. The doorway, kitchen and living room are rooms of the hero's house, with doorways between them and a front door onto the street. The post box is a few steps from the front gate. Clinics and labs are further down the street; model and facade places stand across the road. Rooms are cut away on the camera's side, like a doll's house.
+- Scenes that follow each other are one continuous scene. The next scene starts where the last one ended, and the hero holds what they held. If the next scene is somewhere else, the hero walks there at the start of the shot, and the camera follows. If the first beat is a `walk`, the hero walks straight to that mark.
+- A walk of more than about 14 m becomes a crane: the camera goes up over the roofs, along the street, and down onto the new place.
+- After a diagram shot, the film comes back to the story with a short crane down onto the place. When a scene is followed by a diagram shot, the camera rises and the picture fades to white.
+- The shot gets longer for the walk or crane (see `shot-types.md`), so write the caption for the whole move. Order scenes so the hero's journey makes sense: kitchen, then the post box, then the clinic.
+
+`examples/bowel-screening` shows a full director's cut.
 
 **Simulate:** `controls` lists 1–6 input ids to show as sliders.
 

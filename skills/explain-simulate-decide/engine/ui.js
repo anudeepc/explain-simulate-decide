@@ -182,7 +182,8 @@ export function createUI(wrap, sp, model, h) {
   const worked = [...sp.model.inputs, ...(sp.model.constants || [])].filter((x) => x.source === 'article' && x.note);
   // what the validator held the model to (it would not play otherwise)
   const checks = (sp.checks || []).filter((c) => c.claim);
-  const credits = (sp.world?.nodes || []).filter((c) => c.credit).map((c) => `${c.label || c.id}: ${c.credit}`);
+  // models and pictures from open libraries, for the props and for the places in the story
+  const credits = [...(sp.world?.nodes || []), ...(sp.places || [])].filter((c) => c.credit).map((c) => `${c.label || c.id}: ${c.credit}`);
   const srcLink = /^https?:\/\//.test(sp.source?.url || '') ? el('a', { href: sp.source.url, target: '_blank', rel: 'noopener noreferrer', text: sp.source.title || sp.source.url }) : el('span', { text: sp.source?.title || '' });
   const quoteEl = (q) => {
     const text = quoteText(q);
@@ -210,7 +211,7 @@ export function createUI(wrap, sp, model, h) {
       assumptions.length ? el('p', { text: 'Assumptions: ' + assumptions.map((a) => `${a.label} = ${a.default !== undefined ? formatInput(a, a.default) : formatValue(a.value, a.unit)}${a.fits !== undefined ? ' (set so the model matches the source)' : ''}${a.note ? ` (${a.note})` : ''}`).join('; ') }) : null,
       worked.length ? el('p', { text: 'Worked out from the source: ' + worked.map((a) => `${a.label}: ${a.note}`).join('; ') }) : null,
       checks.length ? el('div', {}, el('p', { text: 'The model was checked against the source:' }), el('ul', {}, checks.map((c) => el('li', { text: `✓ ${c.claim}` })))) : null,
-      credits.length ? el('p', { text: 'Model credits: ' + credits.join('; ') }) : null));
+      credits.length ? el('p', { text: 'Credits: ' + credits.join('; ') }) : null));
 
   // ---- transcript for screen readers
   const transcript = el('div', { class: 'esd-sr', 'aria-live': 'polite' });

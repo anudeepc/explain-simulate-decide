@@ -1,208 +1,250 @@
-// The director's scenes: small sets where the hero acts. A scene shot in the screenplay
-// names a set and a few beats ("walk to the mat", "pick up the letter", "read it"); this
-// file stages them in their own studio and plays the beats in order. Everything is a
-// pure function of the shot's progress, so a frame drawn twice is identical.
+// The director's story world. Every scene shot in the screenplay happens in one connected
+// world (sets/world.js lays it out, sets/street.js builds it): the hero walks from place to
+// place, and the camera follows like a Steadicam, craning over the rooftops for far moves
+// (story.js plans the journeys, rig.js moves the camera).
+//
+// Everything is a pure function of film time, so a frame drawn twice is identical.
 import * as THREE from './vendor/three/three.module.js';
 import buildCharacter from './cast/character.js';
-import { SET_BUILDERS } from './sets/index.js';
+import buildHuman, { loadHumans } from './cast/human.js';
 import { buildObject } from './sets/objects.js';
+import { buildWorld } from './sets/street.js';
+import { planStory, heroAt, shotSpans, EXIT } from './story.js';
+import { desired, follow, crane, arrive, rise, blocks } from './rig.js';
 import { breathe } from './camera.js';
-import { easeInOut, span, lerp, clamp01 } from './timing.js';
+import { span, easeInOut, easeOut } from './timing.js';
 
-const LEAD = 0.06; // a breath before the first beat
-const TAIL = 0.92; // and after the last
-const STEP = 0.7; // metres per step when walking
 const NURSE_TINT = '#5aa9a5';
+const NURSE = { tint: NURSE_TINT, body: 'female', outfit: 'scrubs', hair: '#6b4a32', skin: '#c99a76' };
 
-const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-const turnTo = (from, to, k) => from + wrapAngle(to - from) * k;
+/** Get people ready to be built (a rigged human may need to load its model first). */
+let humans = false;
+export async function preparePeople() {
+  try {
+    await loadHumans();
+    humans = true;
+  } catch (e) {
+    // without the rigged people (assets missing), the film still plays with the clay character
+    console.warn('Rigged people unavailable, using the clay character:', e?.message || e);
+    humans = false;
+  }
+}
+
+/**
+ * The one seam where people are made. Returns {object, height, hand, seat, pose(action, k, opts), setExpression}.
+ * pose() opts may carry prev: {action, k, opts} and blend (0..1) to cross-fade from the last beat.
+ */
+export function makePerson(opts) {
+  return humans ? buildHuman(opts) : buildCharacter(opts);
+}
 
 /**
  * @param {any} sp screenplay
- * @param {{makeSetScene: () => THREE.Scene}} stage
+ * @param {{makeSetScene: (o?: any) => THREE.Scene}} stage
  * @param {{accent: string}} tone the hero wears the film's accent colour
  */
-export function createScenes(sp, stage, tone) {
-  const staged = {};
-  sp.explain.forEach((shot, i) => {
-    if (shot.shot !== 'scene') return;
-    const build = SET_BUILDERS[shot.set];
-    if (!build) return;
-    // each shot gets its own copy of its set, so nothing one scene does leaks into another
-    const scene = stage.makeSetScene();
-    const set = build();
-    scene.add(set.object);
-    const hero = buildCharacter({ tint: tone.accent });
-    scene.add(hero.object);
-    let nurse = null;
-    if (shot.with === 'nurse') {
-      nurse = buildCharacter({ tint: NURSE_TINT, outfit: 'scrubs', hair: '#6b4a32', skin: '#c99a76' });
-      const m = set.marks.nurse || Object.values(set.marks).at(-1);
-      // a seated mark is the seat itself: the nurse sits back onto it from just in front
-      const back = m.pose === 'sit' || m.seat ? -(nurse.seat?.z ?? -0.32) : 0;
-      nurse.object.position.set(m.position[0] + Math.sin(m.facing) * back, m.position[1], m.position[2] + Math.cos(m.facing) * back);
-      nurse.object.rotation.y = m.facing;
-      nurse.sitting = back > 0;
-      scene.add(nurse.object);
-    }
-    const objects = {};
-    for (const b of shot.beats || []) {
-      if (b.object && !objects[b.object]) {
-        objects[b.object] = buildObject(b.object);
-        scene.add(objects[b.object]);
+export async function createScenes(sp, stage, tone) {
+  const none = { has: () => false, scenes: sp.explain.map(() => null), setTimeline() {}, frame: () => null };
+  if (!sp.explain.some((s) => s.shot === 'scene')) return none;
+  await preparePeople();
+  const hero = makePerson({ tint: tone.accent });
+  const story = planStory(sp, { seatBack: -(hero.seat?.z ?? -0.32) });
+  const { world, shots } = story;
+  if (!Object.keys(shots).length) return none;
+  const scene = stage.makeSetScene({ groundY: -0.125 });
+  const built = await buildWorld(world, { accent: tone.accent });
+  scene.add(built.object, hero.object);
+  const nurse = Object.values(shots).some((p) => p.nurse) ? makePerson(NURSE) : null;
+  if (nurse) scene.add(nurse.object);
+  const objects = {};
+  for (const p of Object.values(shots)) {
+    for (const name of [...p.beats.map((b) => b.object), p.start.holding, p.transit.holdFrom, ...Object.keys(p.carried)]) {
+      if (name && !objects[name]) {
+        objects[name] = buildObject(name);
+        scene.add(objects[name]);
       }
     }
-    staged[i] = { shot, scene, set, hero, nurse, objects };
+  }
+  // the doors each shot's journey goes through
+  const nearPath = (p, path) => path.slice(1).some((b, i) => {
+    const a = path[i];
+    const dx = b[0] - a[0];
+    const dz = b[1] - a[1];
+    const k = Math.min(1, Math.max(0, ((p[0] - a[0]) * dx + (p[2] - a[1]) * dz) / (dx * dx + dz * dz || 1)));
+    return Math.hypot(a[0] + dx * k - p[0], a[1] + dz * k - p[2]) < 0.6;
   });
-
+  const throughDoors = Object.fromEntries(Object.entries(shots).map(([i, p]) => [i, new Set(p.transit.path ? built.doors.filter((d) => nearPath(d.at, p.transit.path)) : [])]));
+  const key = scene.userData.key;
   const v = new THREE.Vector3();
+  let tl = null;
+  const durOf = (i) => tl.segments[i].end - tl.segments[i].start;
 
-  /** Replay the beats up to `local` (0..1) and pose everyone. */
-  function play(rt, local) {
-    const { shot, set, hero, nurse, objects, scene } = rt;
-    const beats = shot.beats || [];
-    const seatBack = -(hero.seat?.z ?? -0.32); // the hero sits onto a seat this far behind their feet
-    const mark = (name) => {
-      const m = name && set.marks[name];
-      if (!m) return null;
-      if (m.pose !== 'sit' && !m.seat) return m;
-      // a chair mark is the seat itself: stand just in front of it
-      return { position: [m.position[0] + Math.sin(m.facing) * seatBack, m.position[1], m.position[2] + Math.cos(m.facing) * seatBack], facing: m.facing };
-    };
-    const firstWalk = beats.find((b) => b.do === 'walk' || b.do === 'sit');
-    const start = mark(shot.at) || (firstWalk ? null : mark(beats.find((b) => b.at)?.at)) || Object.values(set.marks)[0] || { position: [0, 0, 0], facing: 0 };
-    const pos = new THREE.Vector3(...start.position);
-    let facing = start.facing;
-    let holding = null;
-    let seated = !!shot.seated; // the scene may open with the hero already in a chair
-    let feel = shot.feel || 'neutral';
-    const rest = {}; // object → where it lies
-    // where each object starts: on its spot if the hero picks it up there, otherwise in the hero's hand
-    for (const b of beats) {
-      if (!b.object || b.object in rest || holding === b.object) continue;
-      if (b.do === 'pickUp' && set.spots[b.from]) rest[b.object] = set.spots[b.from];
-      else if (!holding) holding = b.object;
-    }
+  /** Where the camera wants to be in shot i at s seconds (before the shot: the shot before, if the story runs on). */
+  function wantAt(i, s) {
+    const plan = shots[i];
+    if (s < 0 && shots[i - 1] && plan.transit.kind !== 'arrive') return wantAt(i - 1, durOf(i - 1) + s);
+    const d = durOf(i);
+    s = Math.min(Math.max(s, 0), d);
+    // while the camera cranes, the follow rig is already waiting at the new place
+    const { T } = shotSpans(plan, d);
+    if ((plan.transit.kind === 'crane' || plan.transit.kind === 'arrive') && s < T) s = T;
+    return desired(heroAt(plan, s, d), plan, world);
+  }
 
-    const n = Math.max(1, beats.length);
-    const u = span(local, LEAD, TAIL) * n;
-    const cur = Math.min(n - 1, Math.floor(u));
-    let action = 'idle';
-    let p = local;
-    let opts = {};
-    let flying = null; // an object on its way from the hand to its spot
-    let reach = null; // where the hand reaches in the current beat (a slot, a shelf, the mat)
-    for (let i = 0; i <= cur && i < beats.length; i++) {
-      const b = beats[i];
-      const k = i < cur ? 1 : clamp01(u - i);
-      if (b.feel) feel = b.feel;
-      action = b.do;
-      p = k;
-      opts = { sitting: seated };
-      if (b.do === 'walk') {
-        const m = mark(b.to);
-        if (!m) continue;
-        const to = new THREE.Vector3(...m.position);
-        const dist = pos.distanceTo(to);
-        const heading = Math.atan2(to.x - pos.x, to.z - pos.z);
-        // turn toward the goal, walk, then turn to face what is there
-        if (dist > 0.05) {
-          const turn = easeInOut(span(k, 0, 0.15));
-          const go = easeInOut(span(k, 0.12, 0.88));
-          const settle = easeInOut(span(k, 0.85, 1));
-          facing = turnTo(turnTo(facing, heading, turn), m.facing, settle);
-          pos.lerp(to, go);
-          opts = { cycles: Math.max(1, Math.round(dist / STEP)) };
-          p = span(k, 0.12, 0.88);
-          if (k >= 1) pos.copy(to);
-        } else facing = turnTo(facing, m.facing, easeInOut(k));
-        seated = false;
-      } else if (b.do === 'sit') {
-        const m = mark(b.at);
-        if (m) {
-          pos.set(...m.position);
-          facing = m.facing;
-        }
-        if (k >= 1) seated = true;
-      } else if (b.do === 'pickUp') {
-        if (i === cur && set.spots[b.from]) reach = set.spots[b.from];
-        if (k >= 0.5 && b.object) {
-          holding = b.object;
-          delete rest[b.object];
-        }
-      } else if (b.do === 'give' || b.do === 'place') {
-        const obj = b.object || holding;
-        const spot = set.spots[b.to];
-        if (i === cur && spot) reach = spot;
-        if (k >= 0.5 && obj && holding === obj) {
-          holding = null;
-          if (spot) {
-            rest[obj] = spot;
-            if (i === cur && k < 0.8) flying = { obj, k: span(k, 0.5, 0.8), spot };
-          }
-        }
-      }
+  function cameraAt(i, s, reducedMotion) {
+    const plan = shots[i];
+    const d = durOf(i);
+    const { T } = shotSpans(plan, d);
+    const want = (x) => wantAt(i, x);
+    let pose;
+    if (reducedMotion) pose = wantAt(i, s);
+    else if (plan.transit.kind === 'crane' && s < T) pose = crane(s / T, follow((x) => wantAt(i - 1, x), durOf(i - 1)), follow(want, T));
+    else if (plan.transit.kind === 'arrive' && s < T) pose = arrive(s / T, follow(want, T), world.places[plan.place].establish);
+    else pose = follow(want, s);
+    if (plan.exit && !reducedMotion) pose = rise(pose, span(s, d - EXIT, d));
+    return pose;
+  }
+
+  /** How much each occluder is in the way, averaged over a moment either side so walls fade rather than pop. */
+  function occlusion(i, s, reducedMotion) {
+    const d = durOf(i);
+    const out = new Float32Array(built.occluders.length);
+    const times = [s - 0.35, s, s + 0.35].map((x) => Math.min(Math.max(x, 0), d));
+    for (const x of times) {
+      const cam = cameraAt(i, x, reducedMotion).position;
+      const h = heroAt(shots[i], x, d);
+      const y = h.seated ? 0.8 : 1.1;
+      const subjects = [[h.pos[0], y, h.pos[1]], [h.pos[0], 0.3, h.pos[1]], [h.pos[0], h.seated ? 1.2 : 1.62, h.pos[1]]];
+      if (shots[i].nurse) subjects.push([shots[i].nurse.position[0], 1.0, shots[i].nurse.position[2]]);
+      built.occluders.forEach((o, k) => {
+        // high over the street the houses stay solid, so the neighbourhood reads; only walls cut away
+        if (cam[1] > 8 && o.kind !== 'wall') return;
+        const min = o.box.min.toArray();
+        const max = o.box.max.toArray();
+        // in the way: the camera is inside it, or it stands between the camera and someone outside it
+        const inside = (p) => blocks(p, p, min, max, 0.05);
+        if (blocks(cam, cam, min, max, 0.35) || subjects.some((p) => !inside(p) && blocks(cam, p, min, max))) out[k] += 1 / times.length;
+      });
     }
-    if (local >= TAIL && beats.length) p = 1;
-    if (seated && !['sit', 'talk', 'listen', 'read'].includes(action)) {
-      action = 'sit'; // a seated hero who reacts stays in the chair
-      p = 1;
-    }
-    if (seated && action !== 'sit') opts = { ...opts, sitting: true };
-    hero.object.position.copy(pos);
-    hero.object.rotation.y = facing;
-    hero.object.updateMatrixWorld(true);
-    if (reach && ['pickUp', 'give', 'place'].includes(action)) {
-      // aim the hand at the real place: the mat, the post box slot, the shelf
-      const t = hero.object.worldToLocal(v.set(...reach));
-      opts = { ...opts, target: { x: t.x, y: t.y, z: t.z } };
-    }
-    hero.pose(action, p, opts);
-    hero.setExpression(feel);
-    hero.object.updateMatrixWorld(true);
-    if (nurse) {
-      // the nurse answers the hero: talking while the hero listens, listening while the hero talks
-      nurse.pose(action === 'talk' ? 'listen' : 'talk', p, { sitting: nurse.sitting });
-      nurse.setExpression(feel === 'worried' ? 'neutral' : 'smile');
-    }
+    return out;
+  }
+
+  function placeObjects(h) {
     for (const [name, obj] of Object.entries(objects)) {
       obj.visible = true;
-      if (holding === name) {
+      obj.scale.setScalar(1);
+      if (h.holding === name) {
         if (obj.parent !== hero.hand) hero.hand.add(obj);
         obj.position.set(0, 0, 0);
         obj.rotation.set(0, 0, 0);
-      } else {
-        if (obj.parent !== scene) scene.add(obj);
-        obj.rotation.set(0, 0, 0);
-        if (flying?.obj === name) {
-          hero.hand.getWorldPosition(v);
-          obj.position.set(lerp(v.x, flying.spot[0], flying.k), lerp(v.y, flying.spot[1], flying.k), lerp(v.z, flying.spot[2], flying.k));
-        } else if (rest[name]) {
-          obj.position.set(...rest[name]);
-          // paper lies flat where it rests; in the hand it faces the camera
-          const f = obj.userData.flat;
-          if (f && name !== 'kit') obj.rotation.set(...f); // the kit stands upright on its cap end
-        }
-        else obj.visible = false;
+        obj.scale.setScalar(Math.max(0.001, h.scale?.[name] ?? 1));
+        continue;
       }
+      if (obj.parent !== scene) scene.add(obj);
+      obj.rotation.set(0, 0, 0);
+      const r = h.rest[name];
+      if (h.flying?.obj === name) {
+        hero.hand.getWorldPosition(v);
+        const sp = h.flying.spot;
+        obj.position.set(v.x + (sp[0] - v.x) * h.flying.k, v.y + (sp[1] - v.y) * h.flying.k, v.z + (sp[2] - v.z) * h.flying.k);
+      } else if (r) {
+        obj.position.set(...r.at);
+        // paper lies flat where it rests; the kit stands upright on its cap end
+        const f = obj.userData.flat;
+        if (f && name !== 'kit') obj.rotation.set(...f);
+      } else obj.visible = false;
     }
   }
 
   return {
-    /** Is this explain shot a staged scene? */
-    has: (index) => !!staged[index],
+    has: (index) => !!shots[index],
+    /** Per explain shot: seconds a scene needs for its journey, and its beats (for timing.buildTimeline). */
+    scenes: story.scenes,
+    story,
+    triangles: built.triangles,
+    setTimeline(t) {
+      tl = t;
+    },
     /**
      * Stage shot `index` at progress `local` (0..1) and film time `t`.
-     * @returns {{scene: THREE.Scene, pose: {position: number[], target: number[]}}}
+     * @returns {{scene: THREE.Scene, pose: {position: number[], target: number[]}, dip: number}}
      */
     frame(index, local, t, { reducedMotion = false } = {}) {
-      const rt = staged[index];
-      play(rt, local);
-      const cam = rt.set.cameras[rt.shot.camera || 'medium'] || rt.set.cameras.medium;
-      // a slow push in while the scene plays, as a camera operator would
-      const k = reducedMotion ? 0 : easeInOut(local) * 0.06;
-      const pose = { position: cam.position.map((x, i) => lerp(x, cam.target[i], k)), target: cam.target };
-      return { scene: rt.scene, pose: reducedMotion ? pose : breathe(pose, t) };
+      const plan = shots[index];
+      const d = durOf(index);
+      const s = local * d;
+      const h = heroAt(plan, s, d);
+
+      // the hero
+      hero.object.position.set(h.pos[0], 0, h.pos[1]);
+      hero.object.rotation.y = h.facing;
+      hero.object.updateMatrixWorld(true);
+      let opts = h.opts || {};
+      if (h.reach) {
+        // aim the hand at the real place: the mat, the post box slot, the shelf
+        const p = hero.object.worldToLocal(v.set(...h.reach));
+        opts = { ...opts, target: { x: p.x, y: p.y, z: p.z } };
+      }
+      if (h.prev && !opts.prev) opts = { ...opts, prev: h.prev, blend: 1 };
+      hero.pose(h.action, h.k, opts);
+      hero.setExpression(h.feel);
+      hero.object.updateMatrixWorld(true);
+
+      // the second person answers the hero: talking while they listen, listening while they talk
+      if (nurse) {
+        nurse.object.visible = !!plan.nurse;
+        if (plan.nurse) {
+          nurse.object.position.set(...plan.nurse.position);
+          nurse.object.rotation.y = plan.nurse.facing;
+          nurse.pose(h.action === 'talk' ? 'listen' : 'talk', h.k, { sitting: plan.nurse.sitting });
+          nurse.setExpression(h.feel === 'worried' ? 'neutral' : 'smile');
+        }
+      }
+      placeObjects(h);
+
+      // a door opens as the hero walks through it, and closes behind them
+      for (const dr of built.doors) {
+        const through = h.action === 'walk' && throughDoors[index].has(dr);
+        const dist = Math.hypot(dr.at[0] - h.pos[0], dr.at[2] - h.pos[1]);
+        dr.leaf.rotation.y = through ? dr.swing * 1.45 * easeInOut(span(dist, 2.2, 0.9)) : 0;
+      }
+
+      const pose = cameraAt(index, s, reducedMotion);
+
+      // fade whatever stands between the camera and the people
+      const occ = occlusion(index, s, reducedMotion);
+      built.occluders.forEach((o, k) => {
+        const f = easeInOut(occ[k]);
+        const on = f > 0.002;
+        for (const m of o.mats) {
+          if (m.transparent !== on) {
+            m.transparent = on;
+            m.needsUpdate = true;
+          }
+          m.opacity = 1 - f;
+          m.depthWrite = f < 0.5;
+        }
+      });
+
+      // the sun follows the action, so shadows are sharp where we look
+      if (key) {
+        const r = Math.min(30, Math.max(8, 5 + pose.position[1] * 1.1));
+        const texel = (2 * r) / key.shadow.mapSize.x;
+        const cx = Math.round(pose.target[0] / texel) * texel;
+        const cz = Math.round(pose.target[2] / texel) * texel;
+        key.target.position.set(cx, 0, cz);
+        key.position.set(cx - 6, 11, cz - 7.5);
+        Object.assign(key.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: 60 });
+        key.shadow.camera.updateProjectionMatrix();
+        key.target.updateMatrixWorld();
+      }
+
+      let dip = 0;
+      if (!reducedMotion) {
+        if (plan.transit.kind === 'arrive') dip = 1 - easeOut(span(s, 0, 0.5));
+        if (plan.exit) dip = Math.max(dip, easeInOut(span(s, d - 0.5, d)));
+      }
+      return { scene, pose: reducedMotion ? pose : breathe(pose, t), dip };
     },
   };
 }

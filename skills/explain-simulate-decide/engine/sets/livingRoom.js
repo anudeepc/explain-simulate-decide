@@ -7,20 +7,50 @@ const W = 5.6;
 const D = 4.2;
 const BACK = -D / 2;
 const SB_TOP = 0.93; // sideboard top surface
+const WALL_IN = BACK + WALL_T / 2;
+const SOFA_X = -1.25;
+const SD = 0.88; // sofa depth
+const SB_X = 1.3;
+const SB_D = 0.45;
+const SBZ = WALL_IN + SB_D / 2 + 0.02;
 
-export default function build() {
+/** Marks, spots and cameras, in set space (no three.js needed to read them). */
+export const LAYOUT = (() => {
+  // standing to the left of the sideboard's clear middle, turned toward it
+  const shelf = [SB_X - 0.02, SB_TOP, SBZ + 0.04];
+  const stand = [SB_X - 0.62, 0, SBZ + 0.62];
+  return {
+    size: [W, D],
+    marks: {
+      shelf: mark(r3(stand), r3(faceToward(stand, shelf))),
+      sofa: mark(r3([SOFA_X + 0.42, 0, WALL_IN + SD / 2 + 0.06 + 0.08]), 0, { pose: 'sit', seat: 0.45 }),
+    },
+    spots: {
+      shelf: r3(shelf),
+      coffeeTable: r3([SOFA_X - 0.1, 0.42, -0.5]),
+    },
+    cameras: {
+      close: { position: [2.35, 1.5, 0.85], target: [0.85, 1.02, -1.65] },
+      medium: { position: [2.6, 1.55, 3.3], target: [0.55, 0.95, -1.3] },
+      wide: { position: [0.3, 2.3, 6.7], target: [0, 1.05, -0.7] },
+    },
+    doors: [],
+  };
+})();
+
+/** @param {{shell?: boolean}} [o] shell: false leaves out the side wall (the world builds its own) */
+export default function build({ shell = true } = {}) {
   const object = group();
   object.name = 'set:livingRoom';
   const C = { wall: '#f7f7f5', sofa: '#3f6b5c', sofaDark: '#355b4e', cushion: '#e2a33b', navy: '#2c3e5c', brass: '#d2a948', rug: '#dfe4ea', rugLine: '#8fa3b8', curtain: '#e7ecf0' };
-  const WALL_IN = BACK + WALL_T / 2;
   const LEFT_IN = -W / 2 + WALL_T;
 
   object.add(floor(W, D, { map: floorTexture('boards', '#ece3d6', '#d9ccb9', { repeat: [2, 2] }) }));
-  object.add(wall(-W / 2, BACK, W / 2, BACK, { color: C.wall }));
-  object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.8, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
+  const back = wall(-W / 2, BACK, W / 2, BACK, { color: C.wall });
+  object.add(back);
+  if (shell) object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.8, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
 
   // window over the sofa, with soft curtains
-  const SOFA_X = -1.25;
   const win = windowFrame(1.4, 1.2, { bars: 2, sill: true });
   win.position.set(SOFA_X, 1.65, WALL_IN);
   object.add(win);
@@ -33,7 +63,6 @@ export default function build() {
   // sofa: plinth, seat cushions, back cushions, rolled arms, short legs; seat top at 0.45
   const sofa = group();
   const SW = 2.0;
-  const SD = 0.88;
   sofa.position.set(SOFA_X, 0, WALL_IN + SD / 2 + 0.06);
   const sm = clay(C.sofa);
   const smd = clay(C.sofaDark);
@@ -72,10 +101,8 @@ export default function build() {
   object.add(ct);
 
   // the sideboard: navy body, oak top, brass knobs, on slim legs
-  const SB_X = 1.3;
   const SB_W = 1.5;
-  const SB_D = 0.45;
-  const sbZ = WALL_IN + SB_D / 2 + 0.02;
+  const sbZ = SBZ;
   const navy = clay(C.navy);
   object.add(mesh(rounded(SB_W, SB_TOP - 0.18, SB_D, 0.02, 1), navy, { x: SB_X, y: 0.15 + (SB_TOP - 0.18) / 2, z: sbZ }));
   object.add(mesh(rounded(SB_W + 0.04, 0.03, SB_D + 0.03, 0.01, 1), clay(SET_PALETTE.oak), { x: SB_X, y: SB_TOP - 0.015, z: sbZ }));
@@ -118,23 +145,5 @@ export default function build() {
   pl.position.set(W / 2 - 0.4, 0, WALL_IN + 0.35);
   object.add(pl);
 
-  // standing to the left of the sideboard's clear middle, turned toward it
-  const shelf = [SB_X - 0.02, SB_TOP, sbZ + 0.04];
-  const stand = [SB_X - 0.62, 0, sbZ + 0.62];
-  return {
-    object,
-    marks: {
-      shelf: mark(r3(stand), r3(faceToward(stand, shelf))),
-      sofa: mark(r3([SOFA_X + 0.42, 0, WALL_IN + SD / 2 + 0.06 + 0.08]), 0, { pose: 'sit', seat: 0.45 }),
-    },
-    spots: {
-      shelf: r3(shelf),
-      coffeeTable: r3([SOFA_X - 0.1, 0.42, -0.5]),
-    },
-    cameras: {
-      close: { position: [2.35, 1.5, 0.85], target: [0.85, 1.02, -1.65] },
-      medium: { position: [2.6, 1.55, 3.3], target: [0.55, 0.95, -1.3] },
-      wide: { position: [0.3, 2.3, 6.7], target: [0, 1.05, -0.7] },
-    },
-  };
+  return { object, ...LAYOUT, walls: { back }, doors: [] };
 }

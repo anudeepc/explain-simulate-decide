@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Hero character sheet</title>
+<title>Human cast sheet</title>
 <style>
   html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; }
   canvas { display: block; }
@@ -16,10 +16,11 @@
 <body>
 <div id="labels"></div>
 <script type="module">
-// Contact sheet for the hero character: every action at k = 0, 0.5, 1, the seated variants,
-// the expressions close up, and the scrubs (nurse) outfit, on a white studio floor.
+// Contact sheet for the film's people (cast/human.js): every action at k = 0, 0.5, 1, the seated
+// variants, the outfits on both bodies, and the expressions close up, on a white studio floor.
 // Query params: ?only=pickUp,give  ?cols=4  ?k=0,0.25,0.5  ?turn=0.7 (yaw of each figure)
-import build from '../skills/explain-simulate-decide/engine/cast/character.js';
+//               ?body=female (the hero's body)
+import build, { loadHumans } from '../skills/explain-simulate-decide/engine/cast/human.js';
 import { ACTIONS, EXPRESSIONS } from '../skills/explain-simulate-decide/engine/cast/actions.js';
 import { THREE, clay, rounded, mesh, group, PALETTE } from '../skills/explain-simulate-decide/engine/cast/kit.js';
 import { RoomEnvironment } from '../skills/explain-simulate-decide/engine/vendor/three/RoomEnvironment.js';
@@ -27,7 +28,9 @@ import { RoomEnvironment } from '../skills/explain-simulate-decide/engine/vendor
 const q = new URLSearchParams(location.search);
 const ks = q.has('k') ? q.get('k').split(',').map(Number) : [0, 0.5, 1];
 const turn = q.has('turn') ? Number(q.get('turn')) : 0.75;
+const heroBody = q.get('body') || 'male';
 window.sheetErrors = [];
+await loadHumans();
 
 // ---- props that give each action its context ---------------------------------------------
 const box = () => mesh(rounded(0.13, 0.11, 0.13, 0.025), clay(PALETTE.terracotta));
@@ -64,8 +67,8 @@ const inHand = (c, thing, { x = 0, y = 0, z = 0 } = {}) => {
 };
 
 /** One figure in a cell: builds a character, poses it and dresses the set around it. */
-function figure({ action = 'idle', k = 0, opts = {}, expression = 'neutral', outfit, tint, label, props }) {
-  const c = build(outfit === 'scrubs' ? { outfit, tint: tint || '#4fa3a5', hair: '#6b4a32', skin: '#c99878' } : {});
+function figure({ action = 'idle', k = 0, opts = {}, expression = 'neutral', who = {}, label, props }) {
+  const c = build({ tint: '#2a9d8f', body: heroBody, ...who });
   c.setExpression(expression);
   c.pose(action, k, opts);
   const holder = group();
@@ -107,11 +110,15 @@ cells.push({
   ],
 });
 cells.push({
-  title: 'nurse (scrubs)',
+  title: 'outfits: casual / smart / scrubs',
+  span: 2,
   figs: [
-    { action: 'idle', k: 0.2, outfit: 'scrubs', expression: 'smile', label: 'idle' },
-    { action: 'hold', k: 0.5, outfit: 'scrubs', expression: 'neutral', label: 'hold', props: (c) => inHand(c, paper(), { x: -0.06, y: 0.03 }) },
-    { action: 'talk', k: 0.4, outfit: 'scrubs', expression: 'relieved', label: 'talk' },
+    { action: 'idle', k: 0.2, who: { body: 'male', outfit: 'casual' }, label: 'casual' },
+    { action: 'idle', k: 0.2, who: { body: 'female', outfit: 'casual', skin: '#8d5a3c', hair: '#1c1410', hairStyle: 'Long' }, label: 'casual' },
+    { action: 'idle', k: 0.2, who: { body: 'male', outfit: 'smart', skin: '#c99878', hair: '#2a2420', beard: true }, label: 'smart' },
+    { action: 'idle', k: 0.2, who: { body: 'female', outfit: 'smart', hair: '#b08a5a' }, label: 'smart' },
+    { action: 'talk', k: 0.4, who: { body: 'female', outfit: 'scrubs', skin: '#c99878', hair: '#6b4a32' }, expression: 'smile', label: 'scrubs' },
+    { action: 'hold', k: 0.5, who: { body: 'male', outfit: 'scrubs', skin: '#6f4630', hair: '#151010', hairStyle: 'Buzzed' }, label: 'scrubs', props: (c) => inHand(c, paper(), { x: -0.06, y: 0.03 }) },
   ],
 });
 cells.push({

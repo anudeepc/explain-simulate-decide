@@ -22,27 +22,31 @@ const words = (s = '') => s.trim().split(/\s+/).filter(Boolean).length;
 /**
  * @param {{shot: string, caption: string}} shot
  * @param {number} [voiceSeconds] length of a narrated clip for this caption, if any
+ * @param {{extra: number, beats: number}|null} [scene] for a scene: seconds the hero needs to
+ *   get there first (a walk, a crane, a return to the story) and how many beats are left after it
  */
-export function shotDuration(shot, voiceSeconds = 0) {
+export function shotDuration(shot, voiceSeconds = 0, scene = null) {
   let d = Math.max(MIN_SHOT, (words(shot.caption) / READ_WPS + HOLD) / CAPTION_SHARE);
   if (voiceSeconds) d = Math.max(d, (voiceSeconds + VOICE_PAD) / CAPTION_SHARE);
   if (shot.shot === 'turn') d += TURN_EXTRA;
   if (shot.shot === 'follow') d = Math.max(d, FOLLOW_MIN);
   if (shot.shot === 'timelapse') d += TIMELAPSE_EXTRA;
   // a scene needs room for each thing the hero does
-  if (shot.shot === 'scene') d = Math.max(d, SCENE_LEAD + SCENE_BEAT * (shot.beats?.length || 1));
+  // and to get there: the journey comes first, then the beats. The caption stays up throughout.
+  if (shot.shot === 'scene') d = Math.max(d, (scene?.extra || 0) + SCENE_LEAD + SCENE_BEAT * (scene?.beats ?? (shot.beats?.length || 1)));
   return d;
 }
 
 /**
  * @param {any} sp screenplay
- * @param {{voice?: number[]}} [opts] per-shot narration lengths
+ * @param {{voice?: number[], scenes?: Array<{extra: number, beats: number}|null>}} [opts] per-shot
+ *   narration lengths, and per-shot scene journeys (from story.js planStory)
  */
 export function buildTimeline(sp, opts = {}) {
   const segments = [];
   let t = 0;
   sp.explain.forEach((shot, index) => {
-    const d = shotDuration(shot, opts.voice?.[index]);
+    const d = shotDuration(shot, opts.voice?.[index], opts.scenes?.[index]);
     segments.push({ act: 'explain', index, shot: shot.shot, start: t, end: t + d });
     t += d;
   });

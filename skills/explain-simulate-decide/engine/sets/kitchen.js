@@ -8,23 +8,55 @@ const D = 4.2;
 const BACK = -D / 2;
 const TOP = 0.92; // worktop surface
 const DEPTH = 0.62;
+const WALL_IN = BACK + WALL_T / 2; // room face of the back wall
+const FRONT = WALL_IN + DEPTH;
+const SINK_X = -1.25;
+const TABLE = [1.85, -0.75];
+const CHAIR = [1.12, -0.42];
 
-export default function build() {
+/** Marks, spots and cameras, in set space (no three.js needed to read them). */
+export const LAYOUT = (() => {
+  // standing at the worktop in front of the window, turned a little toward the camera
+  const counterSpot = [SINK_X + 0.72, TOP, WALL_IN + 0.32];
+  const counter = [counterSpot[0] - 0.38, 0, FRONT + 0.4];
+  const chairFacing = faceToward([CHAIR[0], 0, CHAIR[1]], [TABLE[0], 0, TABLE[1]]);
+  return {
+    size: [W, D],
+    marks: {
+      counter: mark(counter, r3(faceToward(counter, counterSpot))),
+      chair: mark([CHAIR[0], 0, CHAIR[1]], r3(chairFacing), { pose: 'sit', seat: 0.45 }),
+    },
+    spots: {
+      counter: r3(counterSpot),
+      sink: r3([SINK_X, TOP, WALL_IN + 0.33]),
+      sill: r3([SINK_X + 0.3, TOP + 0.6, WALL_IN + 0.1]),
+      table: r3([TABLE[0] - 0.1, 0.76, TABLE[1] + 0.1]),
+    },
+    cameras: {
+      close: { position: [0.85, 1.45, 0.4], target: [-0.65, 1.0, -1.6] },
+      medium: { position: [0.95, 1.55, 3.3], target: [-0.55, 0.98, -1.2] },
+      wide: { position: [0.6, 2.3, 6.6], target: [0, 1.05, -0.7] },
+    },
+    doors: [],
+  };
+})();
+
+/** @param {{shell?: boolean}} [o] shell: false leaves out the side wall (the world builds its own) */
+export default function build({ shell = true } = {}) {
   const object = group();
   object.name = 'set:kitchen';
   const C = { cab: '#86ad9b', cabDark: '#6f9584', worktop: '#fbfbfa', handle: '#2f3437', tile: '#ffffff', grout: '#dfe3e6', wall: '#f7f7f5' };
-  const WALL_IN = BACK + WALL_T / 2; // room face of the back wall
 
   object.add(floor(W, D, { map: floorTexture('tiles', '#e9ecee', '#d3d8dc', { repeat: [3, 2.4] }) }));
-  object.add(wall(-W / 2, BACK, W / 2, BACK, { color: C.wall }));
-  object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.9, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
+  const back = wall(-W / 2, BACK, W / 2, BACK, { color: C.wall });
+  object.add(back);
+  if (shell) object.add(wall(-W / 2 + WALL_T / 2, D / 2 - 0.9, -W / 2 + WALL_T / 2, BACK - WALL_T / 2, { color: C.wall }));
 
   // base run along the back wall
   const X0 = -W / 2 + WALL_T;
   const X1 = 0.95;
   const runW = X1 - X0;
   const runX = (X0 + X1) / 2;
-  const FRONT = WALL_IN + DEPTH;
   const cab = clay(C.cab);
   const handle = clay(C.handle);
   object.add(mesh(rounded(runW, 0.1, DEPTH - 0.08, 0.01, 1), clay('#4b5357'), { x: runX, y: 0.05, z: WALL_IN + (DEPTH - 0.08) / 2 }));
@@ -66,7 +98,6 @@ export default function build() {
   object.add(splash);
 
   // window over the sink
-  const SINK_X = -1.25;
   const win = windowFrame(1.1, 0.95, { bars: 1 });
   win.position.set(SINK_X, TOP + 0.5 + 0.12 + 0.475, WALL_IN);
   object.add(win);
@@ -122,7 +153,6 @@ export default function build() {
   clock.add(mesh(rounded(0.012, 0.1, 0.005, 0.003, 1), clay(SET_PALETTE.charcoal), { y: 0.04, z: 0.048 }));
   clock.add(mesh(rounded(0.07, 0.012, 0.005, 0.003, 1), clay(SET_PALETTE.charcoal), { x: 0.03, z: 0.048, rz: -0.5 }));
   object.add(clock);
-  const TABLE = [1.85, -0.75];
   const table = group();
   table.position.set(TABLE[0], 0, TABLE[1]);
   table.add(mesh(cylinder(0.4, 0.4, 0.035, 40), clay('#ffffff'), { y: 0.74 }));
@@ -131,7 +161,6 @@ export default function build() {
   table.add(mesh(cylinder(0.045, 0.04, 0.09, 16), clay('#e2a33b'), { x: 0.12, y: 0.8, z: -0.08 }));
   table.add(mesh(torus(0.03, 0.008, 12), clay('#e2a33b'), { x: 0.17, y: 0.8, z: -0.08, ry: Math.PI / 2 }));
   object.add(table);
-  const CHAIR = [1.12, -0.42];
   const chairFacing = faceToward([CHAIR[0], 0, CHAIR[1]], [TABLE[0], 0, TABLE[1]]);
   const ch = chair({ seat: 0.45, color: SET_PALETTE.oak, frame: SET_PALETTE.charcoal, style: 'wood' });
   ch.position.set(CHAIR[0], 0, CHAIR[1]);
@@ -141,25 +170,5 @@ export default function build() {
   pl.position.set(2.25, 0, BACK + 0.4);
   object.add(pl);
 
-  // standing at the worktop in front of the window, turned a little toward the camera
-  const counterSpot = [SINK_X + 0.72, TOP, WALL_IN + 0.32];
-  const counter = [counterSpot[0] - 0.38, 0, FRONT + 0.4];
-  return {
-    object,
-    marks: {
-      counter: mark(counter, r3(faceToward(counter, counterSpot))),
-      chair: mark([CHAIR[0], 0, CHAIR[1]], r3(chairFacing), { pose: 'sit', seat: 0.45 }),
-    },
-    spots: {
-      counter: r3(counterSpot),
-      sink: r3([SINK_X, TOP, WALL_IN + 0.33]),
-      sill: r3([SINK_X + 0.3, TOP + 0.6, WALL_IN + 0.1]),
-      table: r3([TABLE[0] - 0.1, 0.76, TABLE[1] + 0.1]),
-    },
-    cameras: {
-      close: { position: [0.85, 1.45, 0.4], target: [-0.65, 1.0, -1.6] },
-      medium: { position: [0.95, 1.55, 3.3], target: [-0.55, 0.98, -1.2] },
-      wide: { position: [0.6, 2.3, 6.6], target: [0, 1.05, -0.7] },
-    },
-  };
+  return { object, ...LAYOUT, walls: { back }, doors: [] };
 }

@@ -7,7 +7,7 @@ import { createModel, formatValue } from './model.js';
 import { TONES } from './look.js';
 import { steProblems } from './ste.js';
 import { ACTIONS, EXPRESSIONS } from './cast/actions.js';
-import { SETS, OBJECTS } from './sets/names.js';
+import { SETS, OBJECTS, PLACE_KINDS, placesOf, marksOf, spotsOf } from './sets/names.js';
 
 export const SHOTS = ['establish', 'introduce', 'focus', 'follow', 'cause', 'compare', 'turn', 'timelapse', 'handoff', 'scene'];
 export const CAMERAS = ['close', 'medium', 'wide'];
@@ -289,7 +289,8 @@ export function validate(sp) {
 
   // ---- explain
   const shots = arr(sp.explain);
-  checkShots(shots, nodeById, flowIds, SHOTS, err);
+  checkPlaces(sp, err);
+  checkShots(shots, nodeById, flowIds, SHOTS, err, '', placesOf(sp));
   shots.forEach((x, n) => {
     const where = `explain[${n}]`;
     if (x.shot === 'cause' && !flowIds.has(x.focus)) err(`${where}: cause shots need focus = a flow id`);
@@ -623,7 +624,8 @@ function validateProcess(sp) {
     if (f.rate !== undefined) err(`world.flows[${n}] "${f.id}": a process story has no rates; leave out "rate" (every step flows at the same pace)`);
   });
   const shots = arr(sp.explain);
-  checkShots(shots, nodeById, flowIds, SHOTS.filter((x) => !['cause', 'timelapse'].includes(x)), err, ' (a process story has no numbers to sweep or clock to run)');
+  checkPlaces(sp, err);
+  checkShots(shots, nodeById, flowIds, SHOTS.filter((x) => !['cause', 'timelapse'].includes(x)), err, ' (a process story has no numbers to sweep or clock to run)', placesOf(sp));
   shots.forEach((x, n) => {
     if (x.drive !== undefined) err(`explain[${n}]: drive needs an input; a process story has none`);
   });
@@ -681,12 +683,12 @@ function checkWorld(nodes, flows, err) {
 }
 
 /** What every film's shots need: a known shot type, something to look at, and a short caption. */
-function checkShots(shots, nodeById, flowIds, allowed, err, why = '') {
+function checkShots(shots, nodeById, flowIds, allowed, err, why = '', places = {}) {
   if (shots.length < 3 || shots.length > 12) err(`explain: need 3–12 shots (found ${shots.length})`);
   shots.forEach((x, n) => {
     const where = `explain[${n}]`;
     if (!allowed.includes(x.shot)) err(`${where}: shot "${x.shot}" must be one of ${allowed.join(', ')}${why}`);
-    if (x.shot === 'scene') return checkScene(x, where, err);
+    if (x.shot === 'scene') return checkScene(x, where, err, places);
     if (x.focus === undefined) {
       if (!['establish', 'handoff'].includes(x.shot)) err(`${where}: focus is required (a node or flow id)`);
     } else if (!nodeById[x.focus] && !flowIds.has(x.focus)) err(`${where}: focus "${x.focus}" is not a node or flow`);
@@ -782,8 +784,19 @@ function checkStory(sp, nodes, flows, shots, err) {
  * A scene: the hero acting in a small set, as in a film. "beats" are what they do, in
  * order: walk to a mark, pick up an object, read it, post it, sit, talk, react.
  */
-function checkScene(x, where, err) {
-  if (!SETS.includes(x.set)) err(`${where}: set "${x.set}" must be one of ${SETS.join(', ')}`);
+function checkScene(x, where, err, places = {}) {
+  const place = places[x.set];
+  if (!place) err(`${where}: set "${x.set}" must be one of the ids in "places", or a built-in set: ${SETS.join(', ')}`);
+  // marks are where the hero stands; spots are where things go
+  const marks = marksOf(place);
+  const spots = spotsOf(place);
+  const mark = (name, what) => {
+    if (place && name !== undefined && !marks.includes(name)) err(`${where}: ${what} "${name}" is not a mark in "${x.set}" (marks: ${marks.join(', ')})`);
+  };
+  const spot = (name, what) => {
+    if (place && name !== undefined && !spots.includes(name)) err(`${where}: ${what} "${name}" is not a spot in "${x.set}" (spots: ${spots.join(', ')})`);
+  };
+  mark(x.at, 'at');
   if (x.camera !== undefined && !CAMERAS.includes(x.camera)) err(`${where}: camera must be close, medium or wide`);
   if (x.with !== undefined && x.with !== 'nurse') err(`${where}: with can only be "nurse" (a second person in the scene)`);
   if (x.feel !== undefined && !EXPRESSIONS.includes(x.feel)) err(`${where}: feel must be one of ${EXPRESSIONS.join(', ')}`);
@@ -797,8 +810,45 @@ function checkScene(x, where, err) {
       if (b.feel !== undefined && !EXPRESSIONS.includes(b.feel)) err(`${where}.beats[${k}]: feel must be one of ${EXPRESSIONS.join(', ')}`);
       if (b.do === 'walk' && !isStr(b.to)) err(`${where}.beats[${k}]: walk needs "to", a mark in the set`);
       if (b.do === 'pickUp' && !isStr(b.object)) err(`${where}.beats[${k}]: pickUp needs "object"`);
+      if (b.do === 'walk') mark(b.to, `beats[${k}] walks to`);
+      if (b.do === 'sit') mark(b.at, `beats[${k}] sits at`);
+      if (b.do === 'pickUp') spot(b.from, `beats[${k}] picks up from`);
+      if (b.do === 'give' || b.do === 'place') spot(b.to, `beats[${k}] puts it at`);
     });
   checkCaption(x, where, err);
+}
+
+/**
+ * Places: where the story's scenes happen, laid out along one street in the order the
+ * film first goes there. A place is a built-in set, a glTF model of a real building
+ * (url + credit), or a plain building front that can show a picture (image + credit).
+ */
+function checkPlaces(sp, err) {
+  if (sp.places === undefined) return;
+  if (!Array.isArray(sp.places) || sp.places.length > 12) return err('places: need a list of up to 12 places, each {"id", "kind": "set"|"model"|"facade", …}');
+  const seen = new Set();
+  const usedSets = new Set();
+  const used = new Set(arr(sp.explain).filter((x) => x?.shot === 'scene').map((x) => x.set));
+  sp.places.forEach((p, n) => {
+    const where = `places[${n}]${isStr(p?.id) ? ` "${p.id}"` : ''}`;
+    if (!p || typeof p !== 'object') return err(`${where}: must be an object`);
+    if (!isStr(p.id) || !ID.test(p.id)) err(`${where}: id must be a simple name (letters, digits, _)`);
+    else if (seen.has(p.id)) err(`${where}: id "${p.id}" is used twice`);
+    seen.add(p.id);
+    if (!PLACE_KINDS.includes(p.kind)) return err(`${where}: kind must be one of ${PLACE_KINDS.join(', ')}`);
+    if (SETS.includes(p.id) && !(p.kind === 'set' && p.set === p.id)) err(`${where}: id "${p.id}" is the name of a built-in set; choose another id`);
+    if (p.kind === 'set') {
+      if (!SETS.includes(p.set)) err(`${where}: set must be one of ${SETS.join(', ')}`);
+      else if (usedSets.has(p.set)) err(`${where}: set "${p.set}" already has a place; the world has one of each`);
+      usedSets.add(p.set);
+      for (const k of ['url', 'image']) if (p[k] !== undefined) err(`${where}: a built-in set has no "${k}"`);
+    }
+    if (p.kind === 'model' && (!isStr(p.url) || !isStr(p.credit))) err(`${where}: a model place needs "url" (a .glb/.gltf file) and "credit" (who made it, and the licence)`);
+    if (p.kind === 'facade' && p.image !== undefined && (!isStr(p.image) || !isStr(p.credit))) err(`${where}: a facade with a picture needs "image" (a picture URL or file) and "credit" (who made it, and the licence)`);
+    if (p.label !== undefined && (!isStr(p.label) || p.label.length > 40)) err(`${where}: label is the name on the building, up to 40 characters`);
+    if (p.width !== undefined && (!isNum(p.width) || p.width < 6 || p.width > 24)) err(`${where}: width is the building's frontage in metres, 6–24`);
+    if (isStr(p.id) && !used.has(p.id)) err(`${where}: no scene happens here. Remove it, or set a scene's "set" to "${p.id}".`);
+  });
 }
 
 /** Captions are the film's subtitles: short, and in ASD-STE100 style (see writing-rules.md). */

@@ -13,6 +13,7 @@ You choose the shot type, and the renderer decides the camera, framing and timin
 | `turn` | node or flow | Correct the common misconception. **Exactly one** (at most one in a `process` story). | Slow arc; the longest shot | Holds still so the viewer can compare. Add `drive` only if the surprise needs a sweep |
 | `timelapse` | store node | Show what builds up over time | Medium on the store | The clock runs from 0 to the span: the jar fills, the line is crossed, the flag rises |
 | `handoff` | — | Last shot: hand the choice to the viewer | Settles into the Simulate view (in a `process` story, into Decide) | The questions appear next, or Decide in a `process` story |
+| `scene` | a place (`set`) | The hero acts: a moment in their life (see `screenplay-format.md`) | Follows the hero like a Steadicam, from the open side of the room; cranes over the roofs for far moves | The hero walks to the place, then does the beats |
 
 ## A reliable shape (6–12 shots)
 
@@ -30,6 +31,7 @@ You choose the shot type, and the renderer decides the camera, framing and timin
 
 - **Length:** the caption stays on screen long enough to read at a calm pace (about 2.4 words per second) and then watch the scene for 2 s. The camera move and the fades come on top of that, so a 12-word caption gives a shot of about 9 s. No shot is shorter than 6 s.
 - **Extra time:** `follow` lasts at least 8 s, `turn` gets an extra 2.5 s, and `timelapse` an extra 4 s.
+- **Scenes:** a scene gets about 2.4 s for each beat, plus the time to get there: the walk from the last scene (at about 1.45 m/s), a crane of 5.5–8.5 s for a far place, or a 2.6 s crane down after a diagram shot. When the caption needs more time than that, the hero's beats slow down to fill it.
 - **After Explain:** the recording adds a 26 s Simulate segment (questions, controls, clock) and an 18 s Decide segment.
 
 Eight to eleven shots give an Explain act of about 70–100 seconds, and a whole film of about two to two and a half minutes. Shorter captions make a faster film; don't add shots to fill time.

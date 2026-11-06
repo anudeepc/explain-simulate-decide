@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Story world sheet</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  canvas { display: block; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .name { position: absolute; font-size: 15px; font-weight: 650; color: #2b2b30; background: rgba(255,255,255,0.85); padding: 3px 8px; border-radius: 6px; }
+  .meta { font-weight: 400; color: #6b7280; font-size: 12px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<div id="labels"></div>
+<script type="module">
+// Contact sheet for the story world: the whole street from above, then each place the
+// film visits, framed the way the story camera frames the hero there (a stand-in at the
+// place's first mark). Query: ?sp=<screenplay.json path>  (default: every built-in set,
+// plus a facade place across the road)
+import { THREE } from '../skills/explain-simulate-decide/engine/cast/kit.js';
+import { RoomEnvironment } from '../skills/explain-simulate-decide/engine/vendor/three/RoomEnvironment.js';
+import { planWorld } from '../skills/explain-simulate-decide/engine/sets/world.js';
+import { buildWorld } from '../skills/explain-simulate-decide/engine/sets/street.js';
+import { SETS } from '../skills/explain-simulate-decide/engine/sets/names.js';
+import { desired } from '../skills/explain-simulate-decide/engine/rig.js';
+
+const MAX_TRIS = 450000;
+window.sheetErrors = [];
+const fail = (msg) => window.sheetErrors.push(msg);
+const q = new URLSearchParams(location.search);
+let sp;
+if (q.get('sp')) sp = await (await fetch('/' + q.get('sp'))).json();
+else {
+  sp = { places: [{ id: 'office', kind: 'facade', label: 'Screening Office' }], explain: [...SETS, 'office'].map((set) => ({ shot: 'scene', set, beats: [{ do: 'idle' }], caption: '' })) };
+}
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#ffffff');
+scene.fog = new THREE.Fog('#ffffff', 60, 180);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.45;
+scene.add(new THREE.HemisphereLight('#e4ecff', '#d9d6d0', 0.75));
+const key = new THREE.DirectionalLight('#fff4e6', 2.8);
+key.castShadow = true;
+key.shadow.mapSize.setScalar(4096);
+key.shadow.bias = -0.0004;
+key.shadow.normalBias = 0.02;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight('#cfe1ff', 1.1);
+rim.position.set(5, 4, 6);
+scene.add(rim);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(300, 48), new THREE.MeshStandardMaterial({ color: '#f4f4f3', roughness: 1 }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.125;
+scene.add(ground);
+
+const world = planWorld(sp);
+let built;
+try {
+  built = await buildWorld(world);
+  scene.add(built.object);
+  if (built.triangles > MAX_TRIS) fail(`world: ${built.triangles} triangles (max ${MAX_TRIS})`);
+} catch (e) {
+  fail(`world failed to build: ${e.message}`);
+}
+
+// a 1.75 m stand-in at each place's first mark
+const standMat = new THREE.MeshStandardMaterial({ color: '#0e7c7b', roughness: 0.6 });
+const cells = [];
+const [X0, X1] = world.extent;
+const mid = (X0 + X1) / 2;
+cells.push({ name: 'the street', meta: `${(built?.triangles / 1000).toFixed(0)}k tris`, pose: { position: [mid - 4, 30, -34], target: [mid, 0, 4] }, r: 40 });
+for (const id of world.order) {
+  const p = world.places[id];
+  const m = world.standAt(id, Object.keys(p.marks)[0]);
+  const fig = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 1.37, 8, 20), standMat);
+  fig.position.set(m.position[0], 0.875, m.position[2]);
+  fig.castShadow = true;
+  scene.add(fig);
+  const h = { pos: [m.position[0], m.position[2]], facing: m.facing, heading: m.facing, walking: 0, action: 'idle', k: 0, seated: false };
+  cells.push({ name: id, meta: `${p.kind}${p.set ? ` · ${p.set}` : ''}`, pose: desired(h, { size: 'wide', nurse: null }, world), r: 10, subject: [m.position[0], 1.0, m.position[2]] });
+}
+
+const camera = new THREE.PerspectiveCamera(32, 16 / 9, 0.1, 400);
+const labels = document.getElementById('labels');
+function render() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H);
+  const cols = 3;
+  const cw = W / cols, ch = cw * 9 / 16;
+  renderer.setScissorTest(true);
+  labels.innerHTML = '';
+  cells.forEach((c, i) => {
+    const x = (i % cols) * cw, y = Math.floor(i / cols) * ch;
+    renderer.setViewport(x, H - y - ch, cw, ch);
+    renderer.setScissor(x, H - y - ch, cw, ch);
+    camera.aspect = cw / ch;
+    camera.updateProjectionMatrix();
+    camera.position.fromArray(c.pose.position);
+    camera.lookAt(new THREE.Vector3().fromArray(c.pose.target));
+    // cut away what stands between the camera and the stand-in, as the film does
+    const ray = new THREE.Ray();
+    for (const o of built?.occluders || []) {
+      let hide = false;
+      if (c.subject) {
+        const from = new THREE.Vector3().fromArray(c.pose.position);
+        const to = new THREE.Vector3().fromArray(c.subject);
+        ray.set(from, to.clone().sub(from).normalize());
+        const hit = ray.intersectBox(o.box, new THREE.Vector3());
+        hide = (hit && hit.distanceTo(from) < to.distanceTo(from) && !o.box.containsPoint(to)) || o.box.containsPoint(from);
+      }
+      o.object.visible = !hide;
+    }
+    const t = c.pose.target;
+    key.target.position.set(t[0], 0, t[2]);
+    key.position.set(t[0] - 6, 11, t[2] - 7.5);
+    Object.assign(key.shadow.camera, { left: -c.r, right: c.r, top: c.r, bottom: -c.r, near: 0.5, far: 80 });
+    key.shadow.camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+    const d = document.createElement('div');
+    d.className = 'name';
+    d.innerHTML = `${c.name}<span class="meta">${c.meta}</span>`;
+    d.style.left = `${x + 10}px`;
+    d.style.top = `${y + 8}px`;
+    labels.appendChild(d);
+  });
+}
+render();
+window.addEventListener('resize', render);
+requestAnimationFrame(() => (window.sheetReady = true));
+</script>
+</body>
+</html>

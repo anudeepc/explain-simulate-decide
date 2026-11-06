@@ -11,7 +11,7 @@ const ROAD_Y = -0.12;
 const SLOT_Y = 1.15;
 
 /** A classic cylindrical pillar box, slot facing +Z. */
-function pillarBox() {
+export function pillarBox() {
   const g = group();
   const red = clay('#c8202f');
   const black = clay('#1d1f22');
@@ -51,7 +51,7 @@ function pillarBox() {
 }
 
 /** A tall street lamp: tapered pole, a swan-neck arm and a lantern. Arm points +X. */
-function lamp() {
+export function lamp() {
   const g = group();
   const m = clay('#2e3a40');
   g.add(mesh(cylinder(0.12, 0.14, 0.4, 20), m, { y: 0.2 }));
@@ -67,9 +67,45 @@ function lamp() {
   return g;
 }
 
-export default function build() {
+const BOX = [-0.35, 0, -0.75];
+const BOX_TURN = 0.18;
+
+/** Marks, spots and cameras, in set space (no three.js needed to read them). */
+export const LAYOUT = (() => {
+  // standing at the box's right, turned to the slot (the camera sees the slot and the person's side)
+  const a = BOX_TURN;
+  const slot = [BOX[0] + Math.sin(a) * 0.3, SLOT_Y, BOX[2] + Math.cos(a) * 0.3];
+  const stand = [BOX[0] + 0.62, 0, BOX[2] + 0.42];
+  return {
+    size: [W, D],
+    marks: {
+      box: mark(r3(stand), r3(faceToward(stand, [slot[0], 0, slot[2]]))),
+      approach: mark([1.15, 0, 0.45], -2.2),
+    },
+    spots: {
+      slot: r3(slot),
+      lamp: r3([1.55, 0, KERB_Z - 0.35]),
+    },
+    cameras: {
+      close: { position: [-0.95, 1.45, 1.55], target: [-0.05, 1.1, -0.55] },
+      medium: { position: [-1.1, 1.5, 3.7], target: [0.1, 1.0, -0.6] },
+      wide: { position: [-0.6, 2.6, 7.9], target: [0, 1.6, -0.4] },
+    },
+    doors: [],
+  };
+})();
+
+/** @param {{shell?: boolean}} [o] shell: false is the pillar box alone (the world lays the street) */
+export default function build({ shell = true } = {}) {
   const object = group();
   object.name = 'set:postbox';
+  if (!shell) {
+    const box = pillarBox();
+    box.position.set(...BOX);
+    box.rotation.y = BOX_TURN;
+    object.add(box);
+    return { object, ...LAYOUT, walls: {}, doors: [] };
+  }
 
   // pavement (top at y = 0) with slabs, and the road a kerb-height lower
   const slabs = floorTexture('slabs', '#dfe2e5', '#c6cbd0', { repeat: [3.4, 2.6] });
@@ -139,10 +175,9 @@ export default function build() {
   object.add(tree);
 
   // the pillar box, slot toward the camera, and the lamp near the kerb
-  const BOX = [-0.35, 0, -0.75];
   const box = pillarBox();
   box.position.set(...BOX);
-  box.rotation.y = 0.18;
+  box.rotation.y = BOX_TURN;
   object.add(box);
   const lp = lamp();
   lp.position.set(1.55, 0, KERB_Z - 0.35);
@@ -158,24 +193,5 @@ export default function build() {
   bin.add(mesh(cylinder(0.06, 0.06, 0.04, 12), clay('#2e3a40'), { y: 0.02 }));
   object.add(bin);
 
-  // standing at the box's right, turned to the slot (the camera sees the slot and the person's side)
-  const a = 0.18;
-  const slot = [BOX[0] + Math.sin(a) * 0.3, SLOT_Y, BOX[2] + Math.cos(a) * 0.3];
-  const stand = [BOX[0] + 0.62, 0, BOX[2] + 0.42];
-  return {
-    object,
-    marks: {
-      box: mark(r3(stand), r3(faceToward(stand, [slot[0], 0, slot[2]]))),
-      approach: mark([1.15, 0, 0.45], -2.2),
-    },
-    spots: {
-      slot: r3(slot),
-      lamp: r3([1.55, 0, KERB_Z - 0.35]),
-    },
-    cameras: {
-      close: { position: [-0.95, 1.45, 1.55], target: [-0.05, 1.1, -0.55] },
-      medium: { position: [-1.1, 1.5, 3.7], target: [0.1, 1.0, -0.6] },
-      wide: { position: [-0.6, 2.6, 7.9], target: [0, 1.6, -0.4] },
-    },
-  };
+  return { object, ...LAYOUT, walls: {}, doors: [] };
 }

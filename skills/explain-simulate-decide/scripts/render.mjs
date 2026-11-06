@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, basename } from 'node:path';
 import { validate } from '../engine/schema.js';
 import { inline } from '../engine/bundle.js';
-import { toHtml } from '../engine/export.js';
+import { toHtml, assetsFor } from '../engine/export.js';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -43,9 +43,28 @@ for (const c of sp.world.nodes) {
   }
 }
 
+// places from open libraries (building models and pictures) travel inside the page too
+const MIME = { glb: 'model/gltf-binary', gltf: 'model/gltf+json', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml' };
+for (const pl of sp.places || []) {
+  for (const key of ['url', 'image']) {
+    const src = pl[key];
+    if (!src || src.startsWith('data:')) continue;
+    try {
+      const bytes = src.startsWith('http') ? Buffer.from(await (await fetch(src)).arrayBuffer()) : readFileSync(resolve(dirname(file), src));
+      const ext = src.split(/[?#]/)[0].split('.').pop().toLowerCase();
+      pl[key] = `data:${MIME[ext] || (key === 'url' ? 'model/gltf-binary' : 'image/jpeg')};base64,${bytes.toString('base64')}`;
+    } catch (e) {
+      console.warn(`Could not embed ${key} for place "${pl.id}" (${e.message}); it will show as a plain building.`);
+      delete pl[key];
+    }
+  }
+}
+
 const engineDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'engine');
 const bundle = await inline('player.js', (p) => readFileSync(join(engineDir, p), 'utf8'));
-const html = toHtml(sp, bundle, { options: { cast, voice } });
+// the rigged people's bodies, hair and motion travel inside the page too
+const assets = await assetsFor(bundle, (name) => readFileSync(join(engineDir, 'assets', `${name}.glb`)), sp);
+const html = toHtml(sp, bundle, { options: { cast, voice }, assets });
 const target = out || join(dirname(file), basename(file).replace(/\.json$/, '') + '.html');
 mkdirSync(dirname(target), { recursive: true }); // the output folder may not exist yet
 writeFileSync(target, html);
