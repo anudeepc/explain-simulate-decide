@@ -4,8 +4,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { planWorld, routeLength, LAYOUTS } from '../skills/explain-simulate-decide/engine/sets/world.js';
-import { planStory, heroAt, CRANE_OVER } from '../skills/explain-simulate-decide/engine/story.js';
+import { planStory, heroAt, captionAt, CRANE_OVER } from '../skills/explain-simulate-decide/engine/story.js';
 import { buildTimeline } from '../skills/explain-simulate-decide/engine/timing.js';
+import { desired } from '../skills/explain-simulate-decide/engine/rig.js';
 import { SETS, SET_MARKS, SET_SPOTS, PLACE_MARKS, PLACE_SPOTS, marksOf } from '../skills/explain-simulate-decide/engine/sets/names.js';
 
 const load = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url)));
@@ -120,4 +121,52 @@ test('places without a screenplay "places" list are the built-in sets, and timin
   const story = planStory(solar);
   assert.equal(Object.keys(story.shots).length, 0);
   assert.deepEqual(buildTimeline(solar, { scenes: story.scenes }), buildTimeline(solar));
+});
+
+test('every step shows: each beat subtitle plays in order, long enough to read, and the framing glides', () => {
+  const sp = bowel();
+  const i = sp.explain.findIndex((s) => s.shot === 'scene' && s.set === 'kitchen');
+  const shot = sp.explain[i];
+  const lines = shot.beats.map((b) => b.caption).filter(Boolean);
+  assert.ok(lines.length >= 4, 'the kitchen shows each step of the kit');
+  const story = planStory(sp);
+  const tl = buildTimeline(sp, { scenes: story.scenes });
+  const seg = tl.segments[i];
+  const d = seg.end - seg.start;
+  const seen = [];
+  const shown = {};
+  let lastPos = null;
+  for (let s = 0; s < d; s += 1 / 30) {
+    const c = captionAt(story.shots[i], s, d, shot.caption);
+    if (c.own && c.alpha > 0.95) {
+      if (seen.at(-1) !== c.text) seen.push(c.text);
+      shown[c.text] = (shown[c.text] || 0) + 1 / 30;
+    }
+    const h = heroAt(story.shots[i], s, d);
+    if (lastPos) assert.ok(Math.hypot(h.pos[0] - lastPos[0], h.pos[1] - lastPos[1]) < 0.15, `the hero never jumps (at ${s.toFixed(2)} s)`);
+    lastPos = h.pos;
+  }
+  assert.deepEqual(seen, lines, 'every step subtitle appears, in order');
+  for (const t of lines) assert.ok(shown[t] >= t.split(/\s+/).length / 2.4, `"${t}" stays up long enough to read`);
+});
+
+test('the camera never jumps inside a scene: where it wants to be changes smoothly, frame to frame', () => {
+  // a sudden change here (a new room's angle, a new framing, a flag that flips) shows on screen
+  // as a stutter, because the follow camera averages it in over many samples
+  const sp = bowel();
+  const story = planStory(sp);
+  const tl = buildTimeline(sp, { scenes: story.scenes });
+  for (const [i, plan] of Object.entries(story.shots)) {
+    const seg = tl.segments[i];
+    const d = seg.end - seg.start;
+    let last = null;
+    for (let s = 0; s < d; s += 1 / 30) {
+      const w = desired(heroAt(plan, s, d), plan, story.world);
+      if (last && plan.transit.kind !== 'crane') {
+        const jump = Math.hypot(...w.position.map((v, k) => v - last.position[k]));
+        assert.ok(jump < 0.25, `shot ${i} at ${s.toFixed(2)} s: the camera wants to jump ${jump.toFixed(2)} m in one frame`);
+      }
+      last = w;
+    }
+  }
 });

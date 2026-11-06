@@ -166,7 +166,18 @@ At least one `between` and one `rises` or `falls`. The validator also runs every
 - `camera`: `close`, `medium` (default) or `wide`.
 - `at`: the mark where the hero starts. `seated: true` starts them in a chair.
 - `with: "nurse"`: a second person in the scene (at a model or facade place, they stand at `host`).
-- `beats` (1–4, in order): `{"do": action, "to": mark or spot, "object": letter|envelope|kit, "from": spot, "feel": expression}`. Actions are `idle`, `walk`, `pickUp`, `read`, `hold`, `give`, `place`, `sit`, `talk`, `listen`, `wait` and `react`. Expressions are `neutral`, `curious`, `worried`, `relieved` and `smile`. `walk` goes `to` a mark and `sit` is `at` a mark; `pickUp` is `from` a spot, and `give` and `place` go `to` a spot. The validator checks each name against the place.
+- `beats` (1–8, in order, one real step each): `{"do": action, "to": mark or spot, "object": letter|envelope|kit, "from": spot, "at": spot, "feel": expression, "caption": subtitle, "camera": framing}`. Actions are `idle`, `walk`, `pickUp`, `read`, `hold`, `use`, `give`, `place`, `sit`, `talk`, `listen`, `wait` and `react`. Expressions are `neutral`, `curious`, `worried`, `relieved` and `smile`. `walk` goes `to` a mark and `sit` is `at` a mark; `pickUp` is `from` a spot, and `give` and `place` go `to` a spot. `use` is the hero working with the `object` in their hands: opening it, taking a sample, writing on it, sealing it. The validator checks each name against the place.
+- A beat's `caption` is that step's own subtitle. It shows while the step happens, and the beat lasts long enough to read it. Same rules as every caption: 12 words or fewer, ASD-STE100 style. Beats without one show the shot's `caption`.
+- A beat's `camera` frames that step: `close`, `medium`, `wide`, or `detail`, a close look down at the hands, for small actions like writing a date or closing a lid. The camera glides from one framing to the next; it never cuts.
+
+```json
+{"shot": "scene", "set": "kitchen", "at": "counter", "caption": "You take a tiny sample at home.", "beats": [
+  {"do": "use", "object": "kit", "camera": "detail", "caption": "First, write the date on the sample bottle."},
+  {"do": "use", "object": "kit", "camera": "detail", "caption": "Open the bottle. The lid has a sample stick."},
+  {"do": "use", "object": "kit", "camera": "detail", "caption": "Put the stick back in the bottle. Close the lid tightly."},
+  {"do": "hold", "object": "kit", "caption": "Then put the bottle in the envelope."}
+]}
+```
 
 | Place | Marks (where the hero stands) | Spots (where things go) |
 |---|---|---|

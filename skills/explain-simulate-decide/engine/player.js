@@ -336,6 +336,7 @@ async function start(root, sp, options, api) {
       const shotFrame = director.frame(seg.index, local, t, { reducedMotion });
       f.setScene = shotFrame.scene;
       f.pose = shotFrame.pose;
+      globalThis.__dbg = { pose: shotFrame.pose, local, t };
       f.dip = shotFrame.dip;
     } else if (cut) f.pose = reducedMotion ? setups[st.index].at(0) : breathe(setups[st.index].at(local), t);
     else f.pose = reducedMotion ? poseAt(setups, st.index, local, { reducedMotion }) : breathe(poseAt(setups, st.index, local), t);
@@ -350,6 +351,14 @@ async function start(root, sp, options, api) {
       }
       f.caption = shot.caption;
       f.captionAlpha = textAlpha;
+      if (isScene(seg)) {
+        // a scene can subtitle each step as it happens
+        const c = director.caption(seg.index, local);
+        if (c.own) {
+          f.caption = c.text;
+          f.captionAlpha = c.alpha * (1 - span(local, 0.97, 1));
+        }
+      }
       f.ringAlpha = shot.focus && !['establish', 'handoff'].includes(shot.shot) ? textAlpha : 0;
       if (shot.focus && !['establish', 'handoff'].includes(shot.shot)) {
         if (flowById[shot.focus]) {

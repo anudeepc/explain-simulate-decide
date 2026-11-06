@@ -802,7 +802,7 @@ function checkScene(x, where, err, places = {}) {
   if (x.feel !== undefined && !EXPRESSIONS.includes(x.feel)) err(`${where}: feel must be one of ${EXPRESSIONS.join(', ')}`);
   if (x.seated !== undefined && typeof x.seated !== 'boolean') err(`${where}: seated must be true or false (the hero starts in a chair)`);
   const beats = x.beats;
-  if (!Array.isArray(beats) || beats.length < 1 || beats.length > 4) err(`${where}: a scene needs 1–4 beats: what the hero does, in order, such as {"do": "pickUp", "object": "letter", "from": "mat"}`);
+  if (!Array.isArray(beats) || beats.length < 1 || beats.length > 8) err(`${where}: a scene needs 1–8 beats: what the hero does, in order, one real step each, such as {"do": "pickUp", "object": "letter", "from": "mat"}`);
   else
     beats.forEach((b, k) => {
       if (!ACTIONS.includes(b.do)) err(`${where}.beats[${k}]: do "${b.do}" must be one of ${ACTIONS.join(', ')}`);
@@ -814,6 +814,11 @@ function checkScene(x, where, err, places = {}) {
       if (b.do === 'sit') mark(b.at, `beats[${k}] sits at`);
       if (b.do === 'pickUp') spot(b.from, `beats[${k}] picks up from`);
       if (b.do === 'give' || b.do === 'place') spot(b.to, `beats[${k}] puts it at`);
+      if (b.do === 'use' && !isStr(b.object)) err(`${where}.beats[${k}]: use needs "object", the thing in the hero's hands`);
+      if (b.do === 'use') spot(b.at, `beats[${k}] works at`);
+      if (b.camera !== undefined && ![...CAMERAS, 'detail'].includes(b.camera)) err(`${where}.beats[${k}]: camera must be close, medium, wide or detail (a close look at the hands)`);
+      // a step can carry its own subtitle, shown while it happens
+      if (b.caption !== undefined) checkCaption(b, `${where}.beats[${k}]`, err);
     });
   checkCaption(x, where, err);
 }

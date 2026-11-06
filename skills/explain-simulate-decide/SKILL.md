@@ -23,7 +23,7 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
    Say why you are asking, and accept "don't know". Their answers become the defaults. The page will still ask any viewer the same questions (step 8). Skip this step in the web tool or when no one is there to answer.
 
 3. **Research what the article leaves out.** Ask before searching if the user hasn't allowed web access. Two things are worth looking up:
-   - **What actually happens.** If the topic is something a person goes through (a test, a treatment, a claim, an application, an installation), find the real steps from an authoritative source: what they do, what happens next, how long it takes, and what each result means. Articles often skip this, and it is what the film should show.
+   - **What actually happens.** If the topic is something a person goes through (a test, a treatment, a claim, an application, an installation), find the real steps from an authoritative source: what they do, what happens next, how long it takes, and what each result means. Articles often skip this, and it is what the film should show. Keep the full list of steps, in order: each one becomes a beat in a scene (see "Show every step" in `references/storytelling.md`).
    - **Local and current numbers.** When the answer depends on place, price or the latest research (costs, prices, interest rates, incentives, risk figures), find current figures for the person's area, or a few typical regions.
 
    How to use what you find:
@@ -105,6 +105,7 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
 15. **Check your work** before handing it over:
     - [ ] The shape fits the article, and no number was invented to make a model. With no numbers to change, the shape is `process`.
     - [ ] If the topic is something a person goes through, the film shows the real steps, researched and quoted, not only the odds.
+    - [ ] Every real step is its own beat with its own subtitle, in order, none skipped; small hand steps use the `detail` camera.
     - [ ] Nothing is left that the viewer wouldn't miss.
     - [ ] There is a hero the viewer cares about; the film opens and ends with them, and the captions read like a narrator.
     - [ ] Every number has a quote or is labelled an assumption. Researched figures carry their URL and the date you read them.

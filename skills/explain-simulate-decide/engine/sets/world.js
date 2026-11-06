@@ -46,6 +46,7 @@ function viewOf(cam, rot) {
   const d = cam.position.map((v, i) => v - cam.target[i]);
   return { az: Math.atan2(d[0], d[2]) + rot, el: Math.atan2(d[1], Math.hypot(d[0], d[2])) };
 }
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const OUTSIDE_VIEW = { close: { az: Math.PI + 0.35, el: 0.12 }, medium: { az: Math.PI + 0.35, el: 0.17 }, wide: { az: Math.PI + 0.3, el: 0.3 } };
 const FRONT_VIEW = { close: { az: Math.PI + 0.22, el: 0.12 }, medium: { az: Math.PI + 0.2, el: 0.2 }, wide: { az: Math.PI + 0.16, el: 0.3 } };
 
@@ -249,7 +250,41 @@ export function planWorld(sp, { seatBack = 0.32 } = {}) {
   /** The walkable zone a point is in (rooms and forecourts before the open street). */
   const zoneAt = (p) => (zones.find((z) => inRect(z.rect, p)) || zones.find((z) => inRect(z.rect, p, 0.3)))?.id || null;
   /** Which way to look at a person standing at p: the room's own camera, or the street's. */
-  const viewAt = (p) => views.find((v) => inRect(v.rect, p))?.view || OUTSIDE_VIEW;
+  // which way the camera looks from p: each room's (or the street's) view, blended across the
+  // last metre either side of its edge, so walking through a doorway turns the camera smoothly
+  // instead of snapping it to the next room's angle
+  const BLEND = 0.9;
+  const inside = (r, p) => Math.min(p[0] - r[0], r[2] - p[0], p[1] - r[1], r[3] - p[1]); // signed distance, + inside
+  const viewAt = (p) => {
+    const parts = [];
+    let sum = 0;
+    for (const v of views) {
+      const w = clamp01((inside(v.rect, p) + BLEND) / (2 * BLEND));
+      const ws = w * w * (3 - 2 * w);
+      if (ws > 0) {
+        parts.push([v.view, ws]);
+        sum += ws;
+      }
+    }
+    if (sum < 1) parts.push([OUTSIDE_VIEW, 1 - sum]);
+    if (parts.length === 1) return parts[0][0];
+    const out = {};
+    for (const size of ['close', 'medium', 'wide']) {
+      let sx = 0;
+      let cx = 0;
+      let el = 0;
+      let tot = 0;
+      for (const [v, w] of parts) {
+        const a = v[size] || v.medium;
+        sx += Math.sin(a.az) * w;
+        cx += Math.cos(a.az) * w;
+        el += a.el * w;
+        tot += w;
+      }
+      out[size] = { az: Math.atan2(sx, cx), el: el / tot };
+    }
+    return out;
+  };
 
   /**
    * A walking route from a to b ([x, z]): straight within a room or along the street,

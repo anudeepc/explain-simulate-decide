@@ -23,6 +23,16 @@ Then write the **logline**: one sentence, under 35 words, holding all five. "A k
 - **Show, then say.** The picture does the explaining; the caption tells the viewer what to notice and why it matters. Never caption what the viewer can plainly see ("Here is a house").
 - **Honest stakes.** Real consequences, told calmly. No fear, no urgency, no villains. Respect the viewer's intelligence and their right to decide.
 
+## Show every step: don't skip
+
+When the film follows something a person does (a test, a form, a claim, an installation), show **every real step, in the order it happens**, the way the authoritative source lists them. A viewer should be able to do it themselves after watching. Skipping a step ("you take a sample", then the post box) leaves a gap the viewer has to guess at.
+
+- **One step, one beat.** Take the steps from your research ("What actually happens" in SKILL.md), quote them in `source.quotes`, and make each one a beat with its own `caption`: "First, write the date on the sample bottle." "Open the bottle. The lid has a sample stick."
+- **Look closely at small things.** For a step done with the hands (writing, opening, sealing), give the beat `"camera": "detail"`. The camera glides in to the hands and back out; it never cuts.
+- **Give each step time.** A beat with a subtitle lasts as long as it takes to read. Don't cram two steps into one line. If a scene would need more than 8 beats, split it into two scenes in the same place.
+- **No jumps in time or place without saying so.** If days pass or the hero goes somewhere new, the subtitle says it: "The result comes by letter, usually within two weeks."
+- **Keep the steps that matter for the decision**, and keep them accurate. Don't invent steps the source does not describe; if a step can't be shown (it's private, or the engine has no prop for it), say it in the subtitle while the hero does the nearest action.
+
 ## Writing the captions (subtitles)
 
 Captions are the narration. Viewers can turn them off, so the picture must carry the story too, but when they are on they should read like a film's narrator.

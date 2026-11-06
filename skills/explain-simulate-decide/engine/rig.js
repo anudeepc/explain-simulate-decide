@@ -13,10 +13,14 @@ export const FRAMING = {
   close: { dist: 2.5, y: 1.32 },
   medium: { dist: 4.5, y: 1.08 },
   wide: { dist: 7.4, y: 1.0 },
+  // an insert on the hands: what they hold, what they do to it
+  detail: { dist: 1.25, y: 1.05 },
 };
 export const LAG = 1.4; // seconds the camera trails the hero by, at most
-const SAMPLES = 12;
-const ACTING = ['pickUp', 'give', 'place', 'read'];
+// many samples: with few, anything that changes at one instant arrives in visible steps
+// (one per sample), which reads as a stuttering camera
+const SAMPLES = 64;
+const ACTING = ['pickUp', 'give', 'place', 'read', 'use'];
 
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const scale = (a, k) => a.map((v) => v * k);
@@ -31,21 +35,43 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
  * @param {any} world the world plan (for which way to look from here)
  */
 export function desired(h, plan, world) {
-  const size = FRAMING[plan.size] ? plan.size : 'medium';
+  if (h.prevSize && h.sizeK < 1) {
+    // moving from one framing to the next: glide between the two
+    const a = desired({ ...h, size: h.prevSize, prevSize: null }, plan, world);
+    const b = desired({ ...h, prevSize: null }, plan, world);
+    const e = h.sizeK; // already eased
+    return { position: a.position.map((v, i) => lerp(v, b.position[i], e)), target: a.target.map((v, i) => lerp(v, b.target[i], e)) };
+  }
+  const want = h.size || plan.size;
+  const size = FRAMING[want] ? want : 'medium';
   const F = FRAMING[size];
-  const view = world.viewAt(h.pos)[size] || world.viewAt(h.pos).medium;
-  const sitting = h.seated || (h.action === 'sit' && h.k > 0.5);
-  let focus = [h.pos[0], sitting ? F.y - 0.36 : F.y, h.pos[1]];
+  const views = world.viewAt(h.pos);
+  let view = views[size] || views.medium;
+  if (size === 'detail') {
+    // over the shoulder, from the room's open side, looking down at the hands (in front of the
+    // hero there is usually a counter or a wall, so the camera stays behind and to one side)
+    const base = (views.close || views.medium).az;
+    const sides = [h.facing + Math.PI - 1.4, h.facing + Math.PI + 1.4];
+    const az = sides.reduce((a, b) => (Math.abs(wrap(b - base)) < Math.abs(wrap(a - base)) ? b : a));
+    view = { az, el: 0.8 };
+  }
+  // everything that moves the aim changes smoothly, so the follow camera glides
+  const sitting = h.seated ? 1 : h.action === 'sit' ? easeInOut(clamp01(h.k)) : 0;
+  let focus = [h.pos[0], F.y - 0.36 * sitting, h.pos[1]];
   // lead the walk: aim a little ahead of where they're going
   const lead = 0.75 * (h.walking || 0);
   focus[0] += Math.sin(h.heading) * lead;
   focus[2] += Math.cos(h.heading) * lead;
   // look at what the hands are doing
-  if (h.reach && ACTING.includes(h.action)) focus = focus.map((v, i) => lerp(v, h.reach[i], 0.35));
-  else if (h.action === 'read') focus[1] -= 0.08;
+  if (size === 'detail') {
+    // look down at the hands: just in front of the chest, or where they work
+    const fwd = 0.4;
+    focus = [h.pos[0] + Math.sin(h.facing) * fwd, sitting ? 0.8 : 1.02, h.pos[1] + Math.cos(h.facing) * fwd];
+  } else if (h.reach && ACTING.includes(h.action)) focus = focus.map((v, i) => lerp(v, h.reach[i], 0.35 * (h.reachW ?? 1)));
+  else if (h.action === 'read') focus[1] -= 0.08 * easeInOut(clamp01(h.k * 3));
   let dist = F.dist;
   let az = view.az;
-  if (plan.nurse) {
+  if (plan.nurse && size !== 'detail') {
     // keep the second person in the frame: aim between them, stand back enough for both,
     // and look across the line between them (on the room's side), so neither hides the other
     const n = plan.nurse.position;
@@ -74,7 +100,9 @@ export function follow(want, t) {
   let wsum = 0;
   for (let i = 0; i < SAMPLES; i++) {
     const u = i / (SAMPLES - 1);
-    const w = (1 - u) ** 1.6 + 0.02;
+    // the weight starts at zero for 'now' and rises before it falls, so a sudden change in where
+    // the camera wants to be (a new room, a new framing) starts and ends gently, never with a jolt
+    const w = Math.sin(Math.PI * Math.min(1, u * 1.5)) ** 2 * (1 - u * 0.5) + (u > 2 / 3 ? 0 : 0);
     const d = want(t - u * LAG);
     for (let k = 0; k < 3; k++) {
       pos[k] += d.position[k] * w;
@@ -135,7 +163,7 @@ export function crane(k, from, to) {
   const d1 = horiz(to);
   const dir = add(scale(d0, 1 - glide), scale(d1, glide));
   const dl = Math.hypot(dir[0], dir[2]) || 1;
-  const pull = H * 0.75 * Math.sin(Math.PI * Math.min(1, Math.max(0, k)));
+  const pull = H * 0.75 * Math.sin(Math.PI * Math.min(1, Math.max(0, k))) ** 2; // squared: starts and ends at rest
   const y = from.position[1] + (H - from.position[1]) * up - (H - to.position[1]) * down;
   const position = [lerp(from.position[0], to.position[0], glide) + (dir[0] / dl) * pull, y, lerp(from.position[2], to.position[2], glide) + (dir[2] / dl) * pull];
   const ty = from.target[1] + (0.3 - from.target[1]) * up - (0.3 - to.target[1]) * down;

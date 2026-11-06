@@ -634,6 +634,7 @@ export default function build({ tint = '#5b7fb0', skin = '#e8c4a8', hair = '#3a2
   }
 
   function pose(action, k = 0, opts = {}) {
+    if (action === 'use') action = 'read'; // the clay figure has no "use": both hands up at the thing reads close enough
     const fn = ACT[action];
     if (!fn) throw new Error(`character: unknown action "${action}" (known: ${ACTIONS.join(', ')})`);
     reset();

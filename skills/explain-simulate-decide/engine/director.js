@@ -9,7 +9,7 @@ import buildCharacter from './cast/character.js';
 import buildHuman, { loadHumans } from './cast/human.js';
 import { buildObject } from './sets/objects.js';
 import { buildWorld } from './sets/street.js';
-import { planStory, heroAt, shotSpans, EXIT } from './story.js';
+import { planStory, heroAt, shotSpans, captionAt, EXIT } from './story.js';
 import { desired, follow, crane, arrive, rise, blocks } from './rig.js';
 import { breathe } from './camera.js';
 import { span, easeInOut, easeOut } from './timing.js';
@@ -98,8 +98,10 @@ export async function createScenes(sp, stage, tone) {
     const want = (x) => wantAt(i, x);
     let pose;
     if (reducedMotion) pose = wantAt(i, s);
-    else if (plan.transit.kind === 'crane' && s < T) pose = crane(s / T, follow((x) => wantAt(i - 1, x), durOf(i - 1)), follow(want, T));
-    else if (plan.transit.kind === 'arrive' && s < T) pose = arrive(s / T, follow(want, T), world.places[plan.place].establish);
+    // the crane leaves the follow camera still moving as it was and lands on it already moving,
+    // so neither end of the move has a jolt
+    else if (plan.transit.kind === 'crane' && s < T) pose = crane(s / T, follow((x) => wantAt(i - 1, x), durOf(i - 1) + s), follow(want, s));
+    else if (plan.transit.kind === 'arrive' && s < T) pose = arrive(s / T, follow(want, s), world.places[plan.place].establish);
     else pose = follow(want, s);
     if (plan.exit && !reducedMotion) pose = rise(pose, span(s, d - EXIT, d));
     return pose;
@@ -109,7 +111,7 @@ export async function createScenes(sp, stage, tone) {
   function occlusion(i, s, reducedMotion) {
     const d = durOf(i);
     const out = new Float32Array(built.occluders.length);
-    const times = [s - 0.35, s, s + 0.35].map((x) => Math.min(Math.max(x, 0), d));
+    const times = [s - 0.7, s - 0.35, s, s + 0.35, s + 0.7].map((x) => Math.min(Math.max(x, 0), d));
     for (const x of times) {
       const cam = cameraAt(i, x, reducedMotion).position;
       const h = heroAt(shots[i], x, d);
@@ -169,6 +171,12 @@ export async function createScenes(sp, stage, tone) {
      * Stage shot `index` at progress `local` (0..1) and film time `t`.
      * @returns {{scene: THREE.Scene, pose: {position: number[], target: number[]}, dip: number}}
      */
+    /** The subtitle at this moment of a scene shot: the beat's own line, or the shot's caption. */
+    caption(index, local) {
+      const plan = shots[index];
+      const d = durOf(index);
+      return captionAt(plan, local * d, d, sp.explain[index].caption);
+    },
     frame(index, local, t, { reducedMotion = false } = {}) {
       const plan = shots[index];
       const d = durOf(index);
@@ -192,11 +200,17 @@ export async function createScenes(sp, stage, tone) {
 
       // the second person answers the hero: talking while they listen, listening while they talk
       if (nurse) {
-        nurse.object.visible = !!plan.nurse;
-        if (plan.nurse) {
-          nurse.object.position.set(...plan.nurse.position);
-          nurse.object.rotation.y = plan.nurse.facing;
-          nurse.pose(h.action === 'talk' ? 'listen' : 'talk', h.k, { sitting: plan.nurse.sitting });
+        // she stays where she was while the camera leaves (a crane or walk away from her room)
+        const before = shots[index - 1];
+        const { T } = shotSpans(plan, d);
+        const where = plan.nurse || (before?.nurse && plan.transit.kind !== 'arrive' && s < T ? before.nurse : null);
+        nurse.object.visible = !!where;
+        if (where) {
+          nurse.object.position.set(...where.position);
+          nurse.object.rotation.y = where.facing;
+          // her own clock, not the hero's beats, so her movement never restarts mid-gesture
+          const k = (t / 7) % 1;
+          nurse.pose(h.action === 'talk' ? 'listen' : 'talk', k, { sitting: where.sitting });
           nurse.setExpression(h.feel === 'worried' ? 'neutral' : 'smile');
         }
       }
@@ -204,9 +218,10 @@ export async function createScenes(sp, stage, tone) {
 
       // a door opens as the hero walks through it, and closes behind them
       for (const dr of built.doors) {
-        const through = h.action === 'walk' && throughDoors[index].has(dr);
+        // (it swings over a moment: never already open on the first frame of the shot)
+        const through = throughDoors[index].has(dr);
         const dist = Math.hypot(dr.at[0] - h.pos[0], dr.at[2] - h.pos[1]);
-        dr.leaf.rotation.y = through ? dr.swing * 1.45 * easeInOut(span(dist, 2.2, 0.9)) : 0;
+        dr.leaf.rotation.y = through ? dr.swing * 1.45 * easeInOut(span(dist, 2.2, 0.9)) * easeInOut(span(s, 0, 0.9)) : 0;
       }
 
       const pose = cameraAt(index, s, reducedMotion);

@@ -175,7 +175,13 @@ test('scenes: the hero acting in a set, with subtitles in ASD-STE100 style', () 
   assert.deepEqual(validate(b()), []);
   const scene = (s) => s.explain.find((x) => x.shot === 'scene');
   bad((s) => (scene(s).set = 'castle'), /set "castle" must be one of/);
-  bad((s) => (scene(s).beats = []), /a scene needs 1–4 beats/);
+  bad((s) => (scene(s).beats = []), /a scene needs 1–8 beats/);
+  bad((s) => (scene(s).beats = Array.from({ length: 9 }, () => ({ do: 'wait' }))), /a scene needs 1–8 beats/);
+  // each step can carry its own subtitle and framing; "use" works with the thing in hand
+  bad((s) => (scene(s).beats = [{ do: 'use', caption: 'Open the bottle.' }]), /use needs "object"/);
+  bad((s) => (scene(s).beats = [{ do: 'use', object: 'kit', camera: 'macro' }]), /camera must be close, medium, wide or detail/);
+  bad((s) => (scene(s).beats = [{ do: 'use', object: 'kit', caption: 'The bottle is opened by you.' }]), /beats\[0\] caption/);
+  assert.deepEqual(validate((() => { const s = b(); scene(s).beats = [{ do: 'use', object: 'kit', camera: 'detail', caption: 'Open the bottle.' }]; return s; })()), []);
   bad((s) => (scene(s).beats[0].do = 'dance'), /do "dance" must be one of/);
   bad((s) => (scene(s).beats[0] = { do: 'walk' }), /walk needs "to"/);
   bad((s) => (scene(s).camera = 'drone'), /camera must be close, medium or wide/);

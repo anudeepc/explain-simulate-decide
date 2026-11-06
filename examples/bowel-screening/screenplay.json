@@ -71,6 +71,60 @@
         "url": "https://www.cancerresearchuk.org/health-professional/cancer-screening/bowel-cancer-screening/screening-bowel-overview",
         "publisher": "Cancer Research UK",
         "accessed": "2026-11-06"
+      },
+      {
+        "text": "Your test kit (FIT kit) should include a sample bottle, an envelope, and instructions on how to do the test.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Write the date on the sample bottle.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Open the sample bottle and remove the lid, which has a sample stick attached.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Gently scrape the end of the sample stick along your poo until all the grooves are covered. Only a small amount is needed.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Put the sample stick back into the sample bottle and close the lid tightly.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Put the sample bottle in the envelope included in your test kit and seal it.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Post the envelope with your sample as soon as you can. Postage is free and you do not need a stamp.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "You'll usually get the results of your bowel cancer screening home test (FIT kit) within 2 weeks after sending your poo sample. Sometimes it can take longer.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "You'll be invited to an appointment with a specialist nurse who will talk with you about your results, and what happens next.",
+        "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+        "publisher": "NHS",
+        "accessed": "2026-11-06"
       }
     ]
   },
@@ -510,7 +564,8 @@
       "beats": [
         {
           "do": "walk",
-          "to": "mat"
+          "to": "mat",
+          "caption": "Every two years, a test kit comes in the post."
         },
         {
           "do": "pickUp",
@@ -519,7 +574,8 @@
         },
         {
           "do": "read",
-          "feel": "curious"
+          "feel": "curious",
+          "caption": "The kit has a sample bottle, an envelope and instructions."
         }
       ],
       "caption": "A letter arrives. It is your turn for the bowel test.",
@@ -532,14 +588,38 @@
       "at": "counter",
       "beats": [
         {
-          "do": "hold",
+          "do": "use",
           "object": "kit",
-          "feel": "curious"
+          "at": "counter",
+          "camera": "detail",
+          "feel": "curious",
+          "caption": "First, write the date on the sample bottle."
         },
         {
-          "do": "place",
+          "do": "use",
           "object": "kit",
-          "to": "counter"
+          "at": "counter",
+          "camera": "detail",
+          "caption": "Open the bottle. The lid has a sample stick."
+        },
+        {
+          "do": "use",
+          "object": "kit",
+          "at": "counter",
+          "camera": "detail",
+          "caption": "Scrape the stick along your poo until it fills the grooves."
+        },
+        {
+          "do": "use",
+          "object": "kit",
+          "at": "counter",
+          "camera": "detail",
+          "caption": "Put the stick back in the bottle. Close the lid tightly."
+        },
+        {
+          "do": "hold",
+          "object": "kit",
+          "caption": "Wash your hands. Then put the bottle in the envelope."
         }
       ],
       "caption": "You take a tiny sample at home. It takes two minutes."
@@ -551,7 +631,8 @@
       "beats": [
         {
           "do": "walk",
-          "to": "box"
+          "to": "box",
+          "caption": "Post it soon. You do not need a stamp."
         },
         {
           "do": "give",
@@ -583,7 +664,8 @@
           "do": "pickUp",
           "object": "letter",
           "from": "mat",
-          "feel": "worried"
+          "feel": "worried",
+          "caption": "The result comes by letter, usually within two weeks."
         },
         {
           "do": "read",
@@ -605,6 +687,11 @@
         {
           "do": "sit",
           "at": "patientChair"
+        },
+        {
+          "do": "listen",
+          "feel": "worried",
+          "caption": "A specialist nurse talks to you about the result."
         },
         {
           "do": "listen",

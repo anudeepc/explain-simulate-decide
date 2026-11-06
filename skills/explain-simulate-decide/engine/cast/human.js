@@ -765,6 +765,23 @@ function createMotion({ B, J, rig, object, rest, rigRest, hand, brows }) {
         turn(J.Head, 1, 0, 0, 0.06);
       },
     }),
+    use: (k, o) => ({
+      ...(o.sitting ? { layers: [{ clip: 'Sitting_Idle_Loop', t: loopT('Sitting_Idle_Loop', k, 2), w: 1 }], seated: true } : { layers: [{ clip: 'Idle_Loop', t: loopT('Idle_Loop', k), w: 1 }], arms: 1 }),
+      after() {
+        // both hands working on the thing in hand (open it, take a sample, write on it, seal it):
+        // at a spot such as the counter, or in front of the chest; small, careful movements
+        const base = o.target ? new THREE.Vector3().copy(o.target).add(new THREE.Vector3(0, 0.07, -0.02)) : worldToChar(atChest(0, -0.07, 0.4), new THREE.Vector3());
+        const work = Math.sin(TAU * k * 3);
+        const r = base.clone().add(new THREE.Vector3(-0.045 + 0.025 * work, 0.012 * Math.cos(TAU * k * 3), 0.01 * work));
+        const l = base.clone().add(new THREE.Vector3(0.06, 0.005, 0));
+        const lean = o.target ? 0.6 : 0;
+        reach('r', r, 1, 0.5, null, lean);
+        reach('l', l, 1, 0.5, null, lean);
+        grip = { r: 0.85, l: 0.6 };
+        turn(J.neck_01, 1, 0, 0, 0.2);
+        turn(J.Head, 1, 0, 0, 0.32 + 0.03 * work);
+      },
+    }),
     read: (k, o) => ({
       ...(o.sitting ? { layers: [{ clip: 'Sitting_Idle_Loop', t: loopT('Sitting_Idle_Loop', k, 2), w: 1 }], seated: true } : { layers: [{ clip: 'Idle_Loop', t: loopT('Idle_Loop', k) + 0.4, w: 1 }], arms: 1 }),
       after() {
@@ -979,7 +996,11 @@ function createMotion({ B, J, rig, object, rest, rigRest, hand, brows }) {
     let tilt;
     if (blend < 1) {
       const p = opts.prev;
+      // the previous pose with the previous feeling, so posture and brows ease into the new one
+      const now = expression;
+      if (p.feel && EXPRESSIONS.includes(p.feel)) expression = p.feel;
       const tiltA = compute(p.action, p.k, { ...(p.opts || {}) });
+      expression = now;
       const A = snap();
       const tiltB = compute(action, k, opts);
       const e = blend;
@@ -990,7 +1011,9 @@ function createMotion({ B, J, rig, object, rest, rigRest, hand, brows }) {
       rig.position.lerpVectors(A.rig, rig.position.clone(), e);
       tilt = tiltA || tiltB ? new THREE.Quaternion().slerpQuaternions(tiltA || new THREE.Quaternion(), tiltB || new THREE.Quaternion(), e) : null;
     } else tilt = compute(action, k, opts);
-    applyBrows(FACE[expression]);
+    const fa = opts.prev?.feel && blend < 1 && FACE[opts.prev.feel] ? FACE[opts.prev.feel] : null;
+    const fb = FACE[expression];
+    applyBrows(fa ? Object.fromEntries(Object.keys(fb).map((key) => [key, typeof fb[key] === 'number' ? lerp(fa[key] ?? 0, fb[key], blend) : fb[key]])) : fb);
     placeHand(tilt);
     update();
   }
