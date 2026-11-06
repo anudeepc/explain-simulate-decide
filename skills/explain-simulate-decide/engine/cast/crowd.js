@@ -1,7 +1,9 @@
 // Crowd: 100 small people in a 10 × 10 block. Shows a share of people (a value in %):
-// that many stand lit in colour, the rest stay pale. Made for chances and risks
+// that many stand lit in colour, the rest stay pale. Given several shares (groups), one
+// crowd shows every outcome at once, each in its own colour: one part instead of four. Made for chances and risks
 // ("out of 100 people like you, 4 will…"), which people read far better than percents.
 import { clay, mesh, group, rounded, PALETTE, THREE, clamp01 } from './kit.js';
+import { CROWD_COLORS } from './names.js';
 
 const N = 10;
 const GAP = 0.3;
@@ -27,20 +29,35 @@ export default function build({ tint = PALETTE.terracotta } = {}) {
   object.add(mesh(rounded(side + 0.5, 0.06, side + 0.5, 0.05), clay(PALETTE.cream), { y: 0.03 }));
   const geo = figure();
   const pale = clay('#d8d0c2');
-  const lit = clay(tint, { emissive: 0.18 });
-  const off = new THREE.InstancedMesh(geo, pale, N * N);
-  const on = new THREE.InstancedMesh(geo, lit, N * N);
-  for (const im of [off, on]) {
+  const tints = tint === PALETTE.terracotta ? CROWD_COLORS : [tint, ...CROWD_COLORS.slice(1)];
+  // one instanced block per colour (index 0 = nobody), each with room for all 100
+  const layers = [pale, ...tints.map((c) => clay(c, { emissive: 0.18 }))].map((mat) => {
+    const im = new THREE.InstancedMesh(geo, mat, N * N);
     im.castShadow = true;
     im.receiveShadow = true;
     object.add(im);
-  }
+    return im;
+  });
   const m4 = new THREE.Matrix4();
+  const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
   // lit people fill from the front row, left to right, so "4 in 100" reads as a small cluster
   const place = (i) => {
     const row = Math.floor(i / N);
     const col = i % N;
     return new THREE.Vector3(-side / 2 + col * GAP, 0.06, side / 2 - row * GAP);
+  };
+  /** @param {number[]} shares each 0..1 of the crowd, filled in order */
+  const setGroups = (shares) => {
+    const ends = [];
+    let total = 0;
+    for (const sh of shares.slice(0, tints.length)) ends.push((total = Math.min(N * N, total + Math.round(clamp01(sh) * N * N))));
+    for (let i = 0; i < N * N; i++) {
+      const g = ends.findIndex((e) => i < e) + 1; // 0 = pale
+      const p = place(i);
+      m4.makeTranslation(p.x, p.y + (g ? 0.02 : 0), p.z);
+      layers.forEach((im, k) => im.setMatrixAt(i, k === g ? m4 : hidden));
+    }
+    layers.forEach((im) => (im.instanceMatrix.needsUpdate = true));
   };
   return {
     object,
@@ -50,16 +67,8 @@ export default function build({ tint = PALETTE.terracotta } = {}) {
     /** Takes the real share 0..1 (40% → 0.4), not a position in a range. */
     percent: true,
     setValue(v) {
-      const n = Math.round(clamp01(v) * N * N);
-      for (let i = 0; i < N * N; i++) {
-        const p = place(i);
-        const isOn = i < n;
-        m4.makeTranslation(p.x, p.y + (isOn ? 0.02 : 0), p.z);
-        on.setMatrixAt(i, isOn ? m4 : m4.clone().scale(new THREE.Vector3(0, 0, 0)));
-        off.setMatrixAt(i, isOn ? m4.clone().scale(new THREE.Vector3(0, 0, 0)) : m4);
-      }
-      on.instanceMatrix.needsUpdate = true;
-      off.instanceMatrix.needsUpdate = true;
+      setGroups([v]);
     },
+    setGroups,
   };
 }

@@ -100,7 +100,8 @@ export function validate(sp) {
       else fitted.set(x.fits, x.id);
     }
     if (x.source === 'article') {
-      if (!Number.isInteger(x.quote) || x.quote < 0 || x.quote >= quotes.length) err(`${where}: source "article" needs "quote" = index into source.quotes`);
+      const qs = [].concat(x.quote);
+      if (x.quote === undefined || !qs.length || !qs.every((q) => Number.isInteger(q) && q >= 0 && q < quotes.length)) err(`${where}: source "article" needs "quote": an index into source.quotes (or a list, when the number comes from several sentences)`);
     } else if (x.source !== 'assumption') err(`${where}: source must be "article" or "assumption"`);
   };
   const inputById = Object.fromEntries(inputs.map((i) => [i.id, i]));
@@ -126,7 +127,7 @@ export function validate(sp) {
 
   const levers = inputs.filter((i) => i.kind === 'lever');
   const conditions = inputs.filter((i) => i.kind === 'condition');
-  if (levers.length < 2 || levers.length > 4) err(`model.inputs: need 2–4 levers (found ${levers.length})`);
+  if (levers.length < 1 || levers.length > 4) err(`model.inputs: need 1–4 levers, the choices the person really has (found ${levers.length})`);
   if (conditions.length < 1 || conditions.length > 5) err(`model.inputs: need 1–5 conditions (found ${conditions.length})`);
   inputs.forEach((i, n) => {
     const where = `model.inputs[${n}] "${i.id}"`;
@@ -226,6 +227,18 @@ export function validate(sp) {
       checkRefs(checkFormula(nd.target, `${where} target`), `${where} target`, staticIds);
     }
     if (nd.appears !== undefined && !inputById[nd.appears]) err(`${where}: appears "${nd.appears}" must be an input (the node shows when that input is above its minimum)`);
+    if (nd.groups !== undefined) {
+      const crowd = nd.prop === 'crowd' || nd.kind === 'crowd';
+      if (!crowd) err(`${where}: groups only work on a crowd (prop or kind "crowd")`);
+      else if (nd.plays !== undefined) err(`${where}: give a crowd either "plays" (one share) or "groups" (several), not both`);
+      if (!Array.isArray(nd.groups) || nd.groups.length < 1 || nd.groups.length > 4) err(`${where}: groups needs 1–4 outcomes, each {"value": <id in %>, "label": "…"}`);
+      else
+        nd.groups.forEach((g, k) => {
+          if (!isStr(g.label)) err(`${where}: groups[${k}] needs a label`);
+          if (!allIds.has(g.value)) err(`${where}: groups[${k}] value "${g.value}" is not a model value`);
+          else if (![...inputs, ...derived, ...outputs].some((x) => x.id === g.value && x.unit === '%')) err(`${where}: groups[${k}] value "${g.value}" must be a share in "%"`);
+        });
+    }
   });
   for (const st of stores) if (!nodes.some((nd) => nd.store === st.id)) err(`model.stores "${st.id}" isn't shown: give it a node with "store": "${st.id}", or the viewer never sees it build up`);
   flows.forEach((f, n) => {
@@ -358,6 +371,8 @@ export function validate(sp) {
   if (!errors.length) runChecks(sp).forEach(err);
   // ---- the world must fit the story shape
   if (!errors.length) shapeErrors(sp).forEach(err);
+  // ---- the best part is no part: nothing that does nothing
+  if (!errors.length) deadParts(sp).forEach(err);
 
   bannedWords(sp, err);
   return errors;
@@ -564,7 +579,7 @@ function shapeErrors(sp) {
       if (!flows.some((f) => f.carrier === 'influence')) out.push('shape "cause": draw each cause as a flow with carrier "influence", from the cause to what it changes, with the size of the effect as its rate.');
       break;
     case 'chances':
-      if (!nodes.some((n) => (n.prop === 'crowd' || n.kind === 'crowd') && /^%$|percent/.test(String(unitById[n.plays] ?? '')))) out.push('shape "chances": show the result as a crowd of 100 people: a node with prop "crowd" that plays a value in "%".');
+      if (!nodes.some((n) => (n.prop === 'crowd' || n.kind === 'crowd') && (n.groups || /^%$|percent/.test(String(unitById[n.plays] ?? ''))))) out.push('shape "chances": show the result as a crowd of 100 people: a node with prop "crowd" that plays a value in "%", or one crowd with "groups" for several outcomes.');
       break;
   }
   for (const nd of nodes) {
@@ -590,8 +605,9 @@ function validateProcess(sp) {
   const flows = arr(w.flows);
   const { nodeById, flowIds } = checkWorld(nodes, flows, err);
   nodes.forEach((nd, n) => {
-    for (const k of ['plays', 'store', 'appears', 'target']) if (nd[k] !== undefined) err(`world.nodes[${n}] "${nd.id}": "${k}" needs numbers; a process story has none, so leave it out`);
+    for (const k of ['plays', 'store', 'appears', 'target', 'groups']) if (nd[k] !== undefined) err(`world.nodes[${n}] "${nd.id}": "${k}" needs numbers; a process story has none, so leave it out`);
   });
+  if (!errors.length) deadParts(sp).forEach(err);
   flows.forEach((f, n) => {
     if (f.rate !== undefined) err(`world.flows[${n}] "${f.id}": a process story has no rates; leave out "rate" (every step flows at the same pace)`);
   });
@@ -674,4 +690,48 @@ function checkDecide(sp, err) {
     const list = sp.decide?.[key];
     if (!Array.isArray(list) || list.length < 1 || list.length > 6 || !list.every(isStr)) err(`decide.${key}: need 1–6 sentences`);
   }
+}
+
+/**
+ * The best part is no part. A value no formula reads, or a character no flow touches,
+ * costs the viewer attention and explains nothing: the validator asks for it to go.
+ */
+function deadParts(sp) {
+  const out = [];
+  const m = sp.model || {};
+  const w = sp.world || {};
+  const nodes = arr(w.nodes);
+  const flows = arr(w.flows);
+  // every value something reads: formulas, what nodes show, and what checks test
+  const read = new Set();
+  const formulas = [
+    ...arr(m.derived).map((d) => d.formula),
+    ...arr(m.outputs).map((o) => o.formula),
+    ...arr(m.stores).flatMap((st) => [st.start, st.change, st.ceiling]),
+    ...arr(m.milestones).map((ms) => ms.reaches),
+    ...nodes.map((nd) => nd.target),
+    ...flows.map((f) => f.rate),
+    ...arr(sp.checks).flatMap((c) => c.same || []),
+  ].filter((f) => f !== undefined);
+  for (const f of formulas) {
+    try {
+      refs(parse(String(f))).forEach((r) => read.add(r));
+    } catch {}
+  }
+  for (const nd of nodes) {
+    if (nd.plays) read.add(nd.plays);
+    arr(nd.groups).forEach((g) => read.add(g.value));
+  }
+  for (const c of arr(sp.checks)) if (c.value) read.add(c.value);
+  for (const i of arr(m.inputs)) if (!read.has(i.id)) out.push(`model.inputs "${i.id}" changes nothing: no formula reads it and no node shows it. Remove it (and its slider and questions), or use it.`);
+  for (const c of arr(m.constants)) if (!read.has(c.id)) out.push(`model.constants "${c.id}" is never used. Remove it.`);
+  for (const d of arr(m.derived)) if (!read.has(d.id)) out.push(`model.derived "${d.id}" is never used by a formula, a node, a flow or a check. Remove it.`);
+  // every character takes part in a flow (a store's node may stand alone: it shows the result)
+  const touched = new Set(flows.flatMap((f) => [f.from, f.to]));
+  for (const nd of nodes) {
+    if (touched.has(nd.id) || nd.store) continue;
+    if (nodes.some((x) => x.on === nd.id && touched.has(x.id))) continue; // a host whose mounted part has flows
+    out.push(`world node "${nd.id}" takes part in no flow. Every character should send, receive or turn something; remove it, or show what moves to or from it.`);
+  }
+  return out;
 }

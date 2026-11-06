@@ -7,6 +7,8 @@ description: Turn an article, report or PDF on any topic (money, energy, health,
 
 You read the article and write a **screenplay**: a small JSON file. A fixed renderer builds the world and directs the film from it, handling staging, camera, timing and motion. Never write HTML, CSS or three.js yourself. Your job is judgement: understand the person's situation, find the decision, choose the story's shape, map the system honestly, and write plain words.
 
+**The best part is no part.** The film should hold the fewest characters, flows, numbers and shots that still answer the question. Every part costs the viewer attention. Before adding something, ask what the viewer loses without it, and if the answer is "nothing", leave it out. The validator rejects parts that do nothing.
+
 This skill is used on every kind of article, so nothing in it assumes a topic. The worked examples are about solar power because one example has to be about something. For another topic, copy their structure, not their content. `references/story-shapes.md` has examples from health, money, climate, policy and more.
 
 ## Steps
@@ -20,17 +22,21 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
 
    Say why you are asking, and accept "don't know". Their answers become the defaults. The page will still ask any viewer the same questions (step 8). Skip this step in the web tool or when no one is there to answer.
 
-3. **Check local and current numbers.** When the answer depends on place, price or the latest research (costs, prices, interest rates, incentives, risk figures), use web search to find current figures for the person's area. Otherwise find a few typical regions.
-   - Prefer government statistics and well-known trackers.
+3. **Research what the article leaves out.** Ask before searching if the user hasn't allowed web access. Two things are worth looking up:
+   - **What actually happens.** If the topic is something a person goes through (a test, a treatment, a claim, an application, an installation), find the real steps from an authoritative source: what they do, what happens next, how long it takes, and what each result means. Articles often skip this, and it is what the film should show.
+   - **Local and current numbers.** When the answer depends on place, price or the latest research (costs, prices, interest rates, incentives, risk figures), find current figures for the person's area, or a few typical regions.
+
+   How to use what you find:
+   - Prefer official health, government and statistics sources, and well-known trackers.
    - Quote only pages you actually opened. Copy the sentence word for word; for a table, copy the row values as shown and add "(table)" to the publisher.
    - Store each one as `{"text", "url", "publisher", "accessed"}` in `source.quotes`, where `accessed` is the date you read it (YYYY-MM-DD).
    - A number you can't find a source for is an `assumption`. Never guess and present the guess as fact.
-   - Ask before searching if the user hasn't allowed web access.
+   - Check that a figure is about the thing as it is today. The best-known numbers often come from an older version (an older test, a past tax rate, last year's prices). Prefer current figures, and say in `leftOut` when only older ones exist.
 
 4. **Extract the story.** Work through `references/extraction-guide.md`:
    1. **Decision.** Write it as "Should I…?" or "What happens if…?".
    2. **Options.** The 2–3 real alternatives (for example solar alone, or solar with a battery). They go in `decide.compare`.
-   3. **Levers.** 2–4 inputs the person controls.
+   3. **Levers.** 1–4 inputs the person really controls. Don't invent a choice to fill a slot: if the decision is "take part or not", that is one lever.
    4. **Conditions.** 1–5 inputs the person doesn't control.
    5. **Outcomes.** 1–2 results the person cares about, plus up to 2 **milestones** in time ("paid back in", "debt cleared in").
    6. **Turning point.** The common misconception, which becomes the one `turn` shot.
@@ -81,18 +87,22 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
     - List the trade-offs, what the model leaves out, and questions to ask.
     - **Never recommend an option.**
 
-12. **Validate.** The validator checks the structure, every unit, your checks against the source, and every extreme of the inputs. Fix every error and run it again until it says OK:
+12. **Delete what doesn't earn its place.** Go through every character, flow, input, shot and sentence and ask what the viewer would lose without it. Merge two flows that say the same thing, and show several outcomes in one crowd (`groups`) instead of one crowd each. Cut a shot that repeats another. The validator rejects an input no formula reads, a value nothing uses, and a character no flow touches.
+
+13. **Validate.** The validator checks the structure, every unit, your checks against the source, and every extreme of the inputs. Fix every error and run it again until it says OK:
     ```bash
     node scripts/validate.mjs screenplay.json
     ```
 
-13. **Render** a single offline HTML file:
+14. **Render** a single offline HTML file:
     ```bash
     node scripts/render.mjs screenplay.json -o explainer.html [--cast auto|studio|open|custom] [--voice off|browser]
     ```
 
-14. **Check your work** before handing it over:
+15. **Check your work** before handing it over:
     - [ ] The shape fits the article, and no number was invented to make a model. With no numbers to change, the shape is `process`.
+    - [ ] If the topic is something a person goes through, the film shows the real steps, researched and quoted, not only the odds.
+    - [ ] Nothing is left that the viewer wouldn't miss.
     - [ ] Every number has a quote or is labelled an assumption. Researched figures carry their URL and the date you read them.
     - [ ] You opened every URL you quote, and each quote matches the page word for word.
     - [ ] The checks hold the source's own figures, and no check was loosened to make the model pass.
@@ -103,7 +113,7 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
     - [ ] Decide gives no recommendation, and `leftOut` names the model's real limits.
     - [ ] None of the words listed under "Words we don't use" in `references/writing-rules.md`.
 
-15. **Hand over.**
+16. **Hand over.**
     - Give the user the file path. They can open it in a browser and press **Record MP4** for a 1080p 60 fps video.
     - Say which numbers are assumptions, and which researched figures they should check again before relying on them.
 

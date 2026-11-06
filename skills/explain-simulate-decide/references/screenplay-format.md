@@ -92,11 +92,11 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
 - Known units convert (time, energy, power, mass, length, area, volume, temperature, each currency); any other word is a countable thing.
 
 **Where numbers come from** (inputs and constants; see "Honest numbers" in story-shapes.md)
-- `"source": "article"` with `"quote"`, plus an optional `"note"` when the number is worked out from the quote.
+- `"source": "article"` with `"quote"` (an index, or a list when the number comes from several sentences), plus an optional `"note"` when the number is worked out from the quotes.
 - `"source": "assumption"`, plus `"fits": <check index>` when it was tuned so the model matches that check. A tuned check doesn't count as a test.
 
 **Inputs**
-- 2–4 with `kind: "lever"` and 1–5 with `kind: "condition"`.
+- 1–4 with `kind: "lever"` and 1–5 with `kind: "condition"`.
 - `"toggle": true` (with min 0 and max 1) for a yes-or-no input: the page shows a checkbox. Ask it with choices.
 - `min < max`, and `min ≤ default ≤ max`. `step` is optional.
 
@@ -137,6 +137,8 @@ At least one `between` and one `rises` or `falls`. The validator also runs every
   - `sky: true`: floats above the set.
   - `store`: a store id. Use with `target`, a formula that draws a line on the jar.
   - `appears`: an input; the node is shown only above that input's minimum.
+  - `groups` (crowds only, instead of `plays`): 1–4 outcomes, each `{"value": <id in "%">, "label": "caught early"}`. One crowd of 100 lights each outcome in its own colour, in order, and its label lists them.
+- **No dead parts:** every input and constant must be read by a formula (or shown by a node), every derived value must be used, and every node must take part in a flow (a store's node may stand alone).
 - `flows`: 1–12, each with `from`, `to` (different nodes), a `carrier`, a `rate` formula (may read stores; never negative), a `label`, and a `unit` (for example `kWh/yr`, `$/yr`, `h/night`).
   - Carriers: `energy`, `money`, `water`, `heat`, `light`, `goods`, `people`, `data`, `time` (hours and minutes), `carbon` (emissions, drawn as drifting puffs), `substance` (medicine, food, pollutants) and `influence` (a cause pushing on an effect, drawn as arrowheads; its rate is the size of the effect).
 

@@ -103,9 +103,12 @@ A model can be well-formed and still wrong. In `checks`, write down what the sou
 - **How wide is "about"?** For "about 320 litres", allow about 15% either side (270 to 370) unless the source gives its own range. For "over 20 years" or "at least half", leave one end open with `null`: `[20, null]`.
 - **What gets checked:** an output or derived value at the defaults; a store, or a value that moves with one, at the end of the clock; a milestone as the time it is reached, or "never" when it isn't. The validator checks units first and runs the checks once the units are right.
 
-### When the source disagrees with itself
+### When the source disagrees with itself, or sources disagree
 
-Sometimes an article's own figures don't fit together ("$200 a month clears $5,000 in about 2.5 years with about $1,400 of interest" can't all be true at 22%). Don't invent a number to reconcile them. Check the figure the model reproduces from the source's stated inputs, drop the check for the one that doesn't fit, and say in `decide.leftOut` which figure didn't match and why.
+Don't invent a number to reconcile figures that disagree. Say in `decide.leftOut` which figure you didn't use and why.
+
+- **The article disagrees with itself** ("$200 a month clears $5,000 in about 2.5 years with about $1,400 of interest" can't all be true at 22%): check the figure the model reproduces from the source's stated inputs, and drop the check for the one that doesn't fit.
+- **Two official sources disagree** (a leaflet says "2 to 3 in 100", the latest annual data says 1.7): use the newer, measured figure.
 
 ## Honest numbers
 
@@ -200,10 +203,13 @@ Each shape below lists the signs in an article, the world to build, the model at
 ### `chances`: the answer is a risk
 
 **Signs:** "in 100", "percent chance", "risk", "false positive", "probability", "most people never…".
-**World:** a **`crowd`** node of 100 people for each result that matters ("caught early", "false alarm"). The crowd `plays` a value in `"%"` and lights that many people. People read "4 in 100" far better than "4%".
+**World: the journey, then the odds.** A risk is something people go through, so show what happens before showing how often. Lay out the real steps a person takes, researched and quoted: for a screening test, the kit at home, the sample posted to the lab, the result, and the follow-up. People flow through them (carrier `people`) into **one `crowd`** of 100 at the end. Its `groups` light each outcome in its own colour ("cancer found early", "a false alarm", "all clear"). People read "4 in 100" far better than "4%".
+- **One crowd, not one per outcome.** Several crowds of 100 people make the viewer compare blocks. One crowd split by colour shows the whole picture at once.
+- **Show the outcome over the time the reader cares about.** One round of a test may change only a fraction of a person in 100, which rounds to nobody. Show the result over all the rounds the reader would take (with `pow` for repeated chances), and name the assumptions this needs in `leftOut`.
+- **Only the steps that change the outcome.** Each step should be where people split or wait. A step where nothing happens to the numbers is a caption, not a character.
 **Model:** shares in `"%"`. Chain them with `/ 100` (`risk * found / 100`), cap them with `min(100, …)`, and keep each one between 0 and 100. Use `pow` for repeated chances. A chances story usually has no clock, so its flows carry shares (`"%"`) with no "per time".
 **Checks:** the source's rates as `between`; more testing `rises` both the benefit and the harm (show both).
-**Shots:** `establish` the 100 people, `follow` people into each crowd, and a `turn` on the outcome people don't expect (false alarms outnumber cases found).
+**Shots:** `establish` the journey, `follow` people through each step, then `focus` the crowd, with a `turn` on the outcome people don't expect (false alarms outnumber cases found).
 **Examples:**
 - A screening test: cases caught early vs false alarms.
 - A vaccine: infections avoided vs side effects, out of 100 vaccinated.

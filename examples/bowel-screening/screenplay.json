@@ -1,0 +1,533 @@
+{
+  "version": 2,
+  "shape": "chances",
+  "question": "Should I do the NHS bowel screening home test each time it arrives?",
+  "source": {
+    "title": "Bowel cancer screening",
+    "publisher": "NHS",
+    "url": "https://www.nhs.uk/tests-and-treatments/bowel-cancer-screening/",
+    "quotes": [
+      "Bowel cancer screening is currently offered to people aged 50 to 74 every 2 years.",
+      "You collect the sample at home and send it by post to be tested.",
+      "If your result says you need further tests it means blood was found in your poo and needs to be investigated.",
+      "You'll usually need to have a colonoscopy, which is where a camera is used to check inside your bowel.",
+      "If blood is found in your poo, it does not always mean you have cancer.",
+      "Even if bowel cancer screening shows you do not need further tests, it does not always mean you do not have bowel cancer.",
+      {
+        "text": "Of those invited who adequately participated, 89,030 had a test kit result of ‘further tests are needed’ and were automatically referred. This gave a positivity figure of 1.71%.",
+        "url": "https://www.gov.uk/government/statistics/bowel-cancer-screening-annual-report-2024-to-2025/bowel-cancer-screening-standards-data-report-2024-25",
+        "publisher": "NHS England, Bowel cancer screening standards data report 2024-25",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Around 2 to 3 in 100 people have this result.",
+        "url": "https://www.gov.uk/government/publications/bowel-cancer-screening-benefits-and-risks/nhs-bowel-cancer-screening-helping-you-decide",
+        "publisher": "NHS England, Your guide to NHS bowel cancer screening",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Between 7 and 10 in 100 people have this result.",
+        "url": "https://www.gov.uk/government/publications/bowel-cancer-screening-colonoscopy/bowel-cancer-screening-having-a-colonoscopy-fit",
+        "publisher": "NHS England, Bowel cancer screening: having a colonoscopy",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Around 50 in 100 people (half) have this result.",
+        "url": "https://www.gov.uk/government/publications/bowel-cancer-screening-colonoscopy/bowel-cancer-screening-having-a-colonoscopy-fit",
+        "publisher": "NHS England, Bowel cancer screening: having a colonoscopy",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Around 11 in 100 people have this result.",
+        "url": "https://www.gov.uk/government/publications/bowel-cancer-screening-colonoscopy/bowel-cancer-screening-having-a-colonoscopy-fit",
+        "publisher": "NHS England, Bowel cancer screening: having a colonoscopy",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "You can choose if you have a colonoscopy.",
+        "url": "https://www.gov.uk/government/publications/bowel-cancer-screening-colonoscopy/bowel-cancer-screening-having-a-colonoscopy-fit",
+        "publisher": "NHS England, Bowel cancer screening: having a colonoscopy",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Bowel perforations happen in around 1 in every 1,700 colonoscopies.",
+        "url": "https://www.gov.uk/government/publications/bowel-cancer-screening-colonoscopy/bowel-cancer-screening-having-a-colonoscopy-fit",
+        "publisher": "NHS England, Bowel cancer screening: having a colonoscopy",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "This review found that FOBT screening is likely to avoid approximately 1 in 6 colorectal cancer deaths.",
+        "url": "https://www.cochrane.org/evidence/CD001216_screening-colorectal-cancer-using-faecal-occult-blood-test-hemoccult",
+        "publisher": "Cochrane (Hewitson et al., 2007)",
+        "accessed": "2026-11-06"
+      },
+      {
+        "text": "Northern Ireland: people aged 60 to 74 years who are registered with a GP.",
+        "url": "https://www.cancerresearchuk.org/health-professional/cancer-screening/bowel-cancer-screening/screening-bowel-overview",
+        "publisher": "Cancer Research UK",
+        "accessed": "2026-11-06"
+      }
+    ]
+  },
+  "model": {
+    "inputs": [
+      {
+        "id": "rounds",
+        "label": "Home kits you do",
+        "unit": "",
+        "kind": "lever",
+        "min": 0,
+        "max": 13,
+        "step": 1,
+        "default": 13,
+        "source": "article",
+        "quote": 0,
+        "note": "Every 2 years from 50 to 74 is 13 kits."
+      },
+      {
+        "id": "goScope",
+        "label": "Have a colonoscopy if a kit finds blood",
+        "unit": "",
+        "kind": "lever",
+        "toggle": true,
+        "min": 0,
+        "max": 1,
+        "step": 1,
+        "default": 1,
+        "source": "assumption"
+      },
+      {
+        "id": "positivity",
+        "label": "Kits that find blood",
+        "unit": "%",
+        "kind": "condition",
+        "min": 1,
+        "max": 3,
+        "step": 0.01,
+        "default": 1.71,
+        "source": "article",
+        "quote": 6,
+        "note": "England, 2024-25. The NHS leaflet says around 2 to 3 in 100, so the slider reaches 3."
+      }
+    ],
+    "constants": [
+      {
+        "id": "cancerShare",
+        "label": "Colonoscopies that find cancer",
+        "unit": "%",
+        "value": 8.5,
+        "source": "article",
+        "quote": 8,
+        "note": "The middle of 7 to 10 in 100."
+      },
+      {
+        "id": "polypShare",
+        "label": "Colonoscopies that find polyps",
+        "unit": "%",
+        "value": 61,
+        "source": "article",
+        "quote": 9,
+        "note": "50 in 100 have polyps that need no check-ups, plus 11 in 100 with high-risk polyps (quote 10)."
+      }
+    ],
+    "derived": [
+      {
+        "id": "posted",
+        "label": "People who post a kit",
+        "unit": "%",
+        "formula": "100 * min(1, rounds)"
+      },
+      {
+        "id": "polypsFound",
+        "label": "Polyps found",
+        "unit": "%",
+        "formula": "sentEver * goScope * polypShare / 100"
+      },
+      {
+        "id": "noneFound",
+        "label": "Colonoscopy finds no polyps or cancer",
+        "unit": "%",
+        "formula": "sentEver * goScope * (100 - cancerShare - polypShare) / 100"
+      },
+      {
+        "id": "notChecked",
+        "label": "Sent for tests, no colonoscopy",
+        "unit": "%",
+        "formula": "sentEver * (1 - goScope)"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "sentEver",
+        "label": "Sent for further tests at least once",
+        "unit": "%",
+        "formula": "100 - 100 * pow(1 - positivity / 100, rounds)"
+      },
+      {
+        "id": "cancerFound",
+        "label": "Cancer found by screening",
+        "unit": "%",
+        "formula": "sentEver * goScope * cancerShare / 100"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "claim": "In 2024-25, 1.71 in 100 people screened were sent for further tests",
+      "value": "sentEver",
+      "between": [
+        1.6,
+        1.8
+      ],
+      "when": {
+        "rounds": 1
+      },
+      "quote": 6
+    },
+    {
+      "claim": "Everyone sent for further tests ends up in one of the four groups",
+      "same": [
+        "cancerFound + polypsFound + noneFound + notChecked",
+        "sentEver"
+      ]
+    },
+    {
+      "claim": "More kits mean more cancers found",
+      "value": "cancerFound",
+      "rises": "rounds"
+    },
+    {
+      "claim": "More kits also mean more colonoscopies that find no polyps or cancer",
+      "value": "noneFound",
+      "rises": "rounds"
+    },
+    {
+      "claim": "Without a colonoscopy, screening finds no cancer",
+      "value": "cancerFound",
+      "rises": "goScope"
+    }
+  ],
+  "world": {
+    "nodes": [
+      {
+        "id": "home",
+        "prop": "house",
+        "label": "You, at home with the kit"
+      },
+      {
+        "id": "lab",
+        "label": "Screening lab",
+        "recipe": [
+          {
+            "shape": "box",
+            "size": [
+              1.8,
+              0.25,
+              0.7
+            ],
+            "color": "#d9d4cc"
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.22,
+              1.1,
+              0.22
+            ],
+            "color": "#e8eef2",
+            "at": [
+              -0.55,
+              0.25,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.22,
+              1.1,
+              0.22
+            ],
+            "color": "#e8eef2",
+            "at": [
+              0,
+              0.25,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.22,
+              1.1,
+              0.22
+            ],
+            "color": "#e8eef2",
+            "at": [
+              0.55,
+              0.25,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.26,
+              0.18,
+              0.26
+            ],
+            "color": "#3f7fbf",
+            "at": [
+              -0.55,
+              1.35,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.26,
+              0.18,
+              0.26
+            ],
+            "color": "#3f7fbf",
+            "at": [
+              0,
+              1.35,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "size": [
+              0.26,
+              0.18,
+              0.26
+            ],
+            "color": "#3f7fbf",
+            "at": [
+              0.55,
+              1.35,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hospital",
+        "kind": "building",
+        "label": "Nurse, then colonoscopy"
+      },
+      {
+        "id": "crowd",
+        "prop": "crowd",
+        "label": "100 people like you, 50 to 74",
+        "groups": [
+          {
+            "value": "cancerFound",
+            "label": "Cancer found"
+          },
+          {
+            "value": "polypsFound",
+            "label": "Polyps (small growths) found"
+          },
+          {
+            "value": "noneFound",
+            "label": "No polyps or cancer found"
+          },
+          {
+            "value": "notChecked",
+            "label": "Sent, but no colonoscopy"
+          }
+        ]
+      }
+    ],
+    "flows": [
+      {
+        "id": "mailed",
+        "from": "home",
+        "to": "lab",
+        "carrier": "people",
+        "rate": "posted",
+        "label": "Sample posted, free",
+        "unit": "%"
+      },
+      {
+        "id": "clear",
+        "from": "lab",
+        "to": "crowd",
+        "carrier": "people",
+        "rate": "max(0, posted - sentEver)",
+        "label": "No further tests needed, every time",
+        "unit": "%"
+      },
+      {
+        "id": "sent",
+        "from": "lab",
+        "to": "hospital",
+        "carrier": "people",
+        "rate": "sentEver",
+        "label": "Further tests needed",
+        "unit": "%"
+      },
+      {
+        "id": "results",
+        "from": "hospital",
+        "to": "crowd",
+        "carrier": "people",
+        "rate": "sentEver",
+        "label": "What the tests found",
+        "unit": "%"
+      }
+    ]
+  },
+  "ask": [
+    {
+      "question": "How old are you?",
+      "help": "The NHS posts a kit every 2 years from 50 to 74, so this sets how many kits are left.",
+      "choices": [
+        {
+          "label": "50 to 54",
+          "set": {
+            "rounds": 12
+          }
+        },
+        {
+          "label": "55 to 64",
+          "set": {
+            "rounds": 8
+          }
+        },
+        {
+          "label": "65 to 74",
+          "set": {
+            "rounds": 3
+          }
+        },
+        {
+          "label": "Under 50, or not sure",
+          "set": {
+            "rounds": 13
+          }
+        }
+      ]
+    },
+    {
+      "question": "If a kit found blood, would you have a colonoscopy?",
+      "help": "It's your choice. A nurse would talk it through with you first.",
+      "choices": [
+        {
+          "label": "Yes, or not sure yet",
+          "set": {
+            "goScope": 1
+          }
+        },
+        {
+          "label": "No",
+          "set": {
+            "goScope": 0
+          }
+        }
+      ]
+    }
+  ],
+  "explain": [
+    {
+      "shot": "establish",
+      "caption": "What happens to people like you who do the bowel screening kit?"
+    },
+    {
+      "shot": "follow",
+      "focus": "mailed",
+      "caption": "You put a tiny poo sample in a tube and post it."
+    },
+    {
+      "shot": "follow",
+      "focus": "clear",
+      "caption": "The lab checks for hidden blood. Most kits find none."
+    },
+    {
+      "shot": "follow",
+      "focus": "sent",
+      "caption": "If blood is found, a nurse talks with you about further tests."
+    },
+    {
+      "shot": "follow",
+      "focus": "results",
+      "caption": "A colonoscopy is a camera that looks inside your bowel."
+    },
+    {
+      "shot": "turn",
+      "focus": "crowd",
+      "caption": "But most people sent for a colonoscopy do not have cancer."
+    },
+    {
+      "shot": "cause",
+      "focus": "sent",
+      "drive": "rounds",
+      "caption": "The more kits you do, the more often you're sent for tests."
+    },
+    {
+      "shot": "compare",
+      "focus": "crowd",
+      "drive": "goScope",
+      "caption": "Skip the colonoscopy, and the blood stays unexplained."
+    },
+    {
+      "shot": "handoff",
+      "caption": "Now try it with your age and your choices."
+    }
+  ],
+  "simulate": {
+    "controls": [
+      "rounds",
+      "goScope",
+      "positivity"
+    ],
+    "prompt": "Try your age, your choice about a colonoscopy, and how often kits find blood."
+  },
+  "decide": {
+    "compare": [
+      {
+        "label": "Every kit, 50 to 74",
+        "set": {
+          "rounds": 13,
+          "goScope": 1
+        }
+      },
+      {
+        "label": "Every other kit",
+        "set": {
+          "rounds": 7,
+          "goScope": 1
+        }
+      },
+      {
+        "label": "Every kit, no colonoscopy",
+        "set": {
+          "rounds": 13,
+          "goScope": 0
+        }
+      }
+    ],
+    "tradeoffs": [
+      "More kits give more chances to find cancer or polyps early, and more letters asking for further tests that turn out not to be cancer.",
+      "A colonoscopy explains the blood and polyps can often be removed during it, but it means emptying your bowel with laxatives, a hospital visit and a small risk: about 1 in 1,700 colonoscopies tears the bowel.",
+      "The kit is done at home and posted free, but it can miss a polyp or cancer that was not bleeding that day, so an all-clear letter is not a guarantee."
+    ],
+    "leftOut": [
+      "The crowd counts what screening finds, not lives saved. A review of trials of an older kit found screening avoided about 1 in 6 bowel cancer deaths; this page has no figure like that for today's kit.",
+      "It assumes every kit has the same chance of finding blood, whatever earlier kits showed. In real life, people found to have cancer or high-risk polyps leave home testing for hospital care or check-up colonoscopies.",
+      "Two NHS figures for kits that find blood differ: the leaflet says around 2 to 3 in 100, and 2024-25 programme data say 1.71 in 100. The model uses the newer figure; move the slider to see the older one.",
+      "Colonoscopy results use the NHS leaflet's rough shares for everyone; your own chances depend on age, sex, family history and health.",
+      "It leaves out symptoms. Anyone with symptoms of bowel cancer should see a GP, whatever their last kit said.",
+      "It covers England's programme. Scotland, Wales and Northern Ireland run their own, and Northern Ireland starts at 60."
+    ],
+    "questionsToAsk": [
+      "If my kit finds blood, how soon would I see the specialist nurse, and is a CT scan an option instead of a colonoscopy?",
+      "What is my own risk from a colonoscopy, given my age and health?",
+      "Does my family history or a bowel condition mean I should be checked in a different way?",
+      "I have symptoms now: should I see my GP rather than wait for my next kit?"
+    ]
+  }
+}

@@ -11,6 +11,7 @@ import { cameraSetups, poseAt, breathe } from './camera.js';
 import { createStage, toScreen } from './stage.js';
 import { createFlow } from './flows.js';
 import { resolveActor } from './cast/resolve.js';
+import { CROWD_COLORS } from './cast/names.js';
 import * as overlay from './overlay.js';
 import { createUI, showErrors } from './ui.js';
 import { scheduleScore } from './score.js';
@@ -360,7 +361,7 @@ async function start(root, sp, options, api) {
       f.caption = local > 0.3 ? sp.simulate.prompt : '';
       f.captionAlpha = span(local, 0.32, 0.4) * (1 - span(local, 0.97, 1));
       f.sim = { alpha: span(local, 0.28, 0.34) * (1 - span(local, 0.97, 1)), active: local < 0.66 ? active : null };
-      f.labels = world.nodes.filter((n) => n.plays || n.store).map((n) => ({ node: n.id, alpha: span(local, 0.3, 0.38) * (1 - span(local, 0.97, 1)) }));
+      f.labels = world.nodes.filter((n) => n.plays || n.store || n.groups).map((n) => ({ node: n.id, alpha: span(local, 0.3, 0.38) * (1 - span(local, 0.97, 1)) }));
       f.clockAlpha = span(local, 0.68, 0.72) * (1 - span(local, 0.97, 1));
     } else {
       f.decideAlpha = span(local, 0.12, 0.3);
@@ -420,7 +421,7 @@ async function start(root, sp, options, api) {
     const pose = mode === 'live' ? viewed(directed) : directed;
     const tau = liveTau(now);
     const e = emphasisFor({ act: mode === 'decide' ? 'decide' : 'simulate' });
-    const labels = mode === 'live' ? world.nodes.filter((n) => n.plays || n.store).map((n) => ({ node: n.id, alpha: 0.95, hint: hovered === n.id })) : [];
+    const labels = mode === 'live' ? world.nodes.filter((n) => n.plays || n.store || n.groups).map((n) => ({ node: n.id, alpha: 0.95, hint: hovered === n.id })) : [];
     return {
       act: mode === 'decide' ? 'decide' : 'simulate',
       values: liveValues,
@@ -495,7 +496,8 @@ async function start(root, sp, options, api) {
         const at = m ? sim.reached[m.id] : null;
         actor.setReached?.(at !== null && at !== undefined ? clamp01((frame.tau - at) / (SPAN * 0.05)) : 0);
         actor.setGhost?.(frame.ghost && ghost[nd.id] !== undefined ? clamp01(ghost[nd.id] / v.top) : null);
-      } else if (nd.plays && actor.percent) actor.setValue(clamp01((scope[nd.plays] ?? 0) / 100));
+      } else if (nd.groups && actor.setGroups) actor.setGroups(nd.groups.map((g) => clamp01((scope[g.value] ?? 0) / 100)));
+      else if (nd.plays && actor.percent) actor.setValue(clamp01((scope[nd.plays] ?? 0) / 100));
       else if (nd.plays && ranges[nd.plays]) actor.setValue(normalise(scope[nd.plays], ranges[nd.plays]));
       else actor.setValue(actor.percent ? 1 : 0.6); // a crowd with no number is everyone
       const s = Math.max(0.001, appear[nd.id]);
@@ -543,6 +545,11 @@ async function start(root, sp, options, api) {
         if (nd.store) {
           const v = storeView(nd, sim, levels);
           text = { title: nd.label, value: formatValue(v.level, model.meta(nd.store).unit || '') + (v.target !== null ? ` of ${formatValue(v.target, model.meta(nd.store).unit || '')}` : '') };
+        } else if (nd.groups) {
+          // one crowd, several outcomes: a coloured dot and a share for each
+          // whole people, as the crowd shows them; an outcome nobody reaches is left out
+          const parts = nd.groups.map((g, i) => ({ color: CROWD_COLORS[i], n: Math.round(scope[g.value] ?? 0), label: g.label })).filter((x) => x.n > 0);
+          text = { title: nd.label, value: '', parts: parts.map((x) => ({ color: x.color, text: `${x.n} in 100: ${x.label}` })) };
         } else if (nd.plays) {
           const meta = model.meta(nd.plays);
           text = { title: meta.label, value: inputsById[nd.plays] ? formatInput(inputsById[nd.plays], scope[nd.plays]) : formatValue(scope[nd.plays], meta.unit || ''), assumption: inputsById[nd.plays]?.source === 'assumption' };
@@ -556,7 +563,7 @@ async function start(root, sp, options, api) {
     const placed = [];
     const lh = H * 0.017 * 3.6;
     for (const it of items) {
-      const lw = Math.max(110, Math.max(it.title.length, it.value.length) * H * 0.0095);
+      const lw = Math.max(110, Math.max(it.title.length, it.value.length, ...(it.parts || []).map((x) => x.text.length + 2)) * H * 0.0095);
       let y = it.s.y;
       for (let guard = 0; guard < 8; guard++) {
         const hit = placed.find((r) => Math.abs(r.x - it.s.x) < (r.w + lw) / 2 + 6 && Math.abs(r.y - y) < lh);
@@ -564,7 +571,7 @@ async function start(root, sp, options, api) {
         y = hit.y - lh - 4;
       }
       placed.push({ x: it.s.x, y, w: lw });
-      overlay.drawLabel(ctx2, H, it.s.x, y, it.title, it.value, it.alpha, it.assumption);
+      overlay.drawLabel(ctx2, H, it.s.x, y, it.title, it.value, it.alpha, it.assumption, it.parts);
     }
     if (clockDef && frame.clockAlpha > 0.01) {
       const unit = clockDef.unit[0].toUpperCase() + clockDef.unit.slice(1);

@@ -14,3 +14,6 @@ export const KINDS = [
   'weather', 'sun', 'vehicle', 'machine', 'device', 'screen', 'document', 'money', 'store', 'food', 'medicine', 'time',
   'cell', 'germ', 'other',
 ];
+
+// One crowd can show several outcomes at once, each in its own colour, in this order.
+export const CROWD_COLORS = ['#c0623f', '#e2b04b', '#5b7fb0', '#6b9a6a'];

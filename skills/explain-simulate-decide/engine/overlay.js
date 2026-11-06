@@ -111,16 +111,19 @@ export function drawActs(ctx, W, H, act, question, source = '', acts = ['Explain
 }
 
 /** Small label card above an actor. */
-export function drawLabel(ctx, H, x, y, title, value, alpha, assumption) {
+export function drawLabel(ctx, H, x, y, title, value, alpha, assumption, parts = null) {
   if (alpha <= 0.01) return;
   const fs = Math.round(H * 0.017);
   ctx.save();
   ctx.font = `600 ${fs * 1.25}px ${FONT}`;
   const vw = ctx.measureText(value || '').width;
+  // a crowd's outcomes: one line each, with a dot in that outcome's colour
+  ctx.font = `600 ${fs * 1.05}px ${FONT}`;
+  const pw = parts ? Math.max(...parts.map((p) => ctx.measureText(p.text).width + fs * 1.3)) : 0;
   ctx.font = `500 ${fs}px ${FONT}`;
   const tw = ctx.measureText(title + (assumption ? ' *' : '')).width;
-  const w = Math.max(vw, tw) + fs * 1.6;
-  const h = value ? fs * 3.4 : fs * 2;
+  const w = Math.max(vw, tw, pw) + fs * 1.6;
+  const h = parts ? fs * (1.9 + parts.length * 1.45) : value ? fs * 3.4 : fs * 2;
   const bx = x - w / 2;
   const by = y - h - fs * 0.6;
   card(ctx, bx, by, w, h, fs * 0.6, alpha);
@@ -129,7 +132,20 @@ export function drawLabel(ctx, H, x, y, title, value, alpha, assumption) {
   ctx.textBaseline = 'top';
   ctx.fillStyle = MUTED;
   ctx.fillText(title + (assumption ? ' *' : ''), x, by + fs * 0.5);
-  if (value) {
+  if (parts) {
+    ctx.font = `600 ${fs * 1.05}px ${FONT}`;
+    ctx.textAlign = 'left';
+    parts.forEach((p, i) => {
+      const ly = by + fs * (1.75 + i * 1.45);
+      const lx = x - pw / 2;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(lx + fs * 0.4, ly + fs * 0.55, fs * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = INK;
+      ctx.fillText(p.text, lx + fs * 1.1, ly);
+    });
+  } else if (value) {
     ctx.font = `700 ${fs * 1.25}px ${FONT}`;
     ctx.fillStyle = INK;
     ctx.fillText(value, x, by + fs * 1.7);

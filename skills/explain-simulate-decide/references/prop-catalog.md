@@ -13,7 +13,7 @@ Studio props share one matte "clay" look and stand on the diorama as nodes. A pr
 | `shopping-bag` | items rising out of the bag | shops, spending, consumption |
 | `car` | charge or fuel bar, headlights | travel, transport |
 | `person-figure` | bar beside the figure | one person, workload |
-| `crowd` | 100 small people; plays a value in `"%"` and lights that many | populations, risks, "out of 100 people like you" |
+| `crowd` | 100 small people; plays a value in `"%"` and lights that many, or shows up to 4 outcomes in colour with `groups` | populations, risks, "out of 100 people like you" |
 | `body` | standing figure with a glowing heart | health, symptoms, fitness, a dose |
 | `building` | office block whose windows light up | schools, hospitals, offices, councils, companies |
 | `hill` | grassy hill with trees and a field | land, farms, forests, a region |

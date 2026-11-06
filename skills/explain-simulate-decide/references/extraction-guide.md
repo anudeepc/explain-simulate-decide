@@ -37,7 +37,9 @@ Most decisions have 2–3 real alternatives: solar with or without a battery, fi
 
 When an option rarely pays for itself but has other value (backup power, peace of mind), say so in `tradeoffs`. Don't hide it, and don't sell it.
 
-## 2. Levers (2–4): what the person controls
+## 2. Levers (1–4): what the person controls
+
+Only the choices the person really has. Don't invent one to fill a slot; a decision that is simply "take part or not" has one lever.
 
 Good levers are things the reader can actually change: system size, hours of use, the amount they borrow, how often they do something. A lever that nobody can move is a condition.
 

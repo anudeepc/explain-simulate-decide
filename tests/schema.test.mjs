@@ -121,6 +121,33 @@ test('honest labels for tuned and worked-out numbers', () => {
   expectError((s) => s.model.stores.push({ id: 'spare', label: 'x', unit: '$', start: 0, change: 'saving' }), /isn't shown/);
 });
 
+test('the best part is no part: nothing that does nothing', () => {
+  expectError((s) => s.model.constants.push({ id: 'spare', label: 'Spare', unit: '', value: 1, source: 'assumption' }), /"spare" is never used/);
+  expectError((s) => s.model.derived.push({ id: 'unused', label: 'Unused', unit: 'kWh/yr', formula: 'direct' }), /"unused" is never used/);
+  expectError((s) => s.model.inputs.push({ id: 'idle', label: 'Idle', unit: '', kind: 'lever', min: 0, max: 1, default: 0, source: 'assumption' }), /"idle" changes nothing/);
+  expectError((s) => s.world.nodes.push({ id: 'tree', prop: 'tree', label: 'A tree' }), /node "tree" takes part in no flow/);
+});
+
+test('one crowd can show several outcomes', () => {
+  const sp = () => load('fixtures/shapes/chances-screening.json');
+  const ok = sp();
+  ok.world.nodes = ok.world.nodes.filter((n) => n.id !== 'alarm');
+  ok.world.nodes.find((n) => n.id === 'early').groups = [
+    { value: 'caughtEarly', label: 'caught early' },
+    { value: 'falseAlarm', label: 'false alarm' },
+  ];
+  delete ok.world.nodes.find((n) => n.id === 'early').plays;
+  ok.world.flows = ok.world.flows.map((f) => ({ ...f, to: 'early' }));
+  ok.explain = ok.explain.map((x) => (x.focus === 'alarm' ? { ...x, focus: 'toAlarm' } : x));
+  assert.deepEqual(validate(ok), []);
+  const bad = structuredClone(ok);
+  bad.world.nodes.find((n) => n.id === 'clinic').groups = [{ value: 'caughtEarly', label: 'x' }];
+  assert.ok(validate(bad).some((e) => /groups only work on a crowd/.test(e)));
+  const notShare = structuredClone(ok);
+  notShare.world.nodes.find((n) => n.id === 'early').groups[0].value = 'tests';
+  assert.ok(validate(notShare).some((e) => /must be a share in "%"/.test(e)));
+});
+
 test('a process story has no numbers', () => {
   const p = () => load('fixtures/shapes/process-bill.json');
   const bad = (mutate, pattern) => {
@@ -150,7 +177,7 @@ test('rejects non-objects and old versions', () => {
 
 test('model shape rules', () => {
   expectError((s) => delete s.question, /question/);
-  expectError((s) => (s.model.inputs = s.model.inputs.filter((i) => !['size', 'battery'].includes(i.id))), /2–4 levers/);
+  expectError((s) => (s.model.inputs = s.model.inputs.filter((i) => i.kind !== 'lever')), /1–4 levers/);
   expectError((s) => (s.model.inputs = s.model.inputs.filter((i) => i.kind !== 'condition')), /1–5 conditions/);
   expectError((s) => s.model.outputs.push({ id: 'z', label: 'z', unit: '', formula: 'cost' }), /1–2 outputs/);
   expectError((s) => (s.model.inputs[0].default = 99), /default .* between min and max/);
