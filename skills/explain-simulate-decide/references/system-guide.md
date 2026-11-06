@@ -17,7 +17,7 @@ Write down every *thing* the story mentions that holds, makes, changes or receiv
 | Cause | What pushes on something else? | — | The interest rate | Screen time |
 
 Rules:
-- **Use 4–8 nodes.** Fewer feels empty and more feels like a factory.
+- **Use as few nodes as answer the question,** usually 3 to 7. Every one must take part in a flow (the best part is no part).
 - **Put the person's own things at the centre** (home, car, wallet). Put external parties (the grid, the bank, the market) to the side.
 - **Mount parts on their host with `on`.** Panels go on a roof, a battery could go on a wall.
 - **Things above the set go in the `sky`:** the sun, the weather.
@@ -41,7 +41,7 @@ Rules:
 - **A cause is a flow too:** carrier `influence`, from the cause to what it changes, with the size of the effect as its rate (never negative; the label says which way it pushes).
 - **Keep units consistent within a carrier.** The renderer draws flows that share a carrier and unit on the same scale. A $276 credit stream next to a $607 savings stream looks half as busy, and that comparison is often the whole insight.
 - **Show the flows people forget**, such as power still bought at night, interest, or heat lost through walls. They're usually where the misconception hides.
-- **Use 4–10 flows.**
+- **Use as few flows as tell the story,** usually 3 to 8.
 
 ## 3. Add time (stores and milestones)
 

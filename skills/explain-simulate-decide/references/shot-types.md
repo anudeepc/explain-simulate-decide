@@ -10,20 +10,21 @@ You choose the shot type, and the renderer decides the camera, framing and timin
 | `follow` | flow | Show where something goes | Rides alongside the flow (looks up the beam for flows from the sky) | The stream itself; nothing is swept |
 | `cause` | flow | Show that changing X changes this stream | Two-shot of both ends, plus sibling streams into the same node | The `drive` input sweeps and the stream thickens and thins |
 | `compare` | node or flow | Two states of one thing ("a little vs a lot") | Front-on, medium | `drive` sweeps low → high |
-| `turn` | node or flow | Correct the common misconception. **Exactly one.** | Slow arc; the longest shot | Holds still so the viewer can compare. Add `drive` only if the surprise needs a sweep |
+| `turn` | node or flow | Correct the common misconception. **Exactly one** (at most one in a `process` story). | Slow arc; the longest shot | Holds still so the viewer can compare. Add `drive` only if the surprise needs a sweep |
 | `timelapse` | store node | Show what builds up over time | Medium on the store | The clock runs from 0 to the span: the jar fills, the line is crossed, the flag rises |
-| `handoff` | — | Last shot: hand the model to the viewer | Settles into the Simulate view | The questions appear next |
+| `handoff` | — | Last shot: hand the choice to the viewer | Settles into the Simulate view (in a `process` story, into Decide) | The questions appear next, or Decide in a `process` story |
 
-## A reliable shape (8–11 shots)
+## A reliable shape (6–12 shots)
 
-1. `establish`: the question.
-2. `follow` the first flow from its source (sunlight onto panels, pay into the account).
-3. `follow` or `cause` for each main flow, in the order the system works.
-4. `turn`: the insight. Usually two streams side by side, or one that is smaller than people expect.
-5. `cause` with `drive` set to an option's input (for example, the battery appearing).
-6. `follow` the flow people forget (power still bought at night, interest charged).
-7. `timelapse` on the store: the milestone.
-8. `handoff`.
+1. `establish`: the question, in the hero's world.
+2. `introduce` the hero, or `follow` the first thing that happens to them (a kit on the doormat, sunlight onto their roof).
+3. `follow` or `cause` for each main flow, in the order things happen to the hero.
+4. One shot that sets up what the hero expects.
+5. `turn`: the insight. Usually two streams side by side, or one that is smaller than people expect.
+6. `cause` with `drive` set to an option's input (for example, the battery appearing).
+7. Go wide: `timelapse` on the store, or `focus` on the crowd.
+8. Back to the hero: `focus` on them (the validator checks the film ends here before handoff).
+9. `handoff`.
 
 ## Timing (automatic)
 

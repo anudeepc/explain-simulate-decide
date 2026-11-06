@@ -22,22 +22,22 @@ function coinGeometry() {
 // carrier look: track (radius, colour, opacity) and particles (geometry, colour, spacing, speed)
 // roll: stands on edge and rolls (coins). along: points along the track (pulses, beams).
 const CARRIERS = {
-  energy: { track: [0.075, '#59606b', 0.4, 'glass'], color: '#ffc23a', glow: 3.2, geo: () => new THREE.CapsuleGeometry(0.045, 0.42, 4, 10), gap: 0.62, speed: 1.35, lift: 0, along: true },
+  energy: { track: [0.075, '#4a5260', 0.55, 'glass'], color: '#f2a200', glow: 1.1, geo: () => new THREE.CapsuleGeometry(0.045, 0.42, 4, 10), gap: 0.62, speed: 1.35, lift: 0, along: true },
   money: { path: [0.42, '#efe2c2', '#c9b48a'], color: '#f2c14e', glow: 0.12, geo: coinGeometry, gap: 0.72, speed: 0.85, lift: COIN_R + 0.045, roll: true, metal: true },
   water: { track: [0.1, '#a9d3ea', 0.4, 'glass'], color: '#3f95d6', glow: 0.5, geo: () => new THREE.SphereGeometry(0.075, 16, 12), gap: 0.3, speed: 1.05, lift: 0 },
-  heat: { track: [0.075, '#6b4a3d', 0.5, 'glass'], color: '#ff6a2b', glow: 2.6, geo: () => new THREE.SphereGeometry(0.06, 16, 12), gap: 0.36, speed: 0.95, lift: 0 },
+  heat: { track: [0.075, '#6b4a3d', 0.55, 'glass'], color: '#f0602a', glow: 1.2, geo: () => new THREE.SphereGeometry(0.06, 16, 12), gap: 0.36, speed: 0.95, lift: 0 },
   light: { track: null, beam: 0.34, color: '#fff0bf', glow: 3.2, geo: () => new THREE.CapsuleGeometry(0.022, 0.8, 4, 8), gap: 0.7, speed: 2.8, lift: 0, along: true },
   goods: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#c98b5a', glow: 0.05, geo: () => new RoundedBoxGeometry(0.28, 0.24, 0.28, 2, 0.04), gap: 0.8, speed: 0.75, lift: 0.14 },
   people: { path: [0.46, '#e3d6bd', '#b9a581'], color: '#5b6b80', glow: 0.05, geo: () => new THREE.CapsuleGeometry(0.08, 0.2, 4, 10), gap: 0.7, speed: 0.6, lift: 0.18 },
-  data: { track: [0.06, '#2a3344', 0.5, 'glass'], color: '#5fd4e6', glow: 3, geo: () => new THREE.CapsuleGeometry(0.035, 0.22, 4, 8), gap: 0.34, speed: 1.9, lift: 0, along: true },
+  data: { track: [0.06, '#2a3344', 0.55, 'glass'], color: '#1fb3cc', glow: 1.2, geo: () => new THREE.CapsuleGeometry(0.035, 0.22, 4, 8), gap: 0.34, speed: 1.9, lift: 0, along: true },
   // a cause: arrowheads along a fine line, "this pushes on that"; more arrows, a bigger effect
-  influence: { track: [0.028, '#6f6491', 0.55], color: '#9a86d6', glow: 1.8, geo: () => new THREE.ConeGeometry(0.1, 0.24, 18), gap: 0.55, speed: 1.0, lift: 0, along: true },
+  influence: { track: [0.028, '#6f6491', 0.65], color: '#7a62c9', glow: 0.8, geo: () => new THREE.ConeGeometry(0.1, 0.24, 18), gap: 0.55, speed: 1.0, lift: 0, along: true },
   // hours and minutes: small glowing rings in a glass channel
-  time: { track: [0.065, '#3f5866', 0.4, 'glass'], color: '#7fc4d8', glow: 1.8, geo: () => new THREE.TorusGeometry(0.07, 0.022, 10, 24), gap: 0.4, speed: 0.9, lift: 0, along: true },
+  time: { track: [0.065, '#3f5866', 0.5, 'glass'], color: '#2f9ec0', glow: 0.9, geo: () => new THREE.TorusGeometry(0.07, 0.022, 10, 24), gap: 0.4, speed: 0.9, lift: 0, along: true },
   // carbon and other emissions: soft grey puffs drifting through the air, no pipe
   carbon: { track: null, color: '#7b7f86', glow: 0, geo: () => new THREE.IcosahedronGeometry(0.14, 3), gap: 0.5, speed: 0.55, lift: 0.4, puff: true },
   // medicine, food, pollutants, any stuff: capsules in a glass tube
-  substance: { track: [0.07, '#5c4a6e', 0.4, 'glass'], color: '#b58ae0', glow: 1.4, geo: () => new THREE.CapsuleGeometry(0.045, 0.1, 4, 10), gap: 0.36, speed: 0.9, lift: 0, along: true },
+  substance: { track: [0.07, '#5c4a6e', 0.5, 'glass'], color: '#9a62d6', glow: 0.9, geo: () => new THREE.CapsuleGeometry(0.045, 0.1, 4, 10), gap: 0.36, speed: 0.9, lift: 0, along: true },
 };
 
 /** A soft shaft of light along a curve: brightest down its middle, gently pulsing. */

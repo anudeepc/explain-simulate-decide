@@ -56,6 +56,10 @@ test('powers: plain bases with any power, unit bases only with a fixed power', (
   assert.equal(c('pow(side, 2)', 'm²'), null);
   assert.match(c('pow(side, n / n)', 'm'), /changing power/);
   assert.match(c('pow(2, len)', ''), /power that has a unit/);
+  // a count of things is a fine power: 13 tests
+  assert.equal(c('100 - 100 * pow(1 - p / 100, n)', '%'), null);
+  // a switch is a plain 0 or 1
+  assert.equal(c('side * step(side)', 'm'), null);
 });
 
 test('counted days get a hint', () => {

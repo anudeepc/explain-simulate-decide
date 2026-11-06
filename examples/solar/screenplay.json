@@ -1,6 +1,11 @@
 {
   "version": 2,
   "shape": "build-up",
+  "tone": "energy",
+  "story": {
+    "hero": "home",
+    "logline": "Your roof catches sun all day; power you use yourself saves far more than power you sell, so how soon does solar pay you back?"
+  },
   "question": "Should I put solar on my roof?",
   "source": {
     "title": "Homeowner's Guide to Solar; Will I Save Money with Solar Energy?",
@@ -406,7 +411,7 @@
         "to": "jar",
         "carrier": "money",
         "rate": "exportCredit",
-        "label": "Export credit",
+        "label": "What the grid pays you",
         "unit": "$/yr"
       }
     ]
@@ -537,52 +542,57 @@
   "explain": [
     {
       "shot": "establish",
-      "caption": "Should solar go on your roof? Here is how it works."
+      "caption": "Your roof sits in the sun all day. Could it pay you?"
     },
     {
       "shot": "follow",
       "focus": "light",
-      "caption": "Sunlight lands on the panels. More sun, more power."
+      "caption": "Morning. Sunlight lands on your panels."
     },
     {
       "shot": "follow",
       "focus": "direct",
-      "caption": "Power you use as it's made is power you don't buy."
+      "caption": "Your home runs on it. That's power you don't buy."
     },
     {
       "shot": "cause",
       "focus": "avoided",
-      "caption": "So every unit you don't buy goes into savings."
+      "caption": "So every unit you don't buy drops into your savings."
     },
     {
       "shot": "follow",
       "focus": "export",
-      "caption": "Power you don't use right away goes out to the grid."
+      "caption": "By noon there's spare power. You sell it to the grid."
     },
     {
       "shot": "turn",
       "focus": "credit",
-      "caption": "But the grid usually pays far less than you pay for power."
+      "caption": "But the grid usually pays far less than you pay it."
     },
     {
       "shot": "cause",
       "focus": "charge",
       "drive": "battery",
-      "caption": "A battery can keep that power for the evening instead."
+      "caption": "A battery keeps the spare for the evening instead."
     },
     {
       "shot": "follow",
       "focus": "import",
-      "caption": "At night, you still buy some power from the grid."
+      "caption": "After dark, you still buy some power from the grid."
     },
     {
       "shot": "timelapse",
       "focus": "jar",
-      "caption": "Savings build up each year until they cover the cost."
+      "caption": "Year by year, savings climb until they cover the cost."
+    },
+    {
+      "shot": "focus",
+      "focus": "home",
+      "caption": "Use more of it at home, and that day comes sooner."
     },
     {
       "shot": "handoff",
-      "caption": "Now make it yours. Answer a few questions."
+      "caption": "Now it is your roof. Your numbers decide the rest."
     }
   ],
   "simulate": {

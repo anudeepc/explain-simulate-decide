@@ -1,6 +1,11 @@
 {
   "version": 2,
   "shape": "build-up",
+  "tone": "water",
+  "story": {
+    "hero": "home",
+    "logline": "Your roof fills a tank with rain; summer rain is a trickle beside what your garden drinks, so how long until the tank runs dry and the tap takes over?"
+  },
   "question": "Will a rainwater tank keep my garden watered through summer?",
   "source": {
     "title": "Is a rainwater tank worth it for your garden?",
@@ -14,539 +19,119 @@
       "A 10,000 litre tank lasts most of a dry spell, but costs more and takes up space.",
       "Many owners find a tank of 5,000 litres is a good middle ground for a small garden.",
       "In most places it covers the wet months easily and runs dry in exactly the weeks you need it most.",
-      "In a dry summer the garden takes water out faster than rain puts it in, and the tank runs empty.",
       "Tanks also need a pump, cleaning, and in some areas a permit."
     ]
   },
   "model": {
     "inputs": [
-      {
-        "id": "tankSize",
-        "label": "Tank size",
-        "unit": "L",
-        "kind": "lever",
-        "min": 2000,
-        "max": 10000,
-        "step": 500,
-        "default": 5000,
-        "source": "article",
-        "quote": 6
-      },
-      {
-        "id": "gardenUse",
-        "label": "Water your garden uses in summer",
-        "unit": "L/day",
-        "kind": "lever",
-        "min": 50,
-        "max": 400,
-        "step": 10,
-        "default": 200,
-        "source": "article",
-        "quote": 3
-      },
-      {
-        "id": "roofArea",
-        "label": "Roof area that drains to the tank",
-        "unit": "m²",
-        "kind": "condition",
-        "min": 20,
-        "max": 300,
-        "step": 10,
-        "default": 100,
-        "source": "article",
-        "quote": 2
-      },
-      {
-        "id": "annualRain",
-        "label": "Rain in a year",
-        "unit": "mm/yr",
-        "kind": "condition",
-        "min": 200,
-        "max": 1500,
-        "step": 50,
-        "default": 600,
-        "source": "article",
-        "quote": 2
-      },
-      {
-        "id": "summerRain",
-        "label": "Rain in a summer month",
-        "unit": "mm/month",
-        "kind": "condition",
-        "min": 0,
-        "max": 120,
-        "step": 5,
-        "default": 15,
-        "source": "assumption"
-      }
+      { "id": "tankSize", "label": "Tank size", "unit": "L", "kind": "lever",
+        "min": 2000, "max": 10000, "step": 500, "default": 5000, "source": "article", "quote": [4, 5, 6],
+        "note": "Default is the 5,000 litre middle ground; the range runs from the small 2,000 to the 10,000 litre tank." },
+      { "id": "gardenUse", "label": "Water your garden uses on a summer day", "unit": "L/day", "kind": "lever",
+        "min": 50, "max": 400, "step": 10, "default": 200, "source": "article", "quote": 3 },
+      { "id": "roofArea", "label": "Roof that drains into the tank", "unit": "m²", "kind": "condition",
+        "min": 20, "max": 300, "step": 10, "default": 100, "source": "article", "quote": 2 },
+      { "id": "annualRain", "label": "Rain in a year", "unit": "mm/yr", "kind": "condition",
+        "min": 200, "max": 1500, "step": 50, "default": 600, "source": "article", "quote": 2 },
+      { "id": "summerRain", "label": "Rain in a summer month", "unit": "mm/month", "kind": "condition",
+        "min": 0, "max": 100, "step": 5, "default": 20, "source": "assumption" }
     ],
     "constants": [
-      {
-        "id": "litresPerMm",
-        "label": "Water from each square metre per millimetre of rain",
-        "unit": "L/m²/mm",
-        "value": 1,
-        "source": "article",
-        "quote": 1
-      },
-      {
-        "id": "lossPct",
-        "label": "Lost to gutters and first-flush diverters",
-        "unit": "%",
-        "value": 20,
-        "source": "article",
-        "quote": 1
-      },
-      {
-        "id": "drawRate",
-        "label": "Share of the tank's water a pump can give in a day",
-        "unit": "%/day",
-        "value": 100,
-        "source": "assumption"
-      },
-      {
-        "id": "summerDays",
-        "label": "Length of a summer dry spell",
-        "unit": "day",
-        "value": 60,
-        "source": "assumption"
-      }
+      { "id": "loss", "label": "Rain lost to gutters and diverters", "unit": "%", "value": 20, "source": "article", "quote": 1 }
     ],
     "derived": [
-      {
-        "id": "keepShare",
-        "label": "Share of roof water kept",
-        "unit": "",
-        "formula": "1 - lossPct / 100"
-      },
-      {
-        "id": "rainOnRoof",
-        "label": "Summer rain on the roof",
-        "unit": "L/day",
-        "formula": "roofArea * summerRain / 30 * litresPerMm"
-      },
-      {
-        "id": "summerInflow",
-        "label": "Summer water into the tank",
-        "unit": "L/day",
-        "formula": "rainOnRoof * keepShare"
-      },
-      {
-        "id": "gutterLoss",
-        "label": "Summer water lost in gutters",
-        "unit": "L/day",
-        "formula": "rainOnRoof - summerInflow"
-      },
-      {
-        "id": "summerNeed",
-        "label": "Water the garden needs all summer",
-        "unit": "L",
-        "formula": "gardenUse * summerDays"
-      },
-      {
-        "id": "fromTank",
-        "label": "Summer watering from the tank",
-        "unit": "L",
-        "formula": "min(summerNeed, tankSize + summerInflow * summerDays)"
-      },
-      {
-        "id": "tapNeeded",
-        "label": "Tap water still needed in summer",
-        "unit": "L",
-        "formula": "summerNeed - fromTank"
-      }
+      { "id": "roofRain", "label": "Rain landing on your roof", "unit": "L/day", "formula": "roofArea * summerRain / 30" },
+      { "id": "rainIn", "label": "Rain reaching the tank", "unit": "L/day", "formula": "roofRain * (1 - loss / 100)" },
+      { "id": "hasWater", "label": "Tank still has water", "unit": "", "formula": "tankWater / max(tankWater, 1)" },
+      { "id": "fromTank", "label": "Garden water from the tank", "unit": "L/day", "formula": "min(gardenUse, rainIn + gardenUse * hasWater)" },
+      { "id": "fromTap", "label": "Garden water from the tap", "unit": "L/day", "formula": "gardenUse - fromTank" }
     ],
     "outputs": [
-      {
-        "id": "yearCollect",
-        "label": "Water collected in a year",
-        "unit": "L/yr",
-        "formula": "roofArea * annualRain * litresPerMm * keepShare"
-      },
-      {
-        "id": "coverPct",
-        "label": "Summer watering the tank covers",
-        "unit": "%",
-        "formula": "fromTank / max(summerNeed, 1) * 100"
-      }
+      { "id": "yearlyCatch", "label": "Rain your roof catches in a year", "unit": "L/yr", "formula": "roofArea * annualRain * (1 - loss / 100)" }
     ],
     "stores": [
-      {
-        "id": "tank",
-        "label": "Water in the tank",
-        "unit": "L",
-        "start": "tankSize",
-        "change": "min(summerInflow - gardenUse, (tankSize - tank) * drawRate / 100)",
-        "floor": 0
-      }
+      { "id": "tankWater", "label": "Water in the tank", "unit": "L", "start": "tankSize", "change": "rainIn - fromTank", "floor": 0, "ceiling": "tankSize" }
     ],
     "milestones": [
-      {
-        "id": "runsDry",
-        "label": "Tank runs dry after",
-        "store": "tank",
-        "reaches": "0"
-      }
+      { "id": "runsDry", "label": "Tank runs dry in", "store": "tankWater", "reaches": "0" }
     ]
   },
   "checks": [
-    {
-      "claim": "A 100 square metre roof with 600 mm of rain a year collects roughly 48,000 litres",
-      "value": "yearCollect",
-      "between": [
-        45000,
-        50000
-      ],
-      "quote": 2
-    },
-    {
-      "claim": "A 2,000 litre tank can be empty within ten dry days",
-      "value": "runsDry",
-      "between": [
-        5,
-        10
-      ],
-      "when": {
-        "tankSize": 2000,
-        "summerRain": 0
-      },
-      "quote": 4
-    },
-    {
-      "claim": "A 10,000 litre tank lasts most of a dry spell",
-      "value": "coverPct",
-      "between": [
-        75,
-        100
-      ],
-      "when": {
-        "tankSize": 10000
-      },
-      "quote": 5
-    },
-    {
-      "claim": "In most places the tank runs dry in the weeks you need it most",
-      "value": "coverPct",
-      "between": [
-        0,
-        99
-      ],
-      "quote": 7
-    },
-    {
-      "claim": "A bigger tank lasts longer",
-      "value": "runsDry",
-      "rises": "tankSize"
-    },
-    {
-      "claim": "A thirstier garden empties the tank sooner",
-      "value": "runsDry",
-      "falls": "gardenUse"
-    },
-    {
-      "claim": "A bigger tank covers more of the summer watering",
-      "value": "coverPct",
-      "rises": "tankSize"
-    },
-    {
-      "claim": "More roof means less tap water in summer",
-      "value": "tapNeeded",
-      "falls": "roofArea"
-    },
-    {
-      "claim": "Summer watering comes from the tank or the tap",
-      "same": [
-        "fromTank + tapNeeded",
-        "summerNeed"
-      ]
-    },
-    {
-      "claim": "Rain on the roof goes into the tank or is lost in the gutters",
-      "same": [
-        "rainOnRoof",
-        "summerInflow + gutterLoss"
-      ]
-    }
+    { "claim": "A 100 square metre roof with 600 mm of rain a year collects roughly 48,000 litres", "value": "yearlyCatch", "between": [41000, 55000], "quote": 2 },
+    { "claim": "A 2,000 litre tank can be empty within ten dry days", "value": "runsDry", "between": [null, 10], "when": { "tankSize": 2000, "summerRain": 0 }, "quote": 4 },
+    { "claim": "A bigger tank lasts longer before it runs dry", "value": "runsDry", "rises": "tankSize" },
+    { "claim": "The more the garden drinks, the sooner the tank runs dry", "value": "runsDry", "falls": "gardenUse" },
+    { "claim": "More summer rain keeps the tank going longer", "value": "runsDry", "rises": "summerRain" },
+    { "claim": "A bigger roof catches more rain", "value": "yearlyCatch", "rises": "roofArea" }
   ],
   "world": {
-    "time": {
-      "unit": "day",
-      "span": 60
-    },
+    "time": { "unit": "day", "span": 90 },
     "nodes": [
-      {
-        "id": "cloud",
-        "prop": "cloud",
-        "label": "Summer rain",
-        "plays": "summerRain",
-        "sky": true
-      },
-      {
-        "id": "home",
-        "prop": "house",
-        "label": "Your roof",
-        "plays": "roofArea"
-      },
-      {
-        "id": "tankNode",
-        "prop": "tank",
-        "label": "Rainwater tank",
-        "store": "tank",
-        "target": "tankSize"
-      },
-      {
-        "id": "garden",
-        "prop": "hill",
-        "label": "Your garden",
-        "plays": "gardenUse"
-      },
-      {
-        "id": "mains",
-        "prop": "water-drop",
-        "label": "Tap water",
-        "plays": "tapNeeded"
-      },
-      {
-        "id": "drain",
-        "kind": "other",
-        "label": "Storm drain"
-      }
+      { "id": "cloud", "prop": "cloud", "label": "Summer rain", "plays": "summerRain", "sky": true },
+      { "id": "home", "prop": "house", "label": "Your home" },
+      { "id": "tank", "prop": "tank", "label": "Rainwater tank", "store": "tankWater" },
+      { "id": "garden", "prop": "tree", "label": "Your garden", "plays": "gardenUse" }
     ],
     "flows": [
-      {
-        "id": "rain",
-        "from": "cloud",
-        "to": "home",
-        "carrier": "water",
-        "rate": "rainOnRoof",
-        "label": "Rain on your roof",
-        "unit": "L/day"
-      },
-      {
-        "id": "collected",
-        "from": "home",
-        "to": "tankNode",
-        "carrier": "water",
-        "rate": "summerInflow",
-        "label": "Into the tank",
-        "unit": "L/day"
-      },
-      {
-        "id": "lost",
-        "from": "home",
-        "to": "drain",
-        "carrier": "water",
-        "rate": "gutterLoss",
-        "label": "Lost in the gutters",
-        "unit": "L/day"
-      },
-      {
-        "id": "overflow",
-        "from": "tankNode",
-        "to": "drain",
-        "carrier": "water",
-        "rate": "max(0, summerInflow - gardenUse - (tankSize - tank) * drawRate / 100)",
-        "label": "Overflow when full",
-        "unit": "L/day"
-      },
-      {
-        "id": "watering",
-        "from": "tankNode",
-        "to": "garden",
-        "carrier": "water",
-        "rate": "min(gardenUse, summerInflow + tank * drawRate / 100)",
-        "label": "Watering from the tank",
-        "unit": "L/day"
-      },
-      {
-        "id": "tap",
-        "from": "mains",
-        "to": "garden",
-        "carrier": "water",
-        "rate": "max(0, gardenUse - summerInflow - tank * drawRate / 100)",
-        "label": "Watering from the tap",
-        "unit": "L/day"
-      }
+      { "id": "rainRoof", "from": "cloud", "to": "home", "carrier": "water", "rate": "roofRain", "label": "Rain on your roof", "unit": "L/day" },
+      { "id": "gutter", "from": "home", "to": "tank", "carrier": "water", "rate": "rainIn", "label": "Rain into the tank", "unit": "L/day" },
+      { "id": "tankWatering", "from": "tank", "to": "garden", "carrier": "water", "rate": "fromTank", "label": "Tank water for the garden", "unit": "L/day" },
+      { "id": "tapWatering", "from": "home", "to": "garden", "carrier": "water", "rate": "fromTap", "label": "Tap water for the garden", "unit": "L/day" }
     ]
   },
   "ask": [
-    {
-      "question": "How much roof drains into the tank?",
-      "help": "Count only the roof whose downpipes run to the tank.",
-      "choices": [
-        {
-          "label": "A shed or small part of the roof",
-          "set": {
-            "roofArea": 40
-          },
-          "source": "assumption"
-        },
-        {
-          "label": "Not sure / about half a house roof",
-          "set": {
-            "roofArea": 100
-          },
-          "quote": 2
-        },
-        {
-          "label": "A whole large house roof",
-          "set": {
-            "roofArea": 200
-          },
-          "source": "assumption"
-        }
-      ]
-    },
-    {
-      "question": "How much rain falls where you live in a year?",
-      "help": "Your weather service lists the yearly average for your town, in millimetres.",
-      "input": "annualRain"
-    },
-    {
-      "question": "How often does it rain in your summer?",
-      "choices": [
-        {
-          "label": "Hardly ever",
-          "set": {
-            "summerRain": 0
-          },
-          "source": "assumption"
-        },
-        {
-          "label": "Not sure / a shower now and then",
-          "set": {
-            "summerRain": 15
-          }
-        },
-        {
-          "label": "Regular summer storms",
-          "set": {
-            "summerRain": 50
-          },
-          "source": "assumption"
-        }
-      ]
-    },
-    {
-      "question": "How do you water your garden in summer?",
-      "choices": [
-        {
-          "label": "Only when it's very dry",
-          "set": {
-            "gardenUse": 100
-          }
-        },
-        {
-          "label": "Not sure / by hand most days",
-          "set": {
-            "gardenUse": 200
-          },
-          "quote": 3
-        },
-        {
-          "label": "Sprinklers or a big garden",
-          "set": {
-            "gardenUse": 350
-          }
-        }
-      ]
-    }
+    { "question": "How wet is it where you live?", "help": "Think of a usual year, and how much rain falls in summer.", "choices": [
+      { "label": "Dry, with hot rainless summers", "set": { "annualRain": 300, "summerRain": 5 }, "source": "assumption" },
+      { "label": "About average, or not sure", "set": { "annualRain": 600, "summerRain": 20 } },
+      { "label": "Wet, with rain most months", "set": { "annualRain": 1000, "summerRain": 50 }, "source": "assumption" }
+    ] },
+    { "question": "How much roof drains into the tank?", "help": "Count only the roof whose gutters lead to the tank.", "choices": [
+      { "label": "A shed or garage", "set": { "roofArea": 30 }, "source": "assumption" },
+      { "label": "Part of the house, or not sure", "set": { "roofArea": 100 } },
+      { "label": "The whole house", "set": { "roofArea": 200 }, "source": "assumption" }
+    ] },
+    { "question": "How do you water the garden in summer?", "choices": [
+      { "label": "Just pots and a few beds", "set": { "gardenUse": 80 } },
+      { "label": "By hand, a typical garden, or not sure", "set": { "gardenUse": 200 } },
+      { "label": "A big garden or a sprinkler", "set": { "gardenUse": 400 } }
+    ] }
   ],
   "explain": [
-    {
-      "shot": "establish",
-      "caption": "Will a rainwater tank keep your garden green all summer?"
-    },
-    {
-      "shot": "follow",
-      "focus": "rain",
-      "caption": "Rain lands on your roof and runs into the gutters."
-    },
-    {
-      "shot": "follow",
-      "focus": "collected",
-      "caption": "Most of it flows down the pipe into your tank."
-    },
-    {
-      "shot": "follow",
-      "focus": "watering",
-      "caption": "You water the garden from the tank instead of the tap."
-    },
-    {
-      "shot": "cause",
-      "focus": "collected",
-      "drive": "summerRain",
-      "caption": "More rain fills the tank faster. When full, it overflows."
-    },
-    {
-      "shot": "turn",
-      "focus": "tankNode",
-      "caption": "But in summer, the garden drinks far faster than rain refills."
-    },
-    {
-      "shot": "timelapse",
-      "focus": "tankNode",
-      "caption": "So the tank drains day by day until it runs dry."
-    },
-    {
-      "shot": "follow",
-      "focus": "tap",
-      "caption": "Once it's empty, tap water takes over for the rest of summer."
-    },
-    {
-      "shot": "handoff",
-      "caption": "Now make it yours. Answer a few questions."
-    }
+    { "shot": "establish", "caption": "Summer is coming. Will your rain tank keep the garden green?" },
+    { "shot": "follow", "focus": "rainRoof", "caption": "Rain lands on your roof." },
+    { "shot": "follow", "focus": "gutter", "caption": "Gutters carry it into the tank, losing a little on the way." },
+    { "shot": "follow", "focus": "tankWatering", "caption": "Each summer day, your garden drinks from the tank." },
+    { "shot": "turn", "focus": "gutter", "caption": "But summer rain is a trickle beside what the garden drinks." },
+    { "shot": "timelapse", "focus": "tank", "caption": "So the tank runs down, one dry day after another." },
+    { "shot": "follow", "focus": "tapWatering", "caption": "Once the tank is empty, your tap waters the garden again." },
+    { "shot": "handoff", "caption": "Your roof, your garden, your tank. Now make it yours." }
   ],
-  "simulate": {
-    "controls": [
-      "tankSize",
-      "gardenUse",
-      "roofArea",
-      "summerRain",
-      "annualRain"
-    ],
-    "prompt": "Try your own roof, rain, garden and tank size."
-  },
+  "simulate": { "controls": ["tankSize", "gardenUse", "summerRain", "roofArea"], "prompt": "Try your own tank, roof, rain and watering." },
   "decide": {
     "compare": [
-      {
-        "label": "Small 2,000 L tank",
-        "set": {
-          "tankSize": 2000
-        }
-      },
-      {
-        "label": "Middle 5,000 L tank",
-        "set": {
-          "tankSize": 5000
-        }
-      },
-      {
-        "label": "Large 10,000 L tank",
-        "set": {
-          "tankSize": 10000
-        }
-      }
+      { "label": "Small 2,000 L tank", "set": { "tankSize": 2000 } },
+      { "label": "Middle 5,000 L tank", "set": { "tankSize": 5000 } },
+      { "label": "Large 10,000 L tank", "set": { "tankSize": 10000 } }
     ],
     "tradeoffs": [
-      "A bigger tank lasts longer into a dry spell, but costs more and takes up more space.",
-      "A small tank fits easily, but fills and overflows in one big storm and empties within days.",
-      "Watering less from the tank stretches it further, but the garden may need tap water anyway.",
-      "Every tank needs a pump and cleaning, which add cost and effort on top of the tank."
+      "A bigger tank lasts further into a dry spell, but costs more and takes up more space.",
+      "A small tank fills in one big storm, but the extra spills away and it can be empty within days.",
+      "Watering less stretches the tank, but some plants may struggle in the hottest weeks.",
+      "A tank saves tap water, but it needs a pump, cleaning, and in some areas a permit."
     ],
     "leftOut": [
-      "Prices: the article gives no cost for tanks, pumps or tap water, so the model shows water, not money.",
-      "Rain is spread evenly across each summer month; real rain comes in bursts, and storms may overflow a small tank.",
-      "The dry spell is taken as 60 days and the tank starts it full; both are assumptions.",
-      "Garden needs change with plants, soil, shade and heat, not just how you water.",
-      "Permits and rules for tanks differ by area; check what applies to you."
+      "Rain comes in storms, not as the steady daily trickle the model uses.",
+      "The model starts summer with a full tank; a dry spring would leave less in it.",
+      "Water that spills over the top in wet months is not shown.",
+      "The article gives no prices for tanks, pumps or tap water, so the model counts litres, not dollars.",
+      "Summer rainfall and the answer choices are assumptions; check rainfall records for your area.",
+      "Permit rules differ from place to place; check what applies to you."
     ],
     "questionsToAsk": [
-      "Ask your council: do I need a permit for a tank this size?",
-      "Ask a tank seller: which pump suits my garden, and what cleaning does it need?",
-      "Ask a plumber: how many downpipes can feed the tank, and where can it sit?",
-      "Check your weather service: how much rain falls here in a typical summer month?"
+      "How much of my roof can drain into a tank, and where would the tank sit?",
+      "What pump does this tank need, and what does it cost to run?",
+      "Do I need a permit for a rainwater tank here?",
+      "How much rain usually falls here in the summer months?"
     ]
   }
 }

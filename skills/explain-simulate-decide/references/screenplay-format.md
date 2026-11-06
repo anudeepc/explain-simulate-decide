@@ -6,6 +6,8 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
 {
   "version": 2,
   "shape": "build-up",                                  // see story-shapes.md
+  "tone": "energy",                                     // the accent colour; see storytelling.md
+  "story": { "hero": "home", "logline": "Your roof catches sunlight all day; the power you use yourself saves far more than the power you sell, so how much does solar pay you back?" },
   "question": "Should I put solar on my roof?",          // the decision, reader's voice
   "source": {
     "title": "Homeowner's Guide to Solar",
@@ -80,6 +82,10 @@ One JSON object. `scripts/validate.mjs` checks every rule below and explains any
 - `cause`: at least one `influence` flow.
 - `chances`: a `crowd` node that plays a value in `"%"`.
 - `process`: see "Process stories" below.
+
+**Story** (required): `hero` is a node on the ground (the person or home the viewer stands in for); `logline` is one sentence, 35 words or fewer. The first shot after `establish` and the last shot before `handoff` must be about the hero: focus on it, on a part mounted on it, or on a flow to or from it.
+
+**Tone** (optional, default `neutral`): `health`, `money`, `energy`, `water`, `climate`, `civic`, `food`, `home` or `neutral`. Films are shot on a white set; the tone is the accent colour.
 
 **Ids**
 - Letters, digits and `_`, starting with a letter. Model ids are unique across inputs, constants, derived values, outputs, stores and milestones.

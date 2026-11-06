@@ -1,6 +1,11 @@
 {
   "version": 2,
   "shape": "chances",
+  "tone": "health",
+  "story": {
+    "hero": "you",
+    "logline": "You get a letter inviting you to screening; out of 100 people like you, a few are helped and many more get a false alarm along the way."
+  },
   "question": "What happens if 100 people like me get screened?",
   "source": {
     "title": "Test fixture written for this repo",
@@ -113,10 +118,15 @@
   "world": {
     "nodes": [
       {
+        "id": "you",
+        "prop": "person-figure",
+        "label": "You",
+        "plays": "tests"
+      },
+      {
         "id": "clinic",
         "kind": "building",
-        "label": "Clinic",
-        "plays": "tests"
+        "label": "Clinic"
       },
       {
         "id": "early",
@@ -132,6 +142,15 @@
       }
     ],
     "flows": [
+      {
+        "id": "goIn",
+        "from": "you",
+        "to": "clinic",
+        "carrier": "people",
+        "rate": "tests",
+        "label": "Tests you go for",
+        "unit": "tests"
+      },
       {
         "id": "toEarly",
         "from": "clinic",
@@ -165,6 +184,11 @@
     },
     {
       "shot": "follow",
+      "focus": "goIn",
+      "caption": "You go in for a test every couple of years."
+    },
+    {
+      "shot": "follow",
       "focus": "toEarly",
       "caption": "Screening finds some cases early, while they are easier to treat."
     },
@@ -183,6 +207,11 @@
       "focus": "toAlarm",
       "drive": "tests",
       "caption": "More tests catch more cases, and cause more false alarms."
+    },
+    {
+      "shot": "focus",
+      "focus": "you",
+      "caption": "So what does screening change for someone like you?"
     },
     {
       "shot": "handoff",

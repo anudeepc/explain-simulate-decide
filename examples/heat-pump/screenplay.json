@@ -1,6 +1,11 @@
 {
   "version": 2,
   "shape": "build-up",
+  "tone": "home",
+  "story": {
+    "hero": "home",
+    "logline": "Your home leaks heat all winter; electricity usually costs more than gas, yet a heat pump moves about three units of heat for each one, so could switching pay you back?"
+  },
   "question": "Should I replace my gas furnace with a heat pump?",
   "source": {
     "title": "Thinking about a heat pump? (synthetic test article)",
@@ -212,9 +217,61 @@
       },
       {
         "id": "gas",
-        "prop": "factory",
-        "label": "Gas company",
-        "plays": "gasPrice"
+        "label": "Gas furnace",
+        "plays": "gasPrice",
+        "recipe": [
+          {
+            "shape": "cylinder",
+            "size": [
+              1.4,
+              0.3,
+              1.4
+            ],
+            "color": "#5b6470"
+          },
+          {
+            "shape": "cone",
+            "size": [
+              0.8,
+              1.5,
+              0.8
+            ],
+            "color": "#3d7be0",
+            "at": [
+              0,
+              0.3,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "size": [
+              0.45,
+              0.9,
+              0.45
+            ],
+            "color": "#7fb0f2",
+            "at": [
+              -0.42,
+              0.3,
+              0.12
+            ]
+          },
+          {
+            "shape": "cone",
+            "size": [
+              0.45,
+              0.9,
+              0.45
+            ],
+            "color": "#7fb0f2",
+            "at": [
+              0.42,
+              0.3,
+              0.12
+            ]
+          }
+        ]
       },
       {
         "id": "jar",
@@ -357,49 +414,49 @@
   "explain": [
     {
       "shot": "establish",
-      "caption": "Gas furnace or heat pump? Here is what decides it."
+      "caption": "Winter again. Keep burning gas, or switch to a heat pump?"
     },
     {
       "shot": "follow",
       "focus": "leak",
-      "caption": "In winter, heat leaks out. You have to put it back."
+      "caption": "Outside it's freezing. Your home leaks heat all winter long."
     },
     {
       "shot": "follow",
-      "focus": "warmth",
+      "focus": "elec",
       "caption": "A heat pump runs on electricity, which usually costs more than gas."
     },
     {
       "shot": "turn",
-      "focus": "elec",
-      "caption": "But one unit of electricity moves about three units of heat."
+      "focus": "warmth",
+      "caption": "But a little electricity moves a lot of heat."
     },
     {
       "shot": "cause",
       "focus": "gasStop",
       "drive": "gasPrice",
-      "caption": "So you stop buying gas. Pricier gas means more saved."
+      "caption": "So the gas bill stops. Pricier gas, bigger saving."
     },
     {
       "shot": "cause",
       "focus": "elecBill",
       "drive": "elecPrice",
-      "caption": "The electricity bill grows, and pricier power eats into savings."
+      "caption": "A new power bill takes its share of the saving."
+    },
+    {
+      "shot": "timelapse",
+      "focus": "jar",
+      "caption": "Year by year, savings climb toward the extra cost of installing."
     },
     {
       "shot": "focus",
       "focus": "home",
       "drive": "insulation",
-      "caption": "Insulating first shrinks the heat you need at all."
-    },
-    {
-      "shot": "timelapse",
-      "focus": "jar",
-      "caption": "Savings add up until they cover the extra cost."
+      "caption": "Back home, insulating first shrinks the heat you need at all."
     },
     {
       "shot": "handoff",
-      "caption": "Now make it yours. Answer a few questions."
+      "caption": "Your winter and your prices decide the rest."
     }
   ],
   "simulate": {

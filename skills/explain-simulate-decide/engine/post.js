@@ -166,7 +166,7 @@ void main(){
   col = mix(col, col * col * (3.0 - 2.0 * col), contrast);
   float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = mix(vec3(l), col, saturation);
-  col += vec3(-0.008, 0.0, 0.012) * (1.0 - l) * (1.0 - l) + vec3(0.006, 0.002, -0.006) * l * l;
+  col += vec3(-0.006, 0.0, 0.008) * (1.0 - l) * (1.0 - l); // a touch of cool in the shadows; whites stay white
   // fine grain, new each frame of film time, plus dither against banding
   float g = hash(gl_FragCoord.xy + floor(time * 24.0) * 17.31) - 0.5;
   col += g * grain + (hash(gl_FragCoord.yx * 1.31) - 0.5) / 255.0;
@@ -213,7 +213,7 @@ export function createPost(renderer) {
     exposure: { value: 1.0 },
     contrast: { value: 0.28 },
     saturation: { value: 1.0 },
-    vignette: { value: 0.32 },
+    vignette: { value: 0.1 },
     grain: { value: 0.018 },
   });
   const finalU = finalMat.uniforms;

@@ -78,6 +78,7 @@ Every input, constant, derived value, output, store and flow has a `unit`, and t
 - **Known units convert:** time (s, min, h, day, night, week, month, yr), energy (J, kWh, kcal, BTU, therm), power (W, kW), mass (g, kg, t, lb), length, area, volume (L, gal) and temperature. Each currency is its own unit, so `$` and `€` never mix.
 - **Conversions are bare numbers in the formula:** `× 365` days a year, `× 12` months, `÷ 100` for percent, `÷ 60` minutes to hours, `× 1000` for kilo.
 - **Hidden rates need a constant.** A battery that cycles once a day is `battery * cycles * 365`, with `cycles` in `"/day"`, not `battery * 365`.
+- **Daily values beside counted days:** when you multiply by `"workdays/week"`, write the daily values per workday too (`"h/workday"`), so the units meet.
 - **Counted days are things, not lengths of time.** "5 days a week" of commuting is `"workdays/week"`, and two trips a day is `"trips/day"`. Written as `"days/week"`, it reads as a length of time over a length of time, a plain number, and the "per week" disappears.
 - **Write numbers and units with a space:** `"L/100 km"`, not `"L/100km"`.
 - **A store's change is its unit per clock unit.** Savings in `"$"` on a yearly clock change by `"$/yr"`.
@@ -100,6 +101,7 @@ A model can be well-formed and still wrong. In `checks`, write down what the sou
 - **`same`:** two formulas that must be equal everywhere. Use it for balances: what goes into a converter equals what comes out plus losses, and the parts of a budget add up to the whole.
 - You need **at least one `between` and one `rises` or `falls`.** A milestone counts as "never" when it isn't reached.
 - **If a check fails, fix the model, not the check.** A failing check means the formulas or the defaults disagree with the source. Change a check only if you misread the source, or the source disagrees with itself (below).
+- **Vague words:** "a few" is about 2 to 9, "most" is more than half, "nearly all" is 90 or more, "rarely" is under 10 in 100. Say which reading you used in the check's `claim`.
 - **How wide is "about"?** For "about 320 litres", allow about 15% either side (270 to 370) unless the source gives its own range. For "over 20 years" or "at least half", leave one end open with `null`: `[20, null]`.
 - **What gets checked:** an output or derived value at the defaults; a store, or a value that moves with one, at the end of the clock; a milestone as the time it is reached, or "never" when it isn't. The validator checks units first and runs the checks once the units are right.
 
@@ -126,6 +128,7 @@ Every number in a screenplay says where it came from. Viewers see the asterisks,
 
 - **Values that change over time:** a derived value may read a store, such as "how full the tank is" or "this month's payment" from the balance. It is worked out again at every step of the clock, so write a formula once and use it in both the store's change and the flow's rate. Outputs can't read stores, because the page shows them as fixed numbers.
 - **Limits on a store:** `"floor": 0` stops it going below zero, and `"ceiling"` (a number or a formula of fixed values, such as the tank size) stops it going above. Water beyond the ceiling is lost: draw that as an overflow flow whose rate reads the store.
+- **Switches:** `step(x)` is 1 while x is above zero and 0 otherwise. A tank's outflow stops when it is empty: `use * step(tank)`, and the tap takes over: `use * (1 - step(tank))`. Water spills over a full tank: `rain * (1 - step(tankSize - tank))`.
 - **Powers:** `pow(x, n)`, for chances that repeat. The chance of at least one positive result in n tests is `100 - 100 * pow(1 - p / 100, n)`. The base must be a plain number or share, unless the power is a fixed number such as `pow(side, 2)`.
 - **Bare numbers:** only conversions (0, 1, 2, 5, 7, 10, 12, 24, 30, 52, 60, 100, 365, 1000) may sit in a formula. Every other number is a named constant with a source.
 
@@ -152,7 +155,7 @@ Each shape below lists the signs in an article, the world to build, the model at
 **Signs:** "compounds", "snowballs", "spirals", "the more…, the more…", "interest on interest".
 **World:** like `build-up`, but a flow's rate reads the store itself. Draw that flow so the loop is visible: interest flows from the bank into the debt.
 **Model:** `store.change` reads the store, for example `balance * rate / 100 - payment`, with `"floor": 0`. Write the payment once as a derived value that reads the balance (`max(fixed, balance * minShare / 100)`) and use it in both the store's change and the payment flow.
-**Draw repayment** as a flow out of the store's node to the lender, so the viewer sees money leave the debt as well as interest enter it.
+**Draw repayment** as a flow from the person paying (the hero) to the lender. The debt's level shows it shrinking.
 **Checks:** the end level or milestone `between` the source's figure; the payment `falls` the time to clear.
 **Shots:** `follow` the loop's flow, a `turn` on how fast it grows ("the minimum payment barely covers the interest"), and a `timelapse`.
 **Examples:**

@@ -51,3 +51,9 @@ test('orderFormulas rejects cycles and unknown ids', () => {
   assert.throws(() => orderFormulas([{ id: 'a', formula: 'b' }, { id: 'b', formula: 'a' }], []), /circular/i);
   assert.throws(() => orderFormulas([{ id: 'a', formula: 'zz + 1' }], []), /unknown value "zz"/i);
 });
+
+test('step switches on above zero', () => {
+  assert.equal(evaluate(parse('step(3)'), {}), 1);
+  assert.equal(evaluate(parse('step(0)'), {}), 0);
+  assert.equal(evaluate(parse('step(0 - 2)'), {}), 0);
+});

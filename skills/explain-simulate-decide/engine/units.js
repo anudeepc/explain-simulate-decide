@@ -201,10 +201,16 @@ export function unitsOf(ast, unitOf, report) {
   if (ast.op === 'neg') return unitsOf(ast.a, unitOf, report);
   if ('call' in ast) {
     if (ast.call === 'round') return unitsOf(ast.args[0], unitOf, report);
+    if (ast.call === 'step') {
+      unitsOf(ast.args[0], unitOf, report);
+      return [{ d: {}, k: 0 }]; // a switch: a plain 0 or 1
+    }
     if (ast.call === 'pow') {
       const [base, power] = ast.args;
       const exp = unitsOf(power, unitOf, report);
-      if (!exp.some((c) => c.any || (Object.keys(c.d).length === 0 && near(c.k, 0)))) {
+      // a count of things (13 tests) is fine as a power; a length of time or money is not
+      const PHYSICAL = /^(time|energy|mass|length|temperature|[$€£¥₹])$/;
+      if (!exp.some((c) => c.any || (Object.keys(c.d).every((k) => !PHYSICAL.test(k)) && near(c.k, 0)))) {
         report(`raises to a power that has a unit: "${show(ast)}". The power must be a plain number.`);
         return [ANY];
       }

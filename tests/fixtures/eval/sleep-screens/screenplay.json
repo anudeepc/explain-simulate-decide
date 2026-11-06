@@ -1,6 +1,11 @@
 {
   "version": 2,
-  "shape": "build-up",
+  "shape": "cause",
+  "tone": "health",
+  "story": {
+    "hero": "you",
+    "logline": "You scroll in bed most nights, hoping night mode protects your sleep; the scrolling, not the light, costs minutes that pile into sleep debt, so what changes if the phone goes down earlier?"
+  },
   "question": "What happens to my sleep if I stop screens before bed?",
   "source": {
     "title": "Screens before bed: what they cost your sleep",
@@ -9,35 +14,32 @@
       "Most adults need between seven and nine hours of sleep a night.",
       "In one study, each hour of screen use in the hour before bed was linked to about 20 minutes less sleep that night.",
       "People who use screens in bed also take longer to fall asleep: around 15 minutes longer on average.",
-      "If you lose 30 minutes a night, by the end of a working week you are two and a half hours short.",
-      "It helps a little, but most of the effect comes from staying engaged, not from the light alone.",
-      "Putting the phone away is what makes the biggest difference.",
-      "Stop screens 30 to 60 minutes before bed."
+      "If you lose 30 minutes a night, by the end of a working week you are two and a half hours short."
     ]
   },
   "model": {
     "inputs": [
       {
-        "id": "screenFree",
-        "label": "Screen-free minutes before bed",
+        "id": "screenMins",
+        "label": "Screen time in the last hour before bed",
         "unit": "min/night",
         "kind": "lever",
         "min": 0,
         "max": 60,
         "step": 5,
-        "default": 0,
+        "default": 60,
         "source": "assumption"
       },
       {
         "id": "phoneInBed",
-        "label": "Phone in bed",
+        "label": "Screens in bed",
         "unit": "",
         "kind": "lever",
         "min": 0,
         "max": 1,
         "default": 1,
-        "source": "assumption",
-        "toggle": true
+        "toggle": true,
+        "source": "assumption"
       },
       {
         "id": "need",
@@ -49,11 +51,12 @@
         "step": 0.5,
         "default": 8,
         "source": "article",
-        "quote": 0
+        "quote": 0,
+        "note": "The middle of the seven to nine hours quoted."
       },
       {
         "id": "usual",
-        "label": "Sleep on a screen-free night",
+        "label": "Sleep on a night without screens",
         "unit": "h/night",
         "kind": "condition",
         "min": 5,
@@ -64,14 +67,6 @@
       }
     ],
     "constants": [
-      {
-        "id": "window",
-        "label": "The hour before bed",
-        "unit": "min/night",
-        "value": 60,
-        "source": "article",
-        "quote": 1
-      },
       {
         "id": "perHour",
         "label": "Sleep lost per hour of screens before bed",
@@ -90,12 +85,6 @@
       }
     ],
     "derived": [
-      {
-        "id": "screenMins",
-        "label": "Screen time in the hour before bed",
-        "unit": "min/night",
-        "formula": "max(0, window - screenFree)"
-      },
       {
         "id": "lostToScreens",
         "label": "Sleep cut by screens before bed",
@@ -142,199 +131,69 @@
   },
   "checks": [
     {
-      "claim": "Each hour of screens in the hour before bed costs about 20 minutes of sleep",
+      "claim": "An hour of screens in the hour before bed costs about 20 minutes of sleep",
       "value": "lostToScreens",
-      "between": [
-        18,
-        22
-      ],
-      "when": {
-        "screenFree": 0
-      },
+      "between": [17, 23],
+      "when": { "screenMins": 60 },
       "quote": 1
     },
     {
       "claim": "Losing 30 minutes a night leaves you two and a half hours short by the end of a working week",
       "value": "debt",
-      "between": [
-        2.4,
-        2.6
-      ],
-      "when": {
-        "screenFree": 15,
-        "phoneInBed": 1
-      },
+      "between": [2.4, 2.6],
+      "when": { "screenMins": 45, "phoneInBed": 1 },
       "quote": 3
     },
     {
-      "claim": "More screen-free time before bed means more sleep",
+      "claim": "More screen time before bed means less sleep",
       "value": "sleep",
-      "rises": "screenFree"
+      "falls": "screenMins"
     },
     {
-      "claim": "Putting screens away earlier means less sleep debt",
+      "claim": "Screens in bed mean less sleep",
+      "value": "sleep",
+      "falls": "phoneInBed"
+    },
+    {
+      "claim": "More screen time before bed means more sleep debt by the end of the week",
       "value": "debt",
-      "falls": "screenFree"
-    },
-    {
-      "claim": "Screens in bed add to the sleep lost",
-      "value": "lostTotal",
-      "rises": "phoneInBed"
-    },
-    {
-      "claim": "The hour before bed is split between screens and screen-free time",
-      "same": [
-        "window",
-        "screenMins + screenFree"
-      ]
+      "rises": "screenMins"
     }
   ],
   "world": {
-    "time": {
-      "unit": "day",
-      "span": 5
-    },
+    "time": { "unit": "day", "span": 5 },
     "nodes": [
-      {
-        "id": "hour",
-        "prop": "clock",
-        "label": "The hour before bed",
-        "plays": "screenFree"
-      },
-      {
-        "id": "screens",
-        "prop": "phone",
-        "label": "Evening screens",
-        "plays": "screenMins"
-      },
-      {
-        "id": "inbed",
-        "prop": "phone",
-        "label": "Phone in bed",
-        "plays": "phoneInBed",
-        "appears": "phoneInBed"
-      },
-      {
-        "id": "you",
-        "prop": "body",
-        "label": "You",
-        "plays": "sleep"
-      },
-      {
-        "id": "debtTank",
-        "prop": "tank",
-        "label": "Sleep debt",
-        "store": "debt"
-      }
+      { "id": "phone", "prop": "phone", "label": "Screens before bed", "plays": "screenMins" },
+      { "id": "inbed", "prop": "phone", "label": "Phone in bed", "plays": "phoneInBed", "appears": "phoneInBed" },
+      { "id": "you", "prop": "body", "label": "You", "plays": "sleep" },
+      { "id": "debtTank", "prop": "tank", "label": "Sleep debt", "store": "debt" }
     ],
     "flows": [
-      {
-        "id": "screenTime",
-        "from": "hour",
-        "to": "screens",
-        "carrier": "time",
-        "rate": "screenMins",
-        "label": "Minutes spent on screens",
-        "unit": "min/night"
-      },
-      {
-        "id": "windDown",
-        "from": "hour",
-        "to": "you",
-        "carrier": "time",
-        "rate": "screenFree",
-        "label": "Screen-free wind-down",
-        "unit": "min/night"
-      },
-      {
-        "id": "cutsSleep",
-        "from": "screens",
-        "to": "you",
-        "carrier": "influence",
-        "rate": "lostToScreens",
-        "label": "Cuts sleep",
-        "unit": "min/night"
-      },
-      {
-        "id": "slowerAsleep",
-        "from": "inbed",
-        "to": "you",
-        "carrier": "influence",
-        "rate": "lostInBed",
-        "label": "Slower to fall asleep",
-        "unit": "min/night"
-      },
-      {
-        "id": "missed",
-        "from": "you",
-        "to": "debtTank",
-        "carrier": "time",
-        "rate": "shortfall",
-        "label": "Sleep missed",
-        "unit": "h/night"
-      }
+      { "id": "cutsSleep", "from": "phone", "to": "you", "carrier": "influence", "rate": "lostToScreens", "label": "Cuts sleep", "unit": "min/night" },
+      { "id": "slowerAsleep", "from": "inbed", "to": "you", "carrier": "influence", "rate": "lostInBed", "label": "Slower to fall asleep", "unit": "min/night" },
+      { "id": "missed", "from": "you", "to": "debtTank", "carrier": "time", "rate": "shortfall", "label": "Sleep missed", "unit": "h/night" }
     ]
   },
   "ask": [
     {
-      "question": "How many minutes before bed do you stop using screens?",
-      "help": "Think of last night. Put 0 if you use screens until you sleep.",
-      "input": "screenFree"
+      "question": "In the last hour before bed, how many minutes are you on a screen?",
+      "help": "Think of last night. Put 60 if you use screens until you fall asleep.",
+      "input": "screenMins"
     },
     {
-      "question": "Does your phone come to bed with you?",
+      "question": "Do you use your phone once you are in bed?",
       "choices": [
-        {
-          "label": "Most nights",
-          "set": {
-            "phoneInBed": 1
-          }
-        },
-        {
-          "label": "Rarely",
-          "set": {
-            "phoneInBed": 0
-          }
-        },
-        {
-          "label": "Not sure",
-          "set": {
-            "phoneInBed": 1
-          }
-        }
+        { "label": "Most nights, or not sure", "set": { "phoneInBed": 1 } },
+        { "label": "Rarely", "set": { "phoneInBed": 0 } }
       ]
     },
     {
       "question": "How much sleep do you need to feel rested?",
       "help": "Most adults need between seven and nine hours.",
       "choices": [
-        {
-          "label": "About 7 hours",
-          "set": {
-            "need": 7
-          },
-          "quote": 0
-        },
-        {
-          "label": "About 8 hours",
-          "set": {
-            "need": 8
-          },
-          "quote": 0
-        },
-        {
-          "label": "About 9 hours",
-          "set": {
-            "need": 9
-          },
-          "quote": 0
-        },
-        {
-          "label": "Not sure",
-          "set": {
-            "need": 8
-          }
-        }
+        { "label": "About 7 hours", "set": { "need": 7 }, "quote": 0 },
+        { "label": "About 8 hours, or not sure", "set": { "need": 8 } },
+        { "label": "About 9 hours", "set": { "need": 9 }, "quote": 0 }
       ]
     },
     {
@@ -344,106 +203,43 @@
     }
   ],
   "explain": [
-    {
-      "shot": "establish",
-      "caption": "What happens to your sleep when screens come to bed?"
-    },
-    {
-      "shot": "introduce",
-      "focus": "hour",
-      "caption": "This is the last hour before you go to sleep."
-    },
-    {
-      "shot": "follow",
-      "focus": "screenTime",
-      "caption": "Screens can fill some or all of that hour."
-    },
-    {
-      "shot": "follow",
-      "focus": "cutsSleep",
-      "caption": "Screen time in that hour cuts your sleep that night."
-    },
-    {
-      "shot": "cause",
-      "focus": "slowerAsleep",
-      "drive": "phoneInBed",
-      "caption": "Screens in bed also make you slower to fall asleep."
-    },
-    {
-      "shot": "turn",
-      "focus": "cutsSleep",
-      "drive": "screenFree",
-      "caption": "But dimming the screen barely helps. Putting it away does."
-    },
-    {
-      "shot": "introduce",
-      "focus": "debtTank",
-      "caption": "Sleep debt is sleep you needed but did not get."
-    },
-    {
-      "shot": "follow",
-      "focus": "missed",
-      "caption": "Each short night adds to the debt."
-    },
-    {
-      "shot": "timelapse",
-      "focus": "debtTank",
-      "caption": "So small losses each night add up over a working week."
-    },
-    {
-      "shot": "handoff",
-      "caption": "Now make it yours. Answer a few questions."
-    }
+    { "shot": "establish", "caption": "Tonight you scroll in bed. What does it cost your sleep?" },
+    { "shot": "introduce", "focus": "you", "caption": "You want a full night's sleep before work tomorrow." },
+    { "shot": "follow", "focus": "cutsSleep", "caption": "Screen time before bed trims your sleep that night." },
+    { "shot": "cause", "focus": "slowerAsleep", "drive": "phoneInBed", "caption": "Screens in bed also slow how fast you fall asleep." },
+    { "shot": "turn", "focus": "cutsSleep", "drive": "screenMins", "caption": "But dimming the screen barely helps. Putting it away does." },
+    { "shot": "follow", "focus": "missed", "caption": "Sleep you needed but missed becomes sleep debt." },
+    { "shot": "timelapse", "focus": "debtTank", "caption": "So small losses each night pile up across the working week." },
+    { "shot": "focus", "focus": "you", "caption": "A weekend lie-in repays only part. Your evenings decide the rest." },
+    { "shot": "handoff", "caption": "Now make it yours. Tell us about your evenings." }
   ],
   "simulate": {
-    "controls": [
-      "screenFree",
-      "phoneInBed",
-      "need",
-      "usual"
-    ],
-    "prompt": "Try your own evening and see the week's sleep debt."
+    "controls": ["screenMins", "phoneInBed", "need", "usual"],
+    "prompt": "Try your own evening and watch the week's sleep debt."
   },
   "decide": {
     "compare": [
-      {
-        "label": "Screens until bed, phone in bed",
-        "set": {
-          "screenFree": 0,
-          "phoneInBed": 1
-        }
-      },
-      {
-        "label": "Stop 30 minutes before bed",
-        "set": {
-          "screenFree": 30,
-          "phoneInBed": 1
-        }
-      },
-      {
-        "label": "Stop an hour before, phone outside",
-        "set": {
-          "screenFree": 60,
-          "phoneInBed": 0
-        }
-      }
+      { "label": "Screens until you fall asleep", "set": { "screenMins": 60, "phoneInBed": 1 } },
+      { "label": "Stop 30 minutes before bed", "set": { "screenMins": 30, "phoneInBed": 0 } },
+      { "label": "Stop an hour before bed", "set": { "screenMins": 0, "phoneInBed": 0 } }
     ],
     "tradeoffs": [
       "Evening screens can be how you relax or keep in touch, but they cost some sleep that night.",
-      "Keeping the phone outside the bedroom removes the pull to check it, but you may need another alarm clock.",
+      "A phone outside the bedroom removes the pull to check it, but you may need another alarm clock.",
       "A paper book or calm audio can fill the wind-down time, but a new habit takes a while to settle."
     ],
     "leftOut": [
-      "The 20 and 15 minute figures are averages from studies of groups; your own effect may be larger or smaller.",
-      "The model adds the two effects together; they may overlap, so the real total could be smaller.",
-      "A weekend lie-in pays back part of the debt, but the article gives no number, so the model leaves it out.",
-      "Night mode helps a little, but the article gives no number, so the model does not include it.",
+      "The article calls its numbers illustrative, and the 20 and 15 minute figures are averages; your own effect may be larger or smaller.",
+      "The article gives the loss per hour of screens; the model assumes half an hour costs half as much.",
+      "The model adds the screens-before-bed and screens-in-bed effects; the article doesn't say whether they overlap, so the real total could be smaller.",
+      "A weekend lie-in pays back part of the debt, but the article gives no figure, so the model leaves it out.",
+      "Night mode helps a little, but the article gives no figure, so the model does not include it.",
       "Stress, caffeine, noise and a regular bedtime also change sleep, and the model leaves them out."
     ],
     "questionsToAsk": [
       "I have slept badly for weeks. What should we check first?",
-      "How much sleep do people my age usually need?",
-      "Could caffeine, stress or noise be a bigger part of my poor sleep than screens?"
+      "How much sleep does someone my age usually need?",
+      "Could caffeine, stress or noise matter more than screens for my sleep?"
     ]
   }
 }

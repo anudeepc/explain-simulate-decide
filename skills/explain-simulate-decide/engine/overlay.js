@@ -7,8 +7,9 @@ import { formatValue } from './model.js';
 export const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif';
 export const INK = '#26262b';
 export const MUTED = '#6d6a66';
-export const PAPER = 'rgba(251, 247, 239, 0.94)';
-export const ACCENT = '#c0623f';
+export const PAPER = 'rgba(255, 255, 255, 0.95)';
+/** The film's accent colour, from its tone (look.js). The player sets it before painting. */
+export const theme = { accent: '#3b5b92' };
 export const GOLD = '#e2a43b';
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -19,7 +20,7 @@ function roundRect(ctx, x, y, w, h, r) {
 function card(ctx, x, y, w, h, r, alpha) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.shadowColor = 'rgba(60, 40, 20, 0.16)';
+  ctx.shadowColor = 'rgba(20, 28, 40, 0.14)';
   ctx.shadowBlur = r * 1.6;
   ctx.shadowOffsetY = r * 0.35;
   ctx.fillStyle = PAPER;
@@ -44,26 +45,30 @@ export function wrap(ctx, text, maxW) {
   return lines;
 }
 
+/**
+ * Subtitles, as in a film or streaming player: white words on a soft dark strip near the
+ * bottom of the frame, readable on a white set or a dark one. The viewer can turn them off (CC).
+ */
 export function drawCaption(ctx, W, H, text, alpha) {
   if (!text || alpha <= 0.01) return;
-  const fs = Math.round(H * 0.036);
-  ctx.font = `600 ${fs}px ${FONT}`;
-  const lines = wrap(ctx, text, W * 0.62);
-  const lw = Math.max(...lines.map((l) => ctx.measureText(l).width));
-  const padX = fs * 1.1;
-  const padY = fs * 0.7;
-  const lh = fs * 1.3;
-  const w = lw + padX * 2;
-  const h = lines.length * lh + padY * 2 - (lh - fs);
-  const x = (W - w) / 2;
-  const y = H * 0.86 - h - (1 - alpha) * fs * 0.5;
-  card(ctx, x, y, w, h, fs * 0.7, alpha);
+  const fs = Math.round(H * 0.032);
   ctx.save();
+  ctx.font = `500 ${fs}px ${FONT}`;
+  const lines = wrap(ctx, text, W * 0.66);
+  const lh = fs * 1.42;
+  const y = H * 0.89 - (lines.length - 1) * lh - (1 - alpha) * fs * 0.3;
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = INK;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, y + padY + i * lh));
+  ctx.textBaseline = 'middle';
+  lines.forEach((l, i) => {
+    const cy = y + i * lh;
+    const w = ctx.measureText(l).width + fs * 0.9;
+    ctx.fillStyle = 'rgba(14, 16, 20, 0.74)';
+    roundRect(ctx, W / 2 - w / 2, cy - lh / 2 + fs * 0.06, w, lh - fs * 0.12, fs * 0.22);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(l, W / 2, cy + fs * 0.04);
+  });
   ctx.restore();
 }
 
@@ -215,7 +220,7 @@ export function drawSimPanel(ctx, W, H, controls, alpha, activeId) {
     ctx.fillStyle = 'rgba(0,0,0,0.1)';
     roundRect(ctx, tx, ty, tw, fs * 0.4, fs * 0.2);
     ctx.fill();
-    ctx.fillStyle = c.id === activeId ? ACCENT : '#9b948a';
+    ctx.fillStyle = c.id === activeId ? theme.accent : '#9b948a';
     roundRect(ctx, tx, ty, tw * c.v, fs * 0.4, fs * 0.2);
     ctx.fill();
     ctx.beginPath();
@@ -223,7 +228,7 @@ export function drawSimPanel(ctx, W, H, controls, alpha, activeId) {
     ctx.fillStyle = '#fff';
     ctx.fill();
     ctx.lineWidth = fs * 0.15;
-    ctx.strokeStyle = c.id === activeId ? ACCENT : '#9b948a';
+    ctx.strokeStyle = c.id === activeId ? theme.accent : '#9b948a';
     ctx.stroke();
   });
   ctx.restore();
@@ -273,10 +278,10 @@ export function drawAskCard(ctx, W, H, rows, alpha) {
     ctx.fillText(r.question, x + fs * 1.4, ry);
     ctx.font = `700 ${fs * 1.05}px ${FONT}`;
     const tw = ctx.measureText(r.answer).width + fs * 1.4;
-    ctx.fillStyle = 'rgba(192,98,63,0.12)';
+    ctx.fillStyle = theme.accent + '1f'; // the accent, faint
     roundRect(ctx, x + fs * 1.4, ry + fs * 1.3, tw, fs * 1.6, fs * 0.8);
     ctx.fill();
-    ctx.fillStyle = ACCENT;
+    ctx.fillStyle = theme.accent;
     ctx.fillText(r.answer, x + fs * 2.1, ry + fs * 1.55);
   });
   ctx.restore();
@@ -317,7 +322,7 @@ export function drawDecideCard(ctx, W, H, sp, alpha, compare = null) {
     const colX = (k) => tx + tw * 0.34 + (k * tw * 0.66) / compare.head.length;
     let ty = y + fs * 5.4;
     ctx.font = `700 ${fs * 0.85}px ${FONT}`;
-    ctx.fillStyle = ACCENT;
+    ctx.fillStyle = theme.accent;
     ctx.fillText('COMPARE, WITH YOUR NUMBERS', tx, ty);
     compare.head.forEach((hd, k) => ctx.fillText(hd.toUpperCase(), colX(k), ty));
     ty += fs * 1.6;
@@ -336,7 +341,7 @@ export function drawDecideCard(ctx, W, H, sp, alpha, compare = null) {
   cols.forEach(([title], c) => {
     const cx = x + fs * 1.5 + c * (colW + fs * 0.5);
     let cy = y + fs * 5.6 + tableH;
-    ctx.fillStyle = ACCENT;
+    ctx.fillStyle = theme.accent;
     ctx.font = `700 ${fs}px ${FONT}`;
     ctx.fillText(title.toUpperCase(), cx, cy);
     cy += fs * 1.8;

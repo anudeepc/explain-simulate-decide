@@ -12,14 +12,14 @@
 :root {
   --mat: #2f4a3f;        /* cutting-mat green */
   --mat-deep: #263d34;
-  --chalk: #ece6d8;      /* text on the mat */
-  --chalk-soft: rgba(236, 230, 216, 0.74);
+  --chalk: #f4f5f3;      /* text on the mat */
+  --chalk-soft: rgba(244, 245, 243, 0.74);
   --rule: rgba(236, 230, 216, 0.07);
   --rule-major: rgba(236, 230, 216, 0.13);
-  --paper: #f7f3ea;
+  --paper: #ffffff;
   --ink: #1e2521;
   --ink-soft: #55605a;
-  --line: #d9d1c1;
+  --line: #dfe2e0;
   --coin: #e3b64a;       /* the coins in the film: progress and focus only */
   --coin-deep: #b98a1f;
   --error: #b4432c;

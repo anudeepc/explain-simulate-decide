@@ -1,410 +1,124 @@
 {
   "version": 2,
   "shape": "feedback",
-  "question": "Should I pay only the minimum on my credit card, or a fixed amount?",
+  "tone": "money",
+  "story": {
+    "hero": "you",
+    "logline": "You owe on your card and pay the minimum each month; nearly all of it goes on interest, so how long until you are clear, and what changes it?"
+  },
+  "question": "Should I keep paying the minimum on my credit card, or pay a fixed amount each month?",
   "source": {
     "title": "Paying only the minimum on a credit card",
-    "publisher": "Test fixture (Explain, Simulate, Decide repo); the numbers are illustrative",
+    "publisher": "Test fixture written for this repo; the numbers are illustrative",
     "quotes": [
       "Credit cards make it easy to pay only the minimum each month, often 2% of the balance or $25, whichever is more.",
       "A typical card charges about 22% a year, which works out to just under 2% a month on whatever you still owe.",
       "Take a balance of $5,000 at 22%.",
       "Paying the minimum, it would take over 20 years to clear, and you would pay far more in interest than you originally borrowed.",
       "Paying a fixed $200 a month instead clears the same balance in about two and a half years, with roughly $1,400 in interest.",
-      "Many people believe the minimum payment is set so that you will pay off the card in a reasonable time.",
-      "Stopping new spending on the card matters too: new purchases add to the balance faster than small payments can reduce it.",
       "Each month the interest is added to your balance."
     ]
   },
   "model": {
     "inputs": [
-      {
-        "id": "fixedPay",
-        "label": "Fixed amount you pay each month (0 = minimum only)",
-        "unit": "$/month",
-        "kind": "lever",
-        "min": 0,
-        "max": 500,
-        "step": 10,
-        "default": 0,
-        "source": "assumption"
-      },
-      {
-        "id": "newSpend",
-        "label": "New purchases on the card each month",
-        "unit": "$/month",
-        "kind": "lever",
-        "min": 0,
-        "max": 300,
-        "step": 10,
-        "default": 0,
-        "source": "assumption"
-      },
-      {
-        "id": "balance0",
-        "label": "What you owe today",
-        "unit": "$",
-        "kind": "condition",
-        "min": 500,
-        "max": 20000,
-        "step": 100,
-        "default": 5000,
-        "source": "article",
-        "quote": 2
-      },
-      {
-        "id": "apr",
-        "label": "Interest rate a year",
-        "unit": "%/yr",
-        "kind": "condition",
-        "min": 0,
-        "max": 36,
-        "step": 0.5,
-        "default": 22,
-        "source": "article",
-        "quote": 1
-      },
-      {
-        "id": "minPct",
-        "label": "Minimum payment, share of what you owe",
-        "unit": "%/month",
-        "kind": "condition",
-        "min": 1,
-        "max": 5,
-        "step": 0.5,
-        "default": 2,
-        "source": "article",
-        "quote": 0
-      }
+      { "id": "fixedPay", "label": "Fixed amount you pay each month (0 = just the minimum)", "unit": "$/month", "kind": "lever",
+        "min": 0, "max": 500, "step": 10, "default": 0, "source": "assumption" },
+      { "id": "newSpend", "label": "New purchases on the card each month", "unit": "$/month", "kind": "lever",
+        "min": 0, "max": 500, "step": 10, "default": 0, "source": "assumption" },
+      { "id": "balance0", "label": "What you owe now", "unit": "$", "kind": "condition",
+        "min": 500, "max": 20000, "step": 100, "default": 5000, "source": "article", "quote": 2 },
+      { "id": "apr", "label": "Interest rate a year", "unit": "%/yr", "kind": "condition",
+        "min": 0, "max": 36, "step": 0.5, "default": 22, "source": "article", "quote": 1 }
     ],
     "constants": [
-      {
-        "id": "minFloor",
-        "label": "Smallest minimum payment",
-        "unit": "$/month",
-        "value": 25,
-        "source": "article",
-        "quote": 0
-      },
-      {
-        "id": "cycle",
-        "label": "Time between statements",
-        "unit": "month",
-        "value": 1,
-        "source": "article",
-        "quote": 7
-      }
+      { "id": "minShare", "label": "Minimum payment, share of what you owe", "unit": "%/month", "value": 2, "source": "article", "quote": 0 },
+      { "id": "minFloor", "label": "Smallest minimum payment", "unit": "$/month", "value": 25, "source": "article", "quote": 0 },
+      { "id": "payGap", "label": "Time between payments", "unit": "month", "value": 1, "source": "article", "quote": [0, 5], "note": "You pay, and interest is added, once a month." }
     ],
-    "derived": [],
+    "derived": [
+      { "id": "interest", "label": "Interest added this month", "unit": "$/month", "formula": "balance * apr / 100 / 12" },
+      { "id": "payment", "label": "Your payment this month", "unit": "$/month",
+        "formula": "min(max(fixedPay, balance * minShare / 100, minFloor), balance / payGap + interest + newSpend)" }
+    ],
     "outputs": [
-      {
-        "id": "firstInterest",
-        "label": "Interest added in the first month",
-        "unit": "$/month",
-        "formula": "balance0 * apr / 100 / 12"
-      },
-      {
-        "id": "firstPay",
-        "label": "Your first payment",
-        "unit": "$/month",
-        "formula": "max(fixedPay, minPct / 100 * balance0, minFloor)"
-      }
+      { "id": "firstInterest", "label": "Interest in the first month", "unit": "$/month", "formula": "balance0 * apr / 100 / 12" },
+      { "id": "firstCut", "label": "Off what you owe in the first month", "unit": "$/month",
+        "formula": "max(fixedPay, balance0 * minShare / 100, minFloor) - firstInterest - newSpend" }
     ],
     "stores": [
-      {
-        "id": "balance",
-        "label": "What you owe",
-        "unit": "$",
-        "start": "balance0",
-        "floor": 0,
-        "change": "(balance * apr / 100 / 12 + newSpend - min(max(fixedPay, minPct / 100 * balance, minFloor), balance / cycle + balance * apr / 100 / 12 + newSpend)) * 12"
-      },
-      {
-        "id": "interestPaid",
-        "label": "Interest paid so far",
-        "unit": "$",
-        "start": "0",
-        "change": "balance * apr / 100"
-      }
+      { "id": "balance", "label": "What you owe", "unit": "$", "start": "balance0", "floor": 0, "change": "(balance * apr / 100 / 12 + newSpend - payment) * 12" },
+      { "id": "interestPaid", "label": "Interest you've paid", "unit": "$", "start": 0, "change": "interest * 12" }
     ],
     "milestones": [
-      {
-        "id": "debtFree",
-        "label": "Card cleared in",
-        "store": "balance",
-        "reaches": "0"
-      }
+      { "id": "debtFree", "label": "Card cleared in", "store": "balance", "reaches": "0" },
+      { "id": "interestTops", "label": "Interest paid passes what you owed, in", "store": "interestPaid", "reaches": "balance0" }
     ]
   },
   "checks": [
-    {
-      "claim": "A fixed $200 a month clears $5,000 at 22% in about two and a half years",
-      "value": "debtFree",
-      "between": [
-        2.25,
-        3
-      ],
-      "when": {
-        "fixedPay": 200
-      },
-      "quote": 4
-    },
-    {
-      "claim": "Paying only the minimum, the card is not clear after 20 years",
-      "value": "balance",
-      "between": [
-        1,
-        5000
-      ],
-      "quote": 3
-    },
-    {
-      "claim": "Paying only the minimum, you pay more in interest than you borrowed",
-      "value": "interestPaid",
-      "between": [
-        5000,
-        100000
-      ],
-      "quote": 3
-    },
-    {
-      "claim": "A bigger fixed payment clears the card sooner",
-      "value": "debtFree",
-      "falls": "fixedPay"
-    },
-    {
-      "claim": "New purchases leave more owing",
-      "value": "balance",
-      "rises": "newSpend"
-    },
-    {
-      "claim": "A higher rate means more interest paid",
-      "value": "interestPaid",
-      "rises": "apr"
-    }
+    { "claim": "Paying the minimum, $5,000 at 22% takes over 20 years to clear", "value": "debtFree", "between": [20, null], "quote": 3 },
+    { "claim": "Paying the minimum, you pay more in interest than you borrowed", "value": "interestPaid", "between": [5000, null], "quote": 3 },
+    { "claim": "A fixed $200 a month clears the same balance in about two and a half years", "value": "debtFree", "between": [2.125, 2.875], "when": { "fixedPay": 200 }, "quote": 4 },
+    { "claim": "22% a year is just under 2% a month on what you owe", "value": "firstInterest", "between": [90, 100], "quote": 1 },
+    { "claim": "A bigger fixed payment clears the card sooner", "value": "debtFree", "falls": "fixedPay" },
+    { "claim": "New purchases leave more owing", "value": "balance", "rises": "newSpend" },
+    { "claim": "A lower rate clears the card sooner", "value": "debtFree", "rises": "apr" }
   ],
   "world": {
-    "time": {
-      "unit": "year",
-      "span": 20
-    },
+    "time": { "unit": "year", "span": 20 },
     "nodes": [
-      {
-        "id": "you",
-        "prop": "person-figure",
-        "label": "You",
-        "plays": "fixedPay"
-      },
-      {
-        "id": "shop",
-        "prop": "shopping-bag",
-        "label": "New purchases",
-        "plays": "newSpend",
-        "appears": "newSpend"
-      },
-      {
-        "id": "debt",
-        "prop": "jar",
-        "label": "What you owe",
-        "store": "balance"
-      },
-      {
-        "id": "bank",
-        "prop": "bank",
-        "label": "Card company",
-        "plays": "apr"
-      },
-      {
-        "id": "interestJar",
-        "label": "Interest paid so far",
-        "store": "interestPaid"
-      }
+      { "id": "you", "prop": "person-figure", "label": "You", "plays": "fixedPay" },
+      { "id": "shop", "prop": "shopping-bag", "label": "New purchases", "plays": "newSpend", "appears": "newSpend" },
+      { "id": "bank", "prop": "bank", "label": "Card company", "plays": "apr" },
+      { "id": "debt", "prop": "jar", "label": "What you owe", "store": "balance" },
+      { "id": "paid", "prop": "coin-stack", "label": "Interest you've paid", "store": "interestPaid" }
     ],
     "flows": [
-      {
-        "id": "interest",
-        "from": "bank",
-        "to": "debt",
-        "carrier": "money",
-        "label": "Interest added",
-        "unit": "$/month",
-        "rate": "balance * apr / 100 / 12"
-      },
-      {
-        "id": "purchases",
-        "from": "shop",
-        "to": "debt",
-        "carrier": "money",
-        "label": "New purchases",
-        "unit": "$/month",
-        "rate": "newSpend"
-      },
-      {
-        "id": "payment",
-        "from": "you",
-        "to": "bank",
-        "carrier": "money",
-        "label": "Your payment",
-        "unit": "$/month",
-        "rate": "min(max(fixedPay, minPct / 100 * balance, minFloor), balance / cycle + balance * apr / 100 / 12 + newSpend)"
-      }
+      { "id": "pay", "from": "you", "to": "bank", "carrier": "money", "rate": "payment", "label": "Your payment", "unit": "$/month" },
+      { "id": "charge", "from": "bank", "to": "debt", "carrier": "money", "rate": "interest", "label": "Interest added", "unit": "$/month" },
+      { "id": "buy", "from": "shop", "to": "debt", "carrier": "money", "rate": "newSpend", "label": "New purchases", "unit": "$/month" }
     ]
   },
   "ask": [
-    {
-      "question": "How much do you owe on your card right now?",
-      "help": "It's the balance on your latest statement or in your card's app.",
-      "input": "balance0"
-    },
-    {
-      "question": "What interest rate does your card charge a year?",
-      "help": "Look for the purchase rate (APR) on your statement.",
-      "input": "apr"
-    },
-    {
-      "question": "How do you usually pay?",
-      "choices": [
-        {
-          "label": "Just the minimum, or not sure",
-          "set": {
-            "fixedPay": 0
-          }
-        },
-        {
-          "label": "A fixed $200 a month",
-          "set": {
-            "fixedPay": 200
-          },
-          "quote": 4
-        },
-        {
-          "label": "A fixed $100 a month",
-          "set": {
-            "fixedPay": 100
-          }
-        }
-      ]
-    },
-    {
-      "question": "Do you still use the card for new purchases?",
-      "choices": [
-        {
-          "label": "No, or not sure",
-          "set": {
-            "newSpend": 0
-          }
-        },
-        {
-          "label": "A little each month",
-          "set": {
-            "newSpend": 50
-          }
-        },
-        {
-          "label": "Quite a lot each month",
-          "set": {
-            "newSpend": 150
-          }
-        }
-      ]
-    }
+    { "question": "How much do you owe on your card right now?", "help": "It's the balance on your latest statement, or in your card's app.", "input": "balance0" },
+    { "question": "What interest rate does your card charge a year?", "help": "Look for the purchase rate on your statement.", "input": "apr" },
+    { "question": "Do you pay a fixed amount each month? How much?", "help": "Enter 0 if you pay just the minimum.", "input": "fixedPay" },
+    { "question": "About how much do you add to the card in new purchases each month?", "help": "Add up the purchases on your last statement. Enter 0 if none.", "input": "newSpend" }
   ],
   "explain": [
-    {
-      "shot": "establish",
-      "caption": "Paying only the minimum: how long until your card is clear?"
-    },
-    {
-      "shot": "introduce",
-      "focus": "debt",
-      "caption": "This jar is what you owe on the card."
-    },
-    {
-      "shot": "follow",
-      "focus": "interest",
-      "caption": "Each month the card company adds interest to what you owe."
-    },
-    {
-      "shot": "follow",
-      "focus": "payment",
-      "caption": "The minimum payment is a small share of what you owe."
-    },
-    {
-      "shot": "turn",
-      "focus": "payment",
-      "caption": "But the minimum barely beats the interest, so the debt hardly shrinks."
-    },
-    {
-      "shot": "cause",
-      "focus": "payment",
-      "drive": "fixedPay",
-      "caption": "A fixed payment that doesn't shrink pays the debt down faster."
-    },
-    {
-      "shot": "cause",
-      "focus": "purchases",
-      "drive": "newSpend",
-      "caption": "New purchases add to the debt faster than small payments remove it."
-    },
-    {
-      "shot": "timelapse",
-      "focus": "debt",
-      "caption": "So on the minimum, the debt is still there years later."
-    },
-    {
-      "shot": "handoff",
-      "caption": "Now make it yours. Answer a few questions."
-    }
+    { "shot": "establish", "caption": "You owe money on your card. When will it be cleared?" },
+    { "shot": "follow", "focus": "pay", "caption": "You pay the minimum, trusting it will clear the card in time." },
+    { "shot": "follow", "focus": "charge", "caption": "Each month, the card company adds interest to what you owe." },
+    { "shot": "turn", "focus": "pay", "caption": "But nearly all of the minimum goes on interest." },
+    { "shot": "timelapse", "focus": "debt", "caption": "So years pass. The debt stays; the interest you've paid piles up." },
+    { "shot": "cause", "focus": "buy", "drive": "newSpend", "caption": "New purchases add to the debt faster than small payments shrink it." },
+    { "shot": "cause", "focus": "pay", "drive": "fixedPay", "caption": "A fixed amount doesn't shrink with the debt, so it clears sooner." },
+    { "shot": "handoff", "caption": "Now make it yours. Your numbers decide the rest." }
   ],
-  "simulate": {
-    "controls": [
-      "fixedPay",
-      "newSpend",
-      "balance0",
-      "apr",
-      "minPct"
-    ],
-    "prompt": "Try your own balance, rate and payment."
-  },
+  "simulate": { "controls": ["fixedPay", "newSpend", "balance0", "apr"], "prompt": "Try your own balance, rate and payment." },
   "decide": {
     "compare": [
-      {
-        "label": "Pay the minimum",
-        "set": {
-          "fixedPay": 0
-        }
-      },
-      {
-        "label": "Pay a fixed $200 a month",
-        "set": {
-          "fixedPay": 200
-        }
-      },
-      {
-        "label": "Pay a fixed $300 a month",
-        "set": {
-          "fixedPay": 300
-        }
-      }
+      { "label": "Pay just the minimum", "set": { "fixedPay": 0 } },
+      { "label": "Pay a fixed $200 a month", "set": { "fixedPay": 200 } }
     ],
     "tradeoffs": [
-      "The minimum leaves more cash free each month, but the debt lasts far longer and costs far more in interest.",
-      "A fixed payment clears the card sooner, but it takes the same amount from your budget every month, even in a tight one.",
-      "Moving the balance to a card with a lower rate or a 0% offer can cut the interest, but there may be a transfer fee and a higher rate when the offer ends.",
-      "Stopping new purchases on the card helps the balance fall, but it means paying for things another way."
+      "Paying the minimum leaves more cash free each month, but the debt lasts far longer and the interest keeps adding up.",
+      "A fixed amount clears the card sooner and costs less interest, but it takes the same sum from your budget every month, even in a tight one.",
+      "Moving the balance to a card with a lower rate, or a 0% offer, can cut the interest, but there may be a transfer fee and a higher rate after the offer ends.",
+      "Stopping new spending on the card helps the debt fall, but you need another way to pay for things."
     ],
     "leftOut": [
-      "Interest is worked out once a month here; real cards often charge it daily. At 22% a year, $200 a month works out nearer $1,750 in interest than the article's rounded $1,400.",
-      "Fees, such as late fees, annual fees and balance transfer fees, are not included.",
-      "The rate is held fixed; real rates can change, and a 0% offer ends after a set time. Check what applies to your card.",
+      "The article says $200 a month clears $5,000 in about two and a half years with roughly $1,400 in interest. At 22% with interest added monthly, those payments take about 2.8 years and cost nearer $1,750, so this page does not use the $1,400 figure.",
+      "Interest is added once a month here; many cards work it out daily, so real figures differ a little.",
+      "Minimum payment rules differ between cards. Here it is 2% of what you owe or $25, whichever is more, as in the article. Check how yours is worked out.",
+      "Fees (late, annual, balance transfer) are not included, and the rate is held fixed; real rates can change, and a 0% offer ends after a set time.",
       "Missed or late payments, and their effect on your credit record, are not modelled.",
-      "The $100, $300 and new-purchase amounts in the questions are examples, not figures from the article."
+      "The clock stops at 20 years, so a card that takes longer shows as not cleared within 20 years."
     ],
     "questionsToAsk": [
-      "How is my minimum payment worked out, and how long would it take to clear my balance paying only that?",
-      "What interest rate am I paying now, and is a lower rate available to me?",
-      "If I move my balance to another card, what is the fee, and what rate applies when the offer ends?",
-      "Can I set up an automatic fixed payment each month?"
+      "How is my minimum payment worked out, and how long would paying only that take to clear my balance?",
+      "What rate am I paying now, and is a lower rate available to me?",
+      "If I move my balance to another card, what is the fee, and what rate applies after the offer ends?",
+      "Can I set up a fixed automatic payment each month?"
     ]
   }
 }

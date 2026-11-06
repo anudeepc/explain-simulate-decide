@@ -9,6 +9,7 @@ import { buildTimeline, stateAt, easeInOut, easeOut, span, lerp, TRAVEL, clamp01
 import { layoutWorld, lanes, routeFlow, bounds, FOOT } from './layout.js';
 import { cameraSetups, poseAt, breathe } from './camera.js';
 import { createStage, toScreen } from './stage.js';
+import { toneOf } from './look.js';
 import { createFlow } from './flows.js';
 import { resolveActor } from './cast/resolve.js';
 import { CROWD_COLORS } from './cast/names.js';
@@ -150,7 +151,9 @@ async function start(root, sp, options, api) {
   c2.setAttribute('aria-label', sp.question);
   wrap.append(c3, c2);
   root.replaceChildren(wrap);
-  const stage = createStage(c3);
+  const tone = toneOf(sp);
+  wrap.style.setProperty('--esd-accent', tone.accent);
+  const stage = createStage(c3, tone);
   const ctx2 = c2.getContext('2d');
 
   // ---- nodes: build every prop, then place it (attached props ride on their host)
@@ -528,6 +531,7 @@ async function start(root, sp, options, api) {
     stage.render(timeForFlow);
 
     // ---- overlay
+    overlay.theme.accent = tone.accent; // two films on one page each keep their own colour
     ctx2.clearRect(0, 0, W, H);
     overlay.drawActs(ctx2, W, H, frame.act, sp.question, overlay.sourceLine(sp), overlay.actsOf(sp));
     const items = [];
@@ -589,7 +593,7 @@ async function start(root, sp, options, api) {
       overlay.drawAskCard(ctx2, W, H, demoAnswers, frame.ask || 0);
       overlay.drawDecideCard(ctx2, W, H, sp, frame.decideAlpha || 0, frame.decideAlpha > 0.01 && sp.decide.compare ? compareRows(defaults) : null);
     }
-    overlay.drawCaption(ctx2, W, H, frame.caption, frame.captionAlpha);
+    overlay.drawCaption(ctx2, W, H, frame.caption, subtitles ? frame.captionAlpha : 0);
     overlay.drawSource(ctx2, W, H, sp, 1);
     return sim;
   }
@@ -598,6 +602,7 @@ async function start(root, sp, options, api) {
   let audioCtx = null;
   let score = null;
   let soundOn = opts.music;
+  let subtitles = opts.subtitles ?? true;
   let clipNodes = [];
   // While sound plays, the music is the film's clock (as in any video player): the picture
   // follows the audio, so slow frames skip ahead instead of drifting out of time with it.
@@ -668,9 +673,15 @@ async function start(root, sp, options, api) {
       seek(fr * filmEnd());
     },
     skipToModel: () => afterFilm(),
+    toggleSubtitles: () => {
+      subtitles = !subtitles;
+      ui.setSubtitles(subtitles);
+      drawnKey = ''; // redraw a paused frame
+    },
     toggleSound: () => {
       soundOn = !soundOn;
       ui.setSound(soundOn);
+  ui.setSubtitles(subtitles);
       if (playing && mode === 'film') startAudio(t);
       else stopAudio();
     },
@@ -702,6 +713,7 @@ async function start(root, sp, options, api) {
     record: () => downloadRecording(),
   });
   ui.setSound(soundOn);
+  ui.setSubtitles(subtitles);
   if (!opts.interactive) ui.showBar(false);
 
   function runClock() {

@@ -7,17 +7,17 @@ import { quoteText } from './schema.js';
 const CSS = `
 .esd{position:absolute;inset:0;container-type:size;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,"Helvetica Neue",Arial,sans-serif;color:#26262b;user-select:none}
 .esd canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.esd-bar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;background:rgba(251,247,239,.92);border-radius:999px;padding:6px 10px;box-shadow:0 6px 24px rgba(60,40,20,.14);backdrop-filter:blur(6px);transition:opacity .3s;max-width:96cqw}
+.esd-bar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.92);border-radius:999px;padding:6px 10px;box-shadow:0 6px 24px rgba(20,28,40,.14);backdrop-filter:blur(6px);transition:opacity .3s;max-width:96cqw}
 .esd-bar.dim{opacity:.25}.esd-bar:hover{opacity:1}
 .esd button{white-space:nowrap;font:inherit;font-size:13px;font-weight:600;border:0;border-radius:999px;padding:7px 13px;background:transparent;color:#26262b;cursor:pointer}
 .esd button:hover{background:rgba(0,0,0,.06)}
 .esd button.primary{background:#26262b;color:#fff}.esd button.primary:hover{background:#000}
 .esd button.chip{border:1.5px solid rgba(0,0,0,.14);margin:0 6px 6px 0}
-.esd button.chip[aria-pressed=true]{background:#c0623f;border-color:#c0623f;color:#fff}
-.esd button:focus-visible,.esd input:focus-visible{outline:2px solid #c0623f;outline-offset:2px}
-.esd-scrub{width:min(30cqw,360px);accent-color:#c0623f}
+.esd button.chip[aria-pressed=true]{background:var(--esd-accent,#3b5b92);border-color:var(--esd-accent,#3b5b92);color:#fff}
+.esd button:focus-visible,.esd input:focus-visible{outline:2px solid var(--esd-accent,#3b5b92);outline-offset:2px}
+.esd-scrub{width:min(30cqw,360px);accent-color:var(--esd-accent,#3b5b92)}
 .esd-time{font-size:12px;font-variant-numeric:tabular-nums;color:#6d6a66;min-width:76px;text-align:center}
-.esd-panel{position:absolute;background:rgba(251,247,239,.96);border-radius:16px;box-shadow:0 10px 40px rgba(60,40,20,.16);padding:16px 18px;max-height:calc(100cqh - 90px);overflow:auto;user-select:text;box-sizing:border-box}
+.esd-panel{position:absolute;background:rgba(255,255,255,.96);border-radius:16px;box-shadow:0 10px 40px rgba(20,28,40,.16);padding:16px 18px;max-height:calc(100cqh - 90px);overflow:auto;user-select:text;box-sizing:border-box}
 .esd-sim{left:2cqw;top:calc(12.5cqh + 6px);width:clamp(230px,27cqw,330px);padding:14px 16px;max-height:calc(87.5cqh - 80px)}
 .esd-sim p{margin-bottom:8px}.esd-sim .esd-row{margin-bottom:7px}.esd-sim .esd-out{padding-top:7px}.esd-sim .esd-out .esd-row{margin-bottom:3px}.esd-sim .esd-actions{gap:2px 4px}.esd-sim .esd-actions button{padding:6px 10px}
 .esd h2{margin:0 0 4px;font-size:17px}
@@ -25,7 +25,7 @@ const CSS = `
 .esd-row{margin:0 0 11px}
 .esd-row label{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:3px;gap:8px}
 .esd-row label span:last-child{font-variant-numeric:tabular-nums}
-.esd-row input[type=range]{width:100%;accent-color:#c0623f;margin:0}.esd-row input[type=checkbox]{accent-color:#c0623f;width:18px;height:18px;margin:2px 0 0}
+.esd-row input[type=range]{width:100%;accent-color:var(--esd-accent,#3b5b92);margin:0}.esd-row input[type=checkbox]{accent-color:var(--esd-accent,#3b5b92);width:18px;height:18px;margin:2px 0 0}
 .esd-row small{color:#8a857e;font-size:11px}
 .esd-out{border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:4px}
 .esd-out .esd-row label{font-weight:500}.esd-out .esd-row label span:last-child{font-weight:700}
@@ -35,17 +35,17 @@ const CSS = `
 .esd-q input[type=number]{font:inherit;font-size:15px;padding:7px 10px;border-radius:10px;border:1.5px solid rgba(0,0,0,.15);width:150px;background:#fff}
 .esd-decide{left:50%;top:50%;transform:translate(-50%,-50%);width:min(980px,94cqw)}
 .esd-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 12px}
-.esd-cols h3,.esd-cmp caption{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c0623f;margin:0 0 8px;text-align:left}
+.esd-cols h3,.esd-cmp caption{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--esd-accent,#3b5b92);margin:0 0 8px;text-align:left}
 .esd-cols ul{margin:0;padding-left:16px;font-size:13.5px;line-height:1.5}.esd-cols li{margin-bottom:6px}
 .esd-cmp{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 4px}
 .esd-cmp th,.esd-cmp td{text-align:left;padding:6px 8px}.esd-cmp td{font-weight:700;font-variant-numeric:tabular-nums}
 .esd-cmp tbody tr:nth-child(odd){background:rgba(0,0,0,.035)}.esd-cmp th[scope=row]{font-weight:600}
 .esd-sources{border-top:1px solid rgba(0,0,0,.08);padding-top:10px;font-size:12px;color:#6d6a66}
 .esd-sources blockquote{margin:6px 0;padding-left:10px;border-left:3px solid #e2a43b;font-style:italic}
-.esd-sources a{color:#c0623f}
+.esd-sources a{color:var(--esd-accent,#3b5b92)}
 .esd-errors{left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,90cqw)}
 .esd-errors li{font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-bottom:4px}
-.esd-progress{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(251,247,239,.96);padding:16px 22px;border-radius:14px;font-weight:600;box-shadow:0 10px 40px rgba(60,40,20,.16)}
+.esd-progress{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.96);padding:16px 22px;border-radius:14px;font-weight:600;box-shadow:0 10px 40px rgba(20,28,40,.16)}
 .esd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @container (max-width:560px){.esd-bar{bottom:8px;gap:2px;padding:4px 5px}.esd-bar button{font-size:12px;padding:6px 10px}.esd-time,.esd-rec{display:none}}
 @container (max-width:380px){.esd-bar{bottom:5px}.esd-bar button{font-size:11px;padding:5px 9px}.esd-sound{display:none}}
@@ -101,7 +101,9 @@ export function createUI(wrap, sp, model, h) {
   const skipBtn = el('button', { text: isProcess ? 'Skip to Decide' : 'Try the model', onclick: h.skipToModel });
   const soundBtn = el('button', { class: 'esd-sound', 'aria-label': 'Sound', text: '♪ On', onclick: h.toggleSound });
   const recBtn = el('button', { class: 'esd-rec', text: '● Record MP4', onclick: h.record });
-  const bar = el('div', { class: 'esd-bar' }, playBtn, scrub, time, skipBtn, soundBtn, recBtn);
+  // subtitles, as in a film player: on by default, since the film may have no voice
+  const ccBtn = el('button', { class: 'esd-cc', 'aria-pressed': 'true', 'aria-label': 'Subtitles', text: 'CC', onclick: h.toggleSubtitles });
+  const bar = el('div', { class: 'esd-bar' }, playBtn, scrub, time, skipBtn, ccBtn, soundBtn, recBtn);
 
   // ---- "Make it yours": the page asks the viewer about their situation
   const answers = {};
@@ -235,6 +237,11 @@ export function createUI(wrap, sp, model, h) {
     },
     setSound(on) {
       soundBtn.textContent = on ? '♪ On' : '♪ Off';
+    },
+    setSubtitles(on) {
+      ccBtn.setAttribute('aria-pressed', String(on));
+      ccBtn.style.opacity = on ? '1' : '0.5';
+      ccBtn.style.textDecoration = on ? 'none' : 'line-through';
     },
     /** @param {Record<string, number>} values inputs  @param {Record<string, string>} shown formatted readouts */
     setValues(values, shown) {

@@ -4,6 +4,7 @@ import { parse, refs, orderFormulas } from './formula.js';
 import { PROPS, KINDS } from './cast/names.js';
 import { parseUnit, checkUnit, unitsOf, per } from './units.js';
 import { createModel, formatValue } from './model.js';
+import { TONES } from './look.js';
 
 export const SHOTS = ['establish', 'introduce', 'focus', 'follow', 'cause', 'compare', 'turn', 'timelapse', 'handoff'];
 export const CARRIERS = ['energy', 'money', 'water', 'heat', 'light', 'goods', 'people', 'data', 'influence', 'time', 'carbon', 'substance'];
@@ -30,7 +31,7 @@ export const MAX_CAPTION_WORDS = 12;
 export const ALLOWED_LITERALS = [0, 1, 2, 5, 7, 10, 12, 24, 30, 52, 60, 100, 365, 1000];
 
 const ID = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const RESERVED = ['min', 'max', 'round', 'pow'];
+const RESERVED = ['min', 'max', 'round', 'pow', 'step'];
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
 const isStr = (x) => typeof x === 'string' && x.trim().length > 0;
 const arr = (x) => (Array.isArray(x) ? x : []);
@@ -73,6 +74,7 @@ export function validate(sp) {
   const shape = sp.shape;
   if (!STORY_SHAPES.includes(shape)) err(`shape is required: one of ${STORY_SHAPES.join(', ')}. See references/story-shapes.md for which one fits the article.`);
   const isProcess = shape === 'process';
+  if (sp.tone !== undefined && !TONES[sp.tone]) err(`tone must be one of ${Object.keys(TONES).join(', ')}: the colour that suits the topic`);
   if (isProcess) return [...errors, ...validateProcess(sp)];
 
   // ---- model
@@ -294,6 +296,7 @@ export function validate(sp) {
   });
   if (shots.filter((x) => x.shot === 'turn').length !== 1) err('explain: needs exactly one "turn" shot (the common misconception)');
   if (!shots.some((x) => x.shot === 'follow' || x.shot === 'cause')) err('explain: needs at least one "follow" or "cause" shot, to show the system working');
+  checkStory(sp, nodes, flows, shots, err);
 
   // ---- simulate & decide  // ---- simulate & decide
   const controls = sp.simulate?.controls;
@@ -564,7 +567,10 @@ function shapeErrors(sp) {
       if (!arr(sp.explain).some((x) => x.shot === 'timelapse')) out.push('shape "build-up": add a "timelapse" shot on the store, so the viewer watches it build up.');
       break;
     case 'feedback':
-      if (!stores.some((st) => refs(parse(st.change)).some((r) => storeIds.has(r)))) out.push('shape "feedback": a store\'s change must read a store (for example interest on a balance: "balance * rate / 100"). That is the loop.');
+      // the loop may run through derived values that read the store
+      const derivedRefs = Object.fromEntries(arr(m.derived).map((d) => [d.id, refs(parse(d.formula))]));
+      const reaches = (ids, seen = new Set()) => ids.some((r) => storeIds.has(r) || (!seen.has(r) && derivedRefs[r] && (seen.add(r), reaches(derivedRefs[r], seen))));
+      if (!stores.some((st) => reaches(refs(parse(st.change))))) out.push('shape "feedback": a store\'s change must read a store (for example interest on a balance: "balance * rate / 100"). That is the loop.');
       break;
     case 'conversion':
       if (!hosts.some((h) => insOf(h).length && outsOf(h).length)) out.push('shape "conversion": one node must take something in and send something out (fuel in, power out), so the chain is visible.');
@@ -618,6 +624,7 @@ function validateProcess(sp) {
   });
   if (shots.filter((x) => x.shot === 'turn').length > 1) err('explain: at most one "turn" shot');
   if (!shots.some((x) => x.shot === 'follow')) err('explain: needs at least one "follow" shot, to walk through a step');
+  checkStory(sp, nodes, flows, shots, err);
   checkDecide(sp, err);
   bannedWords(sp, err);
   return errors;
@@ -734,4 +741,33 @@ function deadParts(sp) {
     out.push(`world node "${nd.id}" takes part in no flow. Every character should send, receive or turn something; remove it, or show what moves to or from it.`);
   }
   return out;
+}
+
+/**
+ * Every film has a hero the viewer stands in for, and is shot like a story: it opens on
+ * the hero, goes out into the world, and comes back to the hero before handing over.
+ * See references/storytelling.md.
+ */
+function checkStory(sp, nodes, flows, shots, err) {
+  const st = sp.story;
+  if (!st || typeof st !== 'object') return err('story is required: {"hero": <node id>, "logline": "…"}. Find the story before the world: see references/storytelling.md.');
+  if (!isStr(st.logline)) err('story.logline is required: one sentence with the hero, what they want, what they don\'t know yet, and the discovery');
+  else if (words(st.logline) > 35) err(`story.logline has ${words(st.logline)} words (max 35)`);
+  const hero = nodes.find((n) => n.id === st.hero);
+  if (!hero) return err(`story.hero "${st.hero}" must be a node: the person or home the viewer stands in for`);
+  if (hero.sky) err(`story.hero "${st.hero}" can't be in the sky: the hero is someone on the ground the viewer stands in for`);
+  const PEOPLE_PROPS = ['person-figure', 'body', 'crowd', 'house'];
+  const PEOPLE_KINDS = ['person', 'body', 'crowd', 'home'];
+  if (!PEOPLE_PROPS.includes(hero.prop) && !PEOPLE_KINDS.includes(hero.kind)) err(`story.hero "${st.hero}" must be someone the viewer can stand in for: a person, a body, a crowd or a home (prop ${PEOPLE_PROPS.join(', ')}, or kind ${PEOPLE_KINDS.join(', ')})`);
+  const hostOf = (id) => nodes.find((n) => n.id === id)?.on || id;
+  const isHero = (id) => id === hero.id || hostOf(id) === hero.id || hostOf(hero.id) === id;
+  const involves = (x) => {
+    if (!x?.focus) return false;
+    const f = flows.find((g) => g.id === x.focus);
+    return f ? isHero(f.from) || isHero(f.to) : isHero(x.focus);
+  };
+  const inner = shots.filter((x) => !['establish', 'handoff'].includes(x.shot));
+  if (!inner.length) return;
+  if (!involves(inner[0])) err(`story: open on the hero. Make the first shot after "establish" about "${hero.id}" (focus on it, or on a flow to or from it), not "${inner[0].focus}".`);
+  if (!involves(inner.at(-1))) err(`story: end with the hero. Make the last shot before "handoff" about "${hero.id}" again, so the film comes back to the person it started with (now: "${inner.at(-1).focus}").`);
 }

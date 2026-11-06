@@ -148,6 +148,23 @@ test('one crowd can show several outcomes', () => {
   assert.ok(validate(notShare).some((e) => /must be a share in "%"/.test(e)));
 });
 
+test('every film has a story: a hero it opens and ends on', () => {
+  const p = () => load('fixtures/shapes/process-bill.json');
+  const bad = (mutate, pattern) => {
+    const sp = p();
+    mutate(sp);
+    assert.ok(validate(sp).some((e) => pattern.test(e)), `expected ${pattern} in:\n${validate(sp).join('\n')}`);
+  };
+  assert.deepEqual(validate(p()), []);
+  bad((s) => delete s.story, /story is required/);
+  bad((s) => (s.story.hero = 'nobody'), /must be a node/);
+  bad((s) => (s.story.hero = 'lower'), /someone the viewer can stand in for/);
+  bad((s) => (s.story.logline = 'word '.repeat(40)), /max 35/);
+  bad((s) => s.explain.splice(1, 1), /open on the hero/);
+  bad((s) => s.explain.splice(s.explain.length - 2, 1), /end with the hero/);
+  bad((s) => (s.tone = 'beige'), /tone must be one of/);
+});
+
 test('a process story has no numbers', () => {
   const p = () => load('fixtures/shapes/process-bill.json');
   const bad = (mutate, pattern) => {

@@ -145,6 +145,8 @@ function sectionWatcher() {
 const SECTIONS = {
   version: [0, 'Starting the screenplay'],
   shape: [0.01, 'Choosing the story’s shape'],
+  tone: [0.01, 'Choosing the colour'],
+  story: [0.015, 'Finding the story: who it follows and what they discover'],
   question: [0.02, 'Framing the decision'],
   source: [0.05, 'Quoting the article’s numbers'],
   model: [0.18, 'Writing the model: inputs, formulas and what builds up over time'],

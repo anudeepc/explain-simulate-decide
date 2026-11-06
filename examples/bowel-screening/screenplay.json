@@ -1,6 +1,11 @@
 {
   "version": 2,
   "shape": "chances",
+  "tone": "health",
+  "story": {
+    "hero": "home",
+    "logline": "A kit lands on your doormat; most kits find nothing, and most people sent for a colonoscopy do not have cancer, so what does doing the test really change for you?"
+  },
   "question": "Should I do the NHS bowel screening home test each time it arrives?",
   "source": {
     "title": "Bowel cancer screening",
@@ -315,8 +320,69 @@
       },
       {
         "id": "hospital",
-        "kind": "building",
-        "label": "Nurse, then colonoscopy"
+        "label": "Nurse, then colonoscopy",
+        "recipe": [
+          {
+            "shape": "box",
+            "size": [
+              2.2,
+              1.8,
+              1.4
+            ],
+            "color": "#eef1f4"
+          },
+          {
+            "shape": "box",
+            "size": [
+              2.3,
+              0.14,
+              1.5
+            ],
+            "color": "#8a96a6"
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.24,
+              0.72,
+              0.06
+            ],
+            "color": "#3f7fbf",
+            "at": [
+              0,
+              0.84,
+              0.71
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.72,
+              0.24,
+              0.06
+            ],
+            "color": "#3f7fbf",
+            "at": [
+              0,
+              1.08,
+              0.71
+            ]
+          },
+          {
+            "shape": "box",
+            "size": [
+              0.5,
+              0.62,
+              0.06
+            ],
+            "color": "#5b6b80",
+            "at": [
+              0,
+              0,
+              0.71
+            ]
+          }
+        ]
       },
       {
         "id": "crowd",
@@ -434,7 +500,7 @@
   "explain": [
     {
       "shot": "establish",
-      "caption": "What happens to people like you who do the bowel screening kit?"
+      "caption": "A kit lands on your doormat. What happens if you do it?"
     },
     {
       "shot": "follow",
@@ -444,34 +510,39 @@
     {
       "shot": "follow",
       "focus": "clear",
-      "caption": "The lab checks for hidden blood. Most kits find none."
+      "caption": "The lab looks for hidden blood. Most kits find none."
     },
     {
       "shot": "follow",
       "focus": "sent",
-      "caption": "If blood is found, a nurse talks with you about further tests."
+      "caption": "Blood found? A nurse talks with you about further tests."
     },
     {
       "shot": "follow",
       "focus": "results",
-      "caption": "A colonoscopy is a camera that looks inside your bowel."
+      "caption": "A colonoscopy, a camera check inside your bowel, looks for cancer."
     },
     {
       "shot": "turn",
       "focus": "crowd",
-      "caption": "But most people sent for a colonoscopy do not have cancer."
+      "caption": "But for most people sent, it finds no cancer."
     },
     {
-      "shot": "cause",
-      "focus": "sent",
+      "shot": "compare",
+      "focus": "crowd",
       "drive": "rounds",
-      "caption": "The more kits you do, the more often you're sent for tests."
+      "caption": "More kits find more cancers, and more colonoscopies that find nothing."
     },
     {
       "shot": "compare",
       "focus": "crowd",
       "drive": "goScope",
-      "caption": "Skip the colonoscopy, and the blood stays unexplained."
+      "caption": "A colonoscopy is your choice. Without one, the blood stays unexplained."
+    },
+    {
+      "shot": "focus",
+      "focus": "home",
+      "caption": "Back home, the next kit arrives in two years."
     },
     {
       "shot": "handoff",

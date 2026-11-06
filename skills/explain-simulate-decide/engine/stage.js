@@ -4,16 +4,11 @@ import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
 import { RoundedBoxGeometry } from './vendor/three/RoundedBoxGeometry.js';
 import { createPost } from './post.js';
 
-export const LOOK = {
-  skyTop: '#7fb2e0',
-  horizon: '#ddd3c3',
-  floor: '#c4b8a6',
-  top: '#bccf9f',
-  side: '#a8805a',
-  band: '#8a6646',
-};
+import { STUDIO_LOOK, TONES } from './look.js';
 
-export function createStage(canvas) {
+/** @param {HTMLCanvasElement} canvas  @param {{accent: string, ground: string}} [tone] */
+export function createStage(canvas, tone = TONES.neutral) {
+  const LOOK = { ...STUDIO_LOOK, top: tone.ground };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -38,7 +33,8 @@ export function createStage(canvas) {
   applyLevel();
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(LOOK.horizon, 80, 220);
+  // the far floor fades into the backdrop at the same brightness, so there is no horizon line
+  scene.fog = new THREE.Fog(new THREE.Color(LOOK.horizon).multiplyScalar(1.9), 40, 160);
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environmentIntensity = 0.45;
@@ -50,9 +46,10 @@ export function createStage(canvas) {
       side: THREE.BackSide,
       depthWrite: false,
       fog: false,
-      uniforms: { top: { value: new THREE.Color(LOOK.skyTop) }, horizon: { value: new THREE.Color(LOOK.horizon) } },
+      // brighter than 1, so after the film's tone curve the backdrop reads as clean white
+      uniforms: { top: { value: new THREE.Color(LOOK.skyTop) }, horizon: { value: new THREE.Color(LOOK.horizon) }, lift: { value: 1.9 } },
       vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: 'uniform vec3 top; uniform vec3 horizon; varying vec3 vP; void main(){ float k = smoothstep(-0.05, 0.55, vP.y); gl_FragColor = vec4(mix(horizon, top, k), 1.0); }',
+      fragmentShader: 'uniform vec3 top; uniform vec3 horizon; uniform float lift; varying vec3 vP; void main(){ float k = smoothstep(-0.05, 0.55, vP.y); gl_FragColor = vec4(mix(horizon, top, k) * lift, 1.0); }',
     }),
   );
   scene.add(sky);
@@ -61,8 +58,8 @@ export function createStage(canvas) {
 
   // late-afternoon light: a warm, low sun key with long soft shadows, a cool sky fill,
   // and a rim from behind that separates each prop from the ground
-  scene.add(new THREE.HemisphereLight('#cfe0ff', '#a88d68', 0.55));
-  const key = new THREE.DirectionalLight('#ffeacc', 3.0);
+  scene.add(new THREE.HemisphereLight('#e4ecff', '#d9d6d0', 0.7));
+  const key = new THREE.DirectionalLight('#fff4e6', 3.0);
   key.position.set(9, 18, 12);
   key.castShadow = true;
   key.shadow.mapSize.setScalar(level > 0 ? 2048 : 4096);
@@ -110,14 +107,13 @@ export function createStage(canvas) {
     return { w, d, cx, cz };
   };
 
-  /** A soft pool of warm light on the ground under the node in focus, like a stage spot. */
+  /** A soft pool of the film's accent colour on the ground under the node in focus. */
   const poolMat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: { alpha: { value: 0 }, color: { value: new THREE.Color('#ffd9a0') } },
+    uniforms: { alpha: { value: 0 }, color: { value: new THREE.Color(tone.accent) } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform float alpha; uniform vec3 color; varying vec2 vUv; void main(){ float r = length(vUv - 0.5) * 2.0; float k = pow(1.0 - smoothstep(0.0, 1.0, r), 2.0); gl_FragColor = vec4(color * k * alpha * 0.55, 1.0); }',
+    fragmentShader: 'uniform float alpha; uniform vec3 color; varying vec2 vUv; void main(){ float r = length(vUv - 0.5) * 2.0; float k = pow(1.0 - smoothstep(0.0, 1.0, r), 2.0); gl_FragColor = vec4(color, k * alpha * 0.2); }',
   });
   const ring = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), poolMat);
   ring.rotation.x = -Math.PI / 2;

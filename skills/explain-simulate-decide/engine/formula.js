@@ -1,10 +1,12 @@
 // A tiny, safe arithmetic language for screenplay formulas.
-// Numbers, + - * /, parentheses, min/max/round/pow, and value ids. Nothing else.
+// Numbers, + - * /, parentheses, min/max/round/pow/step, and value ids. Nothing else.
 // Never uses eval or Function: the AI's text is parsed, not run.
 
 const FUNCS = {
   min: { arity: [1, Infinity], fn: (...a) => Math.min(...a) },
   max: { arity: [1, Infinity], fn: (...a) => Math.max(...a) },
+  // a switch: 1 while x is above zero, else 0 ("water flows while the tank has any")
+  step: { arity: [1, 1], fn: (x) => (x > 0 ? 1 : 0) },
   // powers, for chances that repeat ("at least one positive in n tests" = 1 - (1 - p)^n)
   pow: { arity: [2, 2], fn: (x, y) => x ** y },
   round: {
@@ -87,7 +89,7 @@ export function parse(src) {
       take();
       if (peek() && peek().t === '(') {
         const f = FUNCS[tok.v];
-        if (!Object.hasOwn(FUNCS, tok.v)) throw new FormulaError(`"${tok.v}" is not an allowed function (use min, max, round, pow)`);
+        if (!Object.hasOwn(FUNCS, tok.v)) throw new FormulaError(`"${tok.v}" is not an allowed function (use min, max, round, pow, step)`);
         take('(');
         const args = [];
         if (peek() && peek().t !== ')') {

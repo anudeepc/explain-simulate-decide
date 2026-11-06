@@ -45,7 +45,9 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
 
    For a story with no numbers a reader could change, skip levers, conditions, outcomes and checkable claims (see step 5).
 
-5. **Choose the story shape.** Read `references/story-shapes.md` and pick one shape: `build-up`, `feedback`, `budget`, `conversion`, `cause`, `chances` or `process`. The shape decides the world:
+5. **Find the story.** Read `references/storytelling.md`. Before mapping anything, decide who the film follows and what they discover: the hero (a person or home the viewer stands in for), what they want, what they don't know yet, the discovery, and how it ends. Write a one-sentence logline. The film opens on the hero, goes out into the world, and comes back to the hero. Pick the `tone` that suits the topic. The film is shot on a white set, and the tone sets its one accent colour.
+
+   Then **choose the story shape.** Read `references/story-shapes.md` and pick one shape: `build-up`, `feedback`, `budget`, `conversion`, `cause`, `chances` or `process`. The shape decides the world:
    - things piling up get a store;
    - a fixed amount shared gets one node splitting into parts;
    - an effect with nothing moving gets `influence` links;
@@ -76,7 +78,8 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
 
    Each answer sets one or more inputs. Every choices question needs one option that sets exactly the defaults ("Not sure", "About average", "Somewhere else"). Leave `ask` out only when no viewer's answer would change the result, and always for a `process` story.
 
-10. **Write the shots.** Write 6–12 `explain` shots, one idea per shot, with captions of 12 words or fewer.
+10. **Write the shots.** Write 6–12 `explain` shots, one idea per shot, with captions of 12 words or fewer. Captions are the film's subtitles: narrate in the present tense, close to the hero (see `references/storytelling.md`).
+   - Open on the hero, follow what happens to them in order, go wide, then end back on the hero.
    - Follow the system in the order it works: source, flow, store, or first step to last.
    - Use at least one `follow` or `cause`, exactly one `turn` (at most one in a `process`), and a `timelapse` on any store.
    - Start with `establish` and end with `handoff`.
@@ -103,6 +106,7 @@ This skill is used on every kind of article, so nothing in it assumes a topic. T
     - [ ] The shape fits the article, and no number was invented to make a model. With no numbers to change, the shape is `process`.
     - [ ] If the topic is something a person goes through, the film shows the real steps, researched and quoted, not only the odds.
     - [ ] Nothing is left that the viewer wouldn't miss.
+    - [ ] There is a hero the viewer cares about; the film opens and ends with them, and the captions read like a narrator.
     - [ ] Every number has a quote or is labelled an assumption. Researched figures carry their URL and the date you read them.
     - [ ] You opened every URL you quote, and each quote matches the page word for word.
     - [ ] The checks hold the source's own figures, and no check was loosened to make the model pass.

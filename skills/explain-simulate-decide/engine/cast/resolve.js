@@ -79,7 +79,12 @@ export async function resolveActor(entry, mode = 'auto', n = 0, { storeUnit = nu
   const label = entry.label || entry.id;
   // no prop named: take the look of its kind, or for a store, the look of its unit
   const fallback = !entry.prop && !entry.actor ? (entry.kind ? KIND_LOOK[entry.kind] : entry.store ? storeLook(storeUnit) : null) : null;
-  if (fallback?.recipe && !entry.recipe) entry = { ...entry, recipe: fallback.recipe };
+  if (fallback?.recipe && !entry.recipe) {
+    // two characters of the same kind (B cells, memory cells) get different colours
+    const tints = ['#f2b8b5', '#b8d8f2', '#c9e8b8', '#f2dcb0'];
+    const recipe = entry.kind === 'cell' ? fallback.recipe.map((p, i) => (i === 0 ? { ...p, color: tints[n % tints.length] } : p)) : fallback.recipe;
+    entry = { ...entry, recipe };
+  }
   const own = entry.url ? 'open' : entry.recipe ? 'custom' : 'studio';
   const want = mode === 'auto' ? own : mode;
   const prop = entry.prop || entry.actor || fallback?.prop;
